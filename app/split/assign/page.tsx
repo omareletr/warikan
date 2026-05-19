@@ -42,7 +42,10 @@ export default function AssignPage() {
         <h1 className="text-xl font-bold">Assign Dishes</h1>
       </div>
 
-      <div className="mt-8 flex gap-5 overflow-x-auto px-1 py-2 pb-4">
+      <div
+        className="-mx-6 mt-8 flex gap-5 overflow-x-auto px-7 py-2 pb-4"
+        style={{ maskImage: "linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent)" }}
+      >
         {state.people.map((person) => (
           <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} />
         ))}

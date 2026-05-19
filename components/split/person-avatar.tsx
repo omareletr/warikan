@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { initials, formatCurrency } from "@/lib/calculate";
 import type { Person } from "@/lib/types";
 
-const AVATAR_COLORS = [
+export const AVATAR_COLORS = [
   { bg: "bg-emerald-500/15", text: "text-emerald-400", ring: "ring-emerald-400", activeBg: "bg-emerald-500" },
   { bg: "bg-sky-500/15", text: "text-sky-400", ring: "ring-sky-400", activeBg: "bg-sky-500" },
   { bg: "bg-violet-500/15", text: "text-violet-400", ring: "ring-violet-400", activeBg: "bg-violet-500" },

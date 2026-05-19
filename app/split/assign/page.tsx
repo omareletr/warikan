@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PersonAvatar } from "@/components/split/person-avatar";
+import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { formatCurrency, initials } from "@/lib/calculate";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,13 @@ export default function AssignPage() {
   const router = useRouter();
   const { state, updateLineItems } = useSplitFlow();
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
+
+  function personColor(personId: string) {
+    const person = state.people.find((p) => p.id === personId);
+    if (person?.covered) return { bg: "bg-amber-500/15", text: "text-amber-400" };
+    const idx = state.people.findIndex((p) => p.id === personId);
+    return AVATAR_COLORS[idx % AVATAR_COLORS.length];
+  }
 
   function toggleAssignment(itemId: string) {
     navigator.vibrate?.(10);
@@ -171,11 +178,12 @@ export default function AssignPage() {
                     {Object.entries(claimsByPerson).map(([pid, count]) => {
                       const person = state.people.find((p) => p.id === pid);
                       if (!person) return null;
+                      const color = personColor(pid);
                       return (
                         <button
                           key={pid}
                           onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
-                          className="flex h-6 items-center rounded-md bg-secondary px-2 text-sm font-medium active:opacity-70"
+                          className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium active:opacity-70", color.bg, color.text)}
                         >
                           {initials(person.name)}{count > 1 ? ` ×${count}` : ""}
                         </button>
@@ -208,8 +216,9 @@ export default function AssignPage() {
                       {item.assignedToIds.map((pid) => {
                         const person = state.people.find((p) => p.id === pid);
                         if (!person) return null;
+                        const color = personColor(pid);
                         return (
-                          <span key={pid} className="flex h-6 items-center rounded-md bg-secondary px-2 text-sm font-medium">
+                          <span key={pid} className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium", color.bg, color.text)}>
                             {initials(person.name)}
                           </span>
                         );

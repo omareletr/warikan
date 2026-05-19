@@ -11,14 +11,26 @@ export function SummaryBar({ subtotal, tax, tip, fees }: SummaryBarProps) {
   const total = subtotal + tax + tip + fees;
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-card/40 px-5 py-4">
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-        <span>Subtotal <span className="tabular-nums">{formatCurrency(subtotal)}</span></span>
-        <span>Tax <span className="tabular-nums">{formatCurrency(tax)}</span></span>
-        <span>Tip <span className="tabular-nums">{formatCurrency(tip)}</span></span>
-        {fees > 0 && <span>Fees <span className="tabular-nums">{formatCurrency(fees)}</span></span>}
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between text-sm text-muted-foreground">
+        <span>Subtotal</span>
+        <span className="tabular-nums">{formatCurrency(subtotal)}</span>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between text-sm text-muted-foreground">
+        <span>Tax</span>
+        <span className="tabular-nums">{formatCurrency(tax)}</span>
+      </div>
+      <div className="flex justify-between text-sm text-muted-foreground">
+        <span>Tip</span>
+        <span className="tabular-nums">{formatCurrency(tip)}</span>
+      </div>
+      {fees > 0 && (
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>Fees</span>
+          <span className="tabular-nums">{formatCurrency(fees)}</span>
+        </div>
+      )}
+      <div className="mt-1 flex items-center justify-between border-t border-border/50 pt-2.5">
         <span className="text-base font-semibold">Total</span>
         <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(total)}</span>
       </div>

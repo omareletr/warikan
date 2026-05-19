@@ -20,7 +20,7 @@ export default function SummaryPage() {
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-32 pt-14">
+    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-36 pt-14">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
         <h1 className="text-xl font-bold">Summary</h1>
@@ -67,8 +67,10 @@ export default function SummaryPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/80 backdrop-blur-lg p-5">
-        <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Done</Button>
+      <div className="fixed bottom-0 left-0 right-0 p-4">
+        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+          <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Done</Button>
+        </div>
       </div>
     </motion.main>
   );

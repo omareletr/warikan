@@ -69,7 +69,7 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
 
   return (
     <>
-      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-36 pt-14">
+      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40 pt-14">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
@@ -135,16 +135,18 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
         </div>
       </motion.main>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/80 backdrop-blur-lg p-5">
-        <div className="flex gap-3">
-          <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handleEdit}>
-            <Pencil className="h-4 w-4" />
-            Edit Split
-          </Button>
-          <Button className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handlePayments}>
-            <CreditCard className="h-4 w-4" />
-            Payments
-          </Button>
+      <div className="fixed bottom-0 left-0 right-0 p-4">
+        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+          <div className="flex gap-3">
+            <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handleEdit}>
+              <Pencil className="h-4 w-4" />
+              Edit Split
+            </Button>
+            <Button className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handlePayments}>
+              <CreditCard className="h-4 w-4" />
+              Payments
+            </Button>
+          </div>
         </div>
       </div>
     </>

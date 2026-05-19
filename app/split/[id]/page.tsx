@@ -79,7 +79,7 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
 
   return (
     <>
-      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40 pt-14">
+      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48 pt-14">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
@@ -133,7 +133,7 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="border-t border-border/50 px-5 pb-5 pt-4">
                         {pt.items.map((item, j) => (
                           <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
-                            <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm">(÷{item.splitCount})</span>}</span>
+                            <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground/60">split {item.splitCount} ways</span>}</span>
                             <span className="tabular-nums">{formatCurrency(item.price)}</span>
                           </div>
                         ))}

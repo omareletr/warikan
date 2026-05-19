@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { LineItem } from "@/lib/types";
@@ -14,7 +14,7 @@ interface LineItemRowProps {
 }
 
 export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!item.name);
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity.toString());
   const [price, setPrice] = useState(item.price.toString());
@@ -26,6 +26,13 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
       quantity: parseInt(quantity) || 1,
       price: parseFloat(price) || 0,
     });
+    setEditing(false);
+  }
+
+  function cancel() {
+    setName(item.name);
+    setQuantity(item.quantity.toString());
+    setPrice(item.price.toString());
     setEditing(false);
   }
 
@@ -41,13 +48,14 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
           type="number"
           min="1"
           placeholder="Qty"
-          onKeyDown={(e) => e.key === "Enter" && save()}
+          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
         />
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="flex-1"
-          onKeyDown={(e) => e.key === "Enter" && save()}
+          autoFocus
+          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
         />
         <Input
           value={price}
@@ -56,8 +64,11 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
           type="number"
           step="0.01"
           placeholder="Price"
-          onKeyDown={(e) => e.key === "Enter" && save()}
+          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
         />
+        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={cancel}>
+          <X className="h-4 w-4" />
+        </Button>
         <Button variant="ghost" size="sm" onClick={save}>
           Done
         </Button>

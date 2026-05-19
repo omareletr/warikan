@@ -104,6 +104,9 @@ export default function ReviewPage() {
 
           <section>
             <p className="mb-3 text-base font-semibold text-muted-foreground">Items</p>
+            {state.lineItems.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">No items yet — tap Add Item to get started.</p>
+            )}
             <div className="divide-y divide-border/40">
               {state.lineItems.map((item) => (
                 <LineItemRow key={item.id} item={item} onUpdate={updateItem} onRemove={() => removeItem(item.id)} />

@@ -65,6 +65,7 @@ struct ScanView: View {
                     sourceButtonLabel(icon: "photo", label: "Photos", isSelected: selectedSource == .photos)
                 }
                 .onChange(of: selectedPhotoItem) { _, newItem in
+                    print("[ScanView] onChange fired, newItem: \(String(describing: newItem))")
                     guard let newItem else { return }
                     selectedSource = .photos
                     Task { await loadPhoto(from: newItem) }
@@ -92,6 +93,7 @@ struct ScanView: View {
             .padding(.bottom, 32)
         }
         .navigationTitle("Scan Receipt")
+        .onAppear { print("[ScanView] VIEW APPEARED") }
         .fullScreenCover(isPresented: $showDocumentScanner) {
             DocumentScannerView { images in
                 showDocumentScanner = false
@@ -129,22 +131,40 @@ struct ScanView: View {
     // MARK: - Image Processing
 
     private func loadPhoto(from item: PhotosPickerItem) async {
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else { return }
-        processImage(image)
+        print("[ScanView] loadPhoto called")
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                print("[ScanView] loadTransferable returned nil")
+                return
+            }
+            print("[ScanView] Got \(data.count) bytes from photo")
+            guard let image = UIImage(data: data) else {
+                print("[ScanView] Failed to create UIImage from data")
+                return
+            }
+            print("[ScanView] UIImage created: \(image.size)")
+            await MainActor.run {
+                processImage(image)
+            }
+        } catch {
+            print("[ScanView] loadTransferable error: \(error)")
+        }
     }
 
     private func processImage(_ image: UIImage) {
+        print("[ScanView] processImage called, size: \(image.size)")
         flowVM.capturedImage = image
         isProcessing = true
 
         Task {
             let results = await OCRService.recognizeText(in: image)
+            print("[ScanView] OCR returned \(results.lineItems.count) items")
             flowVM.lineItems = results.lineItems
             flowVM.fees = results.fees
             flowVM.taxAmount = results.taxAmount
             flowVM.tipAmount = results.tipAmount
             flowVM.restaurantName = results.restaurantName
+            flowVM.detectedGratuityAmount = results.detectedGratuityAmount
             flowVM.currentStep = 2
             isProcessing = false
         }

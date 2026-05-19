@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import AuthenticationServices
 
 struct SignUpView: View {
     var authViewModel: AuthViewModel
@@ -32,6 +33,14 @@ struct SignUpView: View {
                         .font(.displaySmall)
                         .foregroundStyle(Color("PrimaryText"))
                         .padding(.bottom, 32)
+
+                    // Social sign-in buttons
+                    socialSignInButtons
+                        .padding(.bottom, 24)
+
+                    // Divider with "or"
+                    orDivider
+                        .padding(.bottom, 24)
 
                     // Email
                     fieldLabel("EMAIL")
@@ -104,6 +113,70 @@ struct SignUpView: View {
         }
     }
 
+    // MARK: - Social Sign-In
+
+    private var socialSignInButtons: some View {
+        VStack(spacing: 12) {
+            // Sign in with Apple
+            SignInWithAppleButton(.signUp) { request in
+                authViewModel.prepareAppleSignInRequest(request)
+            } onCompletion: { result in
+                Task {
+                    isLoading = true
+                    errorMessage = nil
+                    do {
+                        try await authViewModel.handleAppleSignIn(result)
+                        if authViewModel.currentUser != nil {
+                            onComplete()
+                        }
+                    } catch {
+                        errorMessage = error.localizedDescription
+                    }
+                    isLoading = false
+                }
+            }
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 54)
+            .clipShape(RoundedRectangle(cornerRadius: 32))
+
+            // Sign in with Google
+            Button {
+                Task { await signInWithGoogle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "g.circle.fill")
+                        .font(.title3)
+                    Text("Sign up with Google")
+                        .font(.body)
+                }
+                .foregroundStyle(Color("PrimaryText"))
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32)
+                        .stroke(Color("Separator"), lineWidth: 1)
+                )
+            }
+            .disabled(isLoading)
+        }
+    }
+
+    private var orDivider: some View {
+        HStack(spacing: 12) {
+            Rectangle()
+                .fill(Color("Separator"))
+                .frame(height: 0.5)
+            Text("or")
+                .font(.footnote)
+                .foregroundStyle(Color("SecondaryText"))
+            Rectangle()
+                .fill(Color("Separator"))
+                .frame(height: 0.5)
+        }
+    }
+
+    // MARK: - Helpers
+
     private func fieldLabel(_ title: String) -> some View {
         Text(title)
             .font(.caption)
@@ -118,6 +191,20 @@ struct SignUpView: View {
         do {
             try await authViewModel.signUp(email: email, password: password)
             onComplete()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    private func signInWithGoogle() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            try await authViewModel.signInWithGoogle()
+            if authViewModel.currentUser != nil {
+                onComplete()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

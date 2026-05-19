@@ -18,6 +18,7 @@ class SplitFlowViewModel {
     var participants: [AppUser] = []
     var guests: [Guest] = []
     var restaurantName: String?
+    var detectedGratuityAmount: Double = 0
     var currentStep: Int = 1
 
     /// Pre-generated split ID used for share links and eventual Firestore write.

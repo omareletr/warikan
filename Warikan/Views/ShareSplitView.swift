@@ -238,7 +238,7 @@ struct ShareSplitView: View {
             let jsonData = try JSONSerialization.data(withJSONObject: data)
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .millisecondsSince1970
-            var session = try decoder.decode(SplitSession.self, from: jsonData)
+            let session = try decoder.decode(SplitSession.self, from: jsonData)
 
             // Verify share token
             guard session.shareToken == shareToken else {

@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct ReceiptReviewView: View {
-    var flowVM: SplitFlowViewModel
+    @Bindable var flowVM: SplitFlowViewModel
 
     @State private var editingItemId: String?
     @State private var showGratuityBanner = false
@@ -38,6 +38,20 @@ struct ReceiptReviewView: View {
                     // Items section
                     sectionLabel("ITEMS")
                     hairlineDivider()
+
+                    if flowVM.lineItems.isEmpty {
+                        // OCR empty state
+                        VStack(spacing: 8) {
+                            Text("We couldn't read this receipt.")
+                                .font(.body)
+                                .foregroundStyle(Color("PrimaryText"))
+                            Text("Try better lighting or add items manually.")
+                                .font(.subheadline)
+                                .foregroundStyle(Color("SecondaryText"))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 24)
+                    }
 
                     ForEach(Array(flowVM.lineItems.enumerated()), id: \.element.id) { index, item in
                         lineItemRow(item: item, index: index)
@@ -98,6 +112,12 @@ struct ReceiptReviewView: View {
             .background(Color("Background"))
         }
         .navigationTitle("Review Receipt")
+        .onAppear {
+            if flowVM.detectedGratuityAmount > 0 {
+                detectedGratuityAmount = flowVM.detectedGratuityAmount
+                showGratuityBanner = true
+            }
+        }
     }
 
     // MARK: - Gratuity Banner

@@ -16,5 +16,11 @@
 		</dict>
 		<dict/>
 	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>CormorantGaramond-Regular.ttf</string>
+		<string>CormorantGaramond-SemiBold.ttf</string>
+		<string>CormorantGaramond-Bold.ttf</string>
+	</array>
 </dict>
 </plist>

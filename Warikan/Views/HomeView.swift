@@ -28,33 +28,42 @@ struct HomeView: View {
     // MARK: - Account computed values
 
     private var owedAmount: Double {
-        guard let userId = authViewModel.currentUser?.uid else { return 0 }
+        guard let userId = authViewModel.userId else { return 0 }
         return homeViewModel.amountOwed(userId: userId)
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Color("Background")
-                .ignoresSafeArea()
+        NavigationStack {
+            ZStack(alignment: .bottomTrailing) {
+                Color("Background")
+                    .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    greetingSection
-                    if authViewModel.isGuest {
-                        guestSplitsList
-                    } else {
-                        accountSplitsList
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        greetingSection
+                        if authViewModel.isGuest {
+                            guestSplitsList
+                        } else {
+                            accountSplitsList
+                        }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 80)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 80)
-            }
 
-            floatingAddButton
+                floatingAddButton
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
+        }
+        .sheet(isPresented: $showSplitFlow) {
+            SplitFlowView(authViewModel: authViewModel) {
+                showSplitFlow = false
+            }
         }
         .task {
             guard !authViewModel.isGuest,
-                  let userId = authViewModel.currentUser?.uid else { return }
+                  let userId = authViewModel.userId else { return }
             await homeViewModel.fetchSplits(for: userId)
         }
     }
@@ -108,28 +117,38 @@ struct HomeView: View {
             if !guestRecentSplits.isEmpty {
                 sectionHeader("Recent")
                 ForEach(guestRecentSplits) { split in
-                    SplitRow(
-                        restaurantName: split.restaurantName,
-                        totalAmount: split.totalAmount,
-                        date: split.date,
-                        peopleCount: split.participantIds.count + split.guests.count,
-                        settled: split.settled,
-                        isMuted: false
-                    )
+                    NavigationLink {
+                        splitDetailDestination(for: split)
+                    } label: {
+                        SplitRow(
+                            restaurantName: split.restaurantName,
+                            totalAmount: split.totalAmount,
+                            date: split.date,
+                            peopleCount: split.participantIds.count + split.guests.count,
+                            settled: split.settled,
+                            isMuted: false
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             if !guestPastSplits.isEmpty {
                 sectionHeader("Past")
                     .padding(.top, guestRecentSplits.isEmpty ? 0 : 24)
                 ForEach(guestPastSplits) { split in
-                    SplitRow(
-                        restaurantName: split.restaurantName,
-                        totalAmount: split.totalAmount,
-                        date: split.date,
-                        peopleCount: split.participantIds.count + split.guests.count,
-                        settled: split.settled,
-                        isMuted: true
-                    )
+                    NavigationLink {
+                        splitDetailDestination(for: split)
+                    } label: {
+                        SplitRow(
+                            restaurantName: split.restaurantName,
+                            totalAmount: split.totalAmount,
+                            date: split.date,
+                            peopleCount: split.participantIds.count + split.guests.count,
+                            settled: split.settled,
+                            isMuted: true
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -147,28 +166,38 @@ struct HomeView: View {
             if !homeViewModel.recentSplits.isEmpty {
                 sectionHeader("Recent")
                 ForEach(homeViewModel.recentSplits) { split in
-                    SplitRow(
-                        restaurantName: split.restaurantName,
-                        totalAmount: split.totalAmount,
-                        date: split.date,
-                        peopleCount: split.participantIds.count + split.guests.count,
-                        settled: split.settled,
-                        isMuted: false
-                    )
+                    NavigationLink {
+                        splitDetailDestination(for: split)
+                    } label: {
+                        SplitRow(
+                            restaurantName: split.restaurantName,
+                            totalAmount: split.totalAmount,
+                            date: split.date,
+                            peopleCount: split.participantIds.count + split.guests.count,
+                            settled: split.settled,
+                            isMuted: false
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             if !homeViewModel.pastSplits.isEmpty {
                 sectionHeader("Past")
                     .padding(.top, homeViewModel.recentSplits.isEmpty ? 0 : 24)
                 ForEach(homeViewModel.pastSplits) { split in
-                    SplitRow(
-                        restaurantName: split.restaurantName,
-                        totalAmount: split.totalAmount,
-                        date: split.date,
-                        peopleCount: split.participantIds.count + split.guests.count,
-                        settled: split.settled,
-                        isMuted: true
-                    )
+                    NavigationLink {
+                        splitDetailDestination(for: split)
+                    } label: {
+                        SplitRow(
+                            restaurantName: split.restaurantName,
+                            totalAmount: split.totalAmount,
+                            date: split.date,
+                            peopleCount: split.participantIds.count + split.guests.count,
+                            settled: split.settled,
+                            isMuted: true
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -233,19 +262,62 @@ struct HomeView: View {
             .padding(.bottom, 8)
     }
 
+    // MARK: - Detail Destination
+
+    private func splitDetailDestination(for split: LocalSplitSession) -> SplitDetailView {
+        SplitDetailView(
+            restaurantName: split.restaurantName,
+            totalAmount: split.totalAmount,
+            date: split.date,
+            lineItems: split.lineItems,
+            fees: split.fees,
+            taxAmount: split.taxAmount,
+            tipAmount: split.tipAmount,
+            guests: split.guests,
+            settled: split.settled,
+            splitId: split.id,
+            shareToken: split.shareToken
+        )
+    }
+
+    private func splitDetailDestination(for split: SplitSession) -> SplitDetailView {
+        SplitDetailView(
+            restaurantName: split.restaurantName,
+            totalAmount: split.totalAmount,
+            date: split.date,
+            lineItems: split.lineItems,
+            fees: split.fees,
+            taxAmount: split.taxAmount,
+            tipAmount: split.tipAmount,
+            guests: split.guests,
+            settled: split.settled,
+            splitId: split.id,
+            shareToken: split.shareToken
+        )
+    }
+
     // MARK: - Floating Add Button
 
     private var floatingAddButton: some View {
         Button {
             showSplitFlow = true
         } label: {
-            Image(systemName: "plus")
-                .font(.title2.weight(.light))
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(Color.vermillion)
-                .clipShape(Circle())
+            if #available(iOS 26.0, *) {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.medium))
+                    .foregroundStyle(Color.vermillion)
+                    .frame(width: 56, height: 56)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            } else {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.light))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(Color.vermillion)
+                    .clipShape(Circle())
+            }
         }
+        .buttonStyle(.plain)
         .padding(.trailing, 20)
         .padding(.bottom, 20)
     }

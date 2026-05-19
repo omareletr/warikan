@@ -10,6 +10,8 @@ struct SplitSummaryView: View {
     var authViewModel: AuthViewModel
 
     @State private var expandedPersonId: String?
+    @State private var exportImage: UIImage?
+    @State private var showShareSheet = false
 
     /// All people in the split.
     private var allPeople: [(id: String, name: String)] {
@@ -57,12 +59,17 @@ struct SplitSummaryView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    // Export as photo — placeholder
+                    Task { await exportAsPhoto() }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 16, weight: .thin))
                         .foregroundStyle(Color("SecondaryText"))
                 }
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let exportImage {
+                ShareSheetView(image: exportImage)
             }
         }
     }
@@ -298,6 +305,42 @@ struct SplitSummaryView: View {
         }
         return String(name.prefix(2)).uppercased()
     }
+
+    // MARK: - Export as Photo
+
+    @MainActor
+    private func exportAsPhoto() async {
+        let exportView = SplitExportView(
+            restaurantName: flowVM.restaurantName,
+            grandTotal: flowVM.grandTotal,
+            people: allPeople,
+            lineItems: flowVM.lineItems,
+            taxAmount: flowVM.taxAmount,
+            tipAmount: flowVM.tipAmount,
+            feesTotal: flowVM.feesTotal,
+            subtotal: flowVM.subtotal
+        )
+        .frame(width: 390)
+
+        let renderer = ImageRenderer(content: exportView)
+        renderer.scale = 3.0
+        if let image = renderer.uiImage {
+            exportImage = image
+            showShareSheet = true
+        }
+    }
+}
+
+// MARK: - Share Sheet
+
+struct ShareSheetView: UIViewControllerRepresentable {
+    let image: UIImage
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [image], applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

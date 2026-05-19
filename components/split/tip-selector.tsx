@@ -22,7 +22,7 @@ export function TipSelector({
     : undefined;
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2">
       {TIP_OPTIONS.map((percent) => (
         <Toggle
           key={percent}
@@ -36,6 +36,14 @@ export function TipSelector({
           {percent}%
         </Toggle>
       ))}
+      <Toggle
+        variant="outline"
+        pressed={tipAmount === 0 && activePercent === undefined}
+        onPressedChange={() => onTipChange(0)}
+        className="h-11 px-3 text-sm text-muted-foreground"
+      >
+        None
+      </Toggle>
     </div>
   );
 }

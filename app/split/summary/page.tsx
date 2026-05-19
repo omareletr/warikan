@@ -39,11 +39,15 @@ export default function SummaryPage() {
             const expanded = expandedId === pt.person.id;
             return (
               <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card className="p-0 overflow-hidden">
-                  <button className="flex w-full items-center gap-4 p-5" onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
+                <Card className="p-0 overflow-hidden transition-all duration-150 active:scale-[0.98]">
+                  <button className="flex w-full items-center gap-4 p-5 active:bg-secondary/30" onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">{initials(pt.person.name)}</div>
                     <span className="flex-1 text-left text-base font-medium">{pt.person.name}</span>
-                    <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
+                    {pt.total > 0 ? (
+                      <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground">Not splitting</span>
+                    )}
                     {expanded ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                   </button>
                   {expanded && (

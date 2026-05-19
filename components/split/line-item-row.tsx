@@ -40,44 +40,48 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
 
   if (editing) {
     return (
-      <div className="flex items-center gap-3 py-3.5">
-        <Input
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          className="w-14"
-          type="number"
-          min="1"
-          placeholder="Qty"
-          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
-        />
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1"
-          autoFocus
-          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
-        />
-        <div className="relative w-24">
+      <div className="flex flex-col gap-2 py-3.5">
+        <div className="flex items-center gap-2">
           <Input
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className="w-14"
             type="number"
-            step="0.01"
-            placeholder="Price"
+            min="1"
+            placeholder="Qty"
             onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
           />
-          {(parseInt(quantity) || 1) > 1 && <span className="absolute -bottom-4 right-0 text-[10px] text-muted-foreground">each</span>}
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="flex-1"
+            autoFocus
+            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          />
         </div>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={onRemove}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={cancel}>
-          <X className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={save}>
-          Done
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full"
+              type="number"
+              step="0.01"
+              placeholder="Price"
+              onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+            />
+            {(parseInt(quantity) || 1) > 1 && <span className="absolute -bottom-4 right-0 text-[10px] text-muted-foreground">each</span>}
+          </div>
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={onRemove}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={cancel}>
+            <X className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={save}>
+            Done
+          </Button>
+        </div>
       </div>
     );
   }

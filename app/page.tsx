@@ -9,14 +9,19 @@ import { getSplits } from "@/lib/splits";
 import type { Split } from "@/lib/types";
 import { SplitCard } from "@/components/split/split-card";
 
+const INITIAL_SHOW = 10;
+
 export default function HomePage() {
   const [splits, setSplits] = useState<Split[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     setSplits(getSplits());
     setLoaded(true);
   }, []);
+
+  const visibleSplits = showAll ? splits : splits.slice(0, INITIAL_SHOW);
 
   if (!loaded) return (
     <main className="flex min-h-dvh items-center justify-center">
@@ -59,7 +64,7 @@ export default function HomePage() {
               Recent Splits
             </p>
             <div className="flex flex-col gap-4">
-              {splits.map((split, i) => (
+              {visibleSplits.map((split, i) => (
                 <motion.div
                   key={split.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -69,6 +74,11 @@ export default function HomePage() {
                   <SplitCard split={split} />
                 </motion.div>
               ))}
+              {!showAll && splits.length > INITIAL_SHOW && (
+                <Button variant="ghost" className="text-muted-foreground" onClick={() => setShowAll(true)}>
+                  Show {splits.length - INITIAL_SHOW} more
+                </Button>
+              )}
             </div>
           </div>
         </div>

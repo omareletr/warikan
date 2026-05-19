@@ -20,7 +20,7 @@ export function PersonAvatar({ person, selected, runningTotal, onClick }: Person
       )}>
         {initials(person.name)}
       </div>
-      <span className="max-w-[72px] truncate text-sm">{person.name}</span>
+      <span className="max-w-[72px] text-center text-sm leading-tight line-clamp-2">{person.name}</span>
       {runningTotal !== undefined && (
         <span className="text-sm tabular-nums text-primary">{formatCurrency(runningTotal)}</span>
       )}

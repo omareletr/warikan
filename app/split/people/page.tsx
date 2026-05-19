@@ -65,7 +65,7 @@ export default function PeoplePage() {
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={state.people.length < 2} onClick={() => router.push("/split/assign")}>
-            Continue with {state.people.length} {state.people.length === 1 ? "person" : "people"}
+            {state.people.length < 2 ? "Add at least 2 people" : `Continue with ${state.people.length} people`}
           </Button>
         </div>
       </div>

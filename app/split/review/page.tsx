@@ -145,9 +145,11 @@ export default function ReviewPage() {
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/80 backdrop-blur-lg p-5">
-        <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />
-        <Button className="mt-4 h-14 w-full rounded-2xl text-base font-semibold" disabled={state.lineItems.length === 0} onClick={() => router.push("/split/people")}>Continue</Button>
+      <div className="fixed bottom-0 left-0 right-0 p-4">
+        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+          <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />
+          <Button className="mt-4 h-14 w-full rounded-2xl text-base font-semibold" disabled={state.lineItems.length === 0} onClick={() => router.push("/split/people")}>Continue</Button>
+        </div>
       </div>
     </motion.main>
   );

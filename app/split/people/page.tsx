@@ -17,6 +17,8 @@ export default function PeoplePage() {
   const router = useRouter();
   const { state, setPeople } = useSplitFlow();
   const [name, setName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   function addPerson() {
     const trimmed = name.trim();
@@ -38,6 +40,26 @@ export default function PeoplePage() {
 
   function toggleCovered(id: string) {
     setPeople(state.people.map((p) => p.id === id ? { ...p, covered: !p.covered } : p));
+  }
+
+  function startEditing(person: Person) {
+    setEditingId(person.id);
+    setEditingName(person.name);
+  }
+
+  function commitEdit(id: string) {
+    const trimmed = editingName.trim();
+    if (trimmed) {
+      let finalName = trimmed;
+      const existing = state.people.filter((p) => p.id !== id).map((p) => p.name);
+      if (existing.includes(trimmed)) {
+        let n = 2;
+        while (existing.includes(`${trimmed} (${n})`)) n++;
+        finalName = `${trimmed} (${n})`;
+      }
+      setPeople(state.people.map((p) => p.id === id ? { ...p, name: finalName } : p));
+    }
+    setEditingId(null);
   }
 
   return (
@@ -71,9 +93,28 @@ export default function PeoplePage() {
                 )}>
                   {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
                 </div>
-                <div className="flex-1">
-                  <span className={cn("text-base font-medium", person.covered && "text-muted-foreground")}>{person.name}</span>
-                  {person.covered && <Badge variant="secondary" className="ml-2 bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>}
+                <div className="flex flex-1 items-center gap-2">
+                  {editingId === person.id ? (
+                    <Input
+                      autoFocus
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onBlur={() => commitEdit(person.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitEdit(person.id);
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      className="h-8 flex-1 border-0 bg-transparent px-2 py-0 text-base font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
+                    />
+                  ) : (
+                    <button
+                      onClick={() => startEditing(person)}
+                      className={cn("flex-1 text-left text-base font-medium", person.covered && "text-muted-foreground")}
+                    >
+                      {person.name}
+                    </button>
+                  )}
+                  {person.covered && !editingId && <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>}
                 </div>
                 <Button variant="ghost" size="icon" className={cn("h-9 w-9", person.covered ? "text-amber-400" : "text-muted-foreground")} onClick={() => toggleCovered(person.id)}>
                   <Gift className="h-4 w-4" />

@@ -13,12 +13,16 @@ export function calculateSplit(
   const totals = people.map((person) => {
     const assignedItems = lineItems
       .filter((item) => item.assignedToIds.includes(person.id))
-      .map((item) => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: (item.price * item.quantity) / item.assignedToIds.length,
-        splitCount: item.assignedToIds.length,
-      }));
+      .map((item) => {
+        const personClaims = item.assignedToIds.filter((id) => id === person.id).length;
+        const totalClaims = item.assignedToIds.length;
+        return {
+          name: item.name,
+          quantity: personClaims,
+          price: (item.price * item.quantity * personClaims) / totalClaims,
+          splitCount: item.quantity <= 1 ? totalClaims : 1,
+        };
+      });
 
     const subtotal = assignedItems.reduce((sum, item) => sum + item.price, 0);
 

@@ -12,6 +12,7 @@ import { LineItemRow } from "@/components/split/line-item-row";
 import { TipSelector } from "@/components/split/tip-selector";
 import { SummaryBar } from "@/components/split/summary-bar";
 import { useSplitFlow } from "@/lib/split-flow-context";
+import { saveSplit } from "@/lib/splits";
 import type { LineItem } from "@/lib/types";
 
 export default function ReviewPage() {
@@ -66,6 +67,27 @@ export default function ReviewPage() {
 
   function removeItem(id: string) {
     updateLineItems(state.lineItems.filter((i) => i.id !== id));
+  }
+
+  function handleContinue() {
+    if (state.editingSplitId) {
+      const totalAmount =
+        state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) +
+        state.taxAmount + state.tipAmount +
+        state.fees.reduce((s, f) => s + f.amount, 0);
+      saveSplit({
+        id: state.editingSplitId,
+        date: new Date().toISOString(),
+        restaurantName: state.restaurantName || undefined,
+        lineItems: state.lineItems,
+        fees: state.fees,
+        taxAmount: state.taxAmount,
+        tipAmount: state.tipAmount,
+        totalAmount,
+        people: state.people,
+      });
+    }
+    router.push("/split/people");
   }
 
   const subtotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -156,7 +178,7 @@ export default function ReviewPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />
-          <Button className="mt-4 h-14 w-full rounded-2xl text-base font-semibold" disabled={state.lineItems.length === 0} onClick={() => router.push("/split/people")}>Continue</Button>
+          <Button className="mt-4 h-14 w-full rounded-2xl text-base font-semibold" disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
         </div>
       </div>
     </motion.main>

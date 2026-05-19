@@ -35,18 +35,18 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
     return (
       <div className="flex items-center gap-3 py-3.5">
         <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1"
-          onKeyDown={(e) => e.key === "Enter" && save()}
-        />
-        <Input
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
-          className="w-16"
+          className="w-14"
           type="number"
           min="1"
           placeholder="Qty"
+          onKeyDown={(e) => e.key === "Enter" && save()}
+        />
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="flex-1"
           onKeyDown={(e) => e.key === "Enter" && save()}
         />
         <Input
@@ -70,12 +70,12 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
       className="flex cursor-pointer items-center justify-between py-3.5"
       onClick={() => setEditing(true)}
     >
-      <span className="text-base">
+      <div className="flex items-center gap-2">
         {item.quantity > 1 && (
-          <span className="mr-1 text-muted-foreground">{item.quantity}×</span>
+          <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">{item.quantity}</span>
         )}
-        {item.name}
-      </span>
+        <span className="text-base">{item.name}</span>
+      </div>
       <div className="flex items-center gap-2">
         <span className="text-base font-medium tabular-nums">
           {formatCurrency(lineTotal)}

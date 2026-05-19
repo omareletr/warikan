@@ -40,6 +40,7 @@ interface SplitFlowContextValue {
   setPeople: (people: Person[]) => void;
   updateLineItems: (lineItems: LineItem[]) => void;
   updateFees: (fees: Fee[]) => void;
+  updateRestaurantName: (name: string) => void;
   updateTax: (amount: number) => void;
   updateTip: (amount: number) => void;
   loadSplit: (split: Split) => void;
@@ -87,6 +88,10 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, fees }));
   }, []);
 
+  const updateRestaurantName = useCallback((name: string) => {
+    setState((prev) => ({ ...prev, restaurantName: name }));
+  }, []);
+
   const updateTax = useCallback((amount: number) => {
     setState((prev) => ({ ...prev, taxAmount: amount }));
   }, []);
@@ -122,6 +127,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
         setPeople,
         updateLineItems,
         updateFees,
+        updateRestaurantName,
         updateTax,
         updateTip,
         loadSplit,

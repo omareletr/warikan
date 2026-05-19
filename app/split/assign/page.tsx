@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,7 +42,7 @@ export default function AssignPage() {
         <h1 className="text-xl font-bold">Assign Dishes</h1>
       </div>
 
-      <div className="mt-8 flex gap-5 overflow-x-auto pb-4">
+      <div className="mt-8 flex gap-5 overflow-x-auto px-1 py-2 pb-4">
         {state.people.map((person) => (
           <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} />
         ))}
@@ -55,20 +55,23 @@ export default function AssignPage() {
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-2">
           {state.lineItems.map((item) => {
-            const isAssigned = item.assignedToIds.includes(selectedPersonId);
+            const isAssignedToMe = item.assignedToIds.includes(selectedPersonId);
+            const isFullyClaimed = item.assignedToIds.length >= item.quantity && !isAssignedToMe;
             return (
               <button key={item.id} onClick={() => toggleAssignment(item.id)}
                 className={cn(
                   "flex items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
-                  isAssigned ? "border-primary/40 bg-primary/5" : "border-transparent hover:bg-secondary"
+                  isAssignedToMe ? "border-primary/40 bg-primary/5" : "border-transparent hover:bg-secondary",
+                  isFullyClaimed && "opacity-50"
                 )}
               >
                 <div className="flex items-center gap-2.5">
-                  {isAssigned && <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
-                  <span className="text-base">
-                    {item.quantity > 1 && <span className="mr-1 text-muted-foreground">{item.quantity}×</span>}
-                    {item.name}
-                  </span>
+                  {isAssignedToMe && <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
+                  {isFullyClaimed && <Check className="h-4 w-4 text-primary" />}
+                  {item.quantity > 1 && (
+                    <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">{item.quantity}</span>
+                  )}
+                  <span className="text-base">{item.name}</span>
                   {item.assignedToIds.length > 0 && (
                     <div className="flex gap-1">
                       {item.assignedToIds.map((pid) => {

@@ -16,7 +16,7 @@ import type { LineItem } from "@/lib/types";
 
 export default function ReviewPage() {
   const router = useRouter();
-  const { state, setReceiptData, updateLineItems, updateTax, updateTip } = useSplitFlow();
+  const { state, setReceiptData, updateLineItems, updateRestaurantName, updateTax, updateTip } = useSplitFlow();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +93,15 @@ export default function ReviewPage() {
 
       {!loading && (
         <div className="mt-8 flex flex-col gap-8">
+          <section>
+            <label className="mb-2 block text-base font-semibold text-muted-foreground">Restaurant</label>
+            <Input
+              value={state.restaurantName}
+              onChange={(e) => updateRestaurantName(e.target.value)}
+              placeholder="Restaurant name (optional)"
+            />
+          </section>
+
           <section>
             <p className="mb-3 text-base font-semibold text-muted-foreground">Items</p>
             <div className="divide-y divide-border/40">

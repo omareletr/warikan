@@ -16,7 +16,7 @@ export function SplitCard({ split }: { split: Split }) {
         <CardContent className="flex items-center justify-between p-5">
           <div>
             <p className="text-base font-semibold">
-              {split.restaurantName || "Untitled Split"}
+              {split.restaurantName || `${date} Split`}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{date}</p>
           </div>

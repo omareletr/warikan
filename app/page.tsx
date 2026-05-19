@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { UtensilsCrossed } from "lucide-react";
+import { UtensilsCrossed, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSplits } from "@/lib/splits";
 import type { Split } from "@/lib/types";
@@ -18,7 +18,11 @@ export default function HomePage() {
     setLoaded(true);
   }, []);
 
-  if (!loaded) return null;
+  if (!loaded) return (
+    <main className="flex min-h-dvh items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </main>
+  );
 
   return (
     <motion.main

@@ -16,6 +16,7 @@ export function SummaryBar({ subtotal, tax, tip, fees }: SummaryBarProps) {
         <span>Subtotal</span>
         <span className="tabular-nums">{formatCurrency(subtotal)}</span>
       </div>
+      <div className="my-0.5 border-t border-border/20" />
       <div className="flex justify-between text-sm text-muted-foreground">
         <span>Tax</span>
         <span className="tabular-nums">{formatCurrency(tax)}</span>

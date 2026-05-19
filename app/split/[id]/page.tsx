@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, ChevronUp, Trash2, Pencil, CreditCard } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Trash2, Pencil, CreditCard, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -34,7 +34,11 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
     setLoaded(true);
   }, [params.id]);
 
-  if (!loaded) return null;
+  if (!loaded) return (
+    <main className="flex min-h-dvh items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </main>
+  );
 
   if (!split) {
     return (
@@ -53,6 +57,12 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
     if (!split) return;
     loadSplit(split);
     router.push("/split/review");
+  }
+
+  function handleEditAssignments() {
+    if (!split) return;
+    loadSplit(split);
+    router.push("/split/assign");
   }
 
   function handlePayments() {
@@ -137,12 +147,18 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <div className="flex gap-3">
-            <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handleEdit}>
-              <Pencil className="h-4 w-4" />
-              Edit Split
-            </Button>
-            <Button className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handlePayments}>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3">
+              <Button variant="outline" className="h-12 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={handleEdit}>
+                <Pencil className="h-4 w-4" />
+                Edit Items
+              </Button>
+              <Button variant="outline" className="h-12 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={handleEditAssignments}>
+                <Users className="h-4 w-4" />
+                Edit Assignments
+              </Button>
+            </div>
+            <Button className="h-14 w-full gap-2 rounded-2xl text-base font-semibold" onClick={handlePayments}>
               <CreditCard className="h-4 w-4" />
               Payments
             </Button>

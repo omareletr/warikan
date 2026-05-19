@@ -57,15 +57,21 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
           autoFocus
           onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
         />
-        <Input
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-24"
-          type="number"
-          step="0.01"
-          placeholder="Price"
-          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
-        />
+        <div className="relative w-24">
+          <Input
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full"
+            type="number"
+            step="0.01"
+            placeholder="Price"
+            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          />
+          {(parseInt(quantity) || 1) > 1 && <span className="absolute -bottom-4 right-0 text-[10px] text-muted-foreground">each</span>}
+        </div>
+        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={onRemove}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={cancel}>
           <X className="h-4 w-4" />
         </Button>

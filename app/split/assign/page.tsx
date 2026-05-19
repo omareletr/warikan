@@ -85,7 +85,12 @@ export default function AssignPage() {
                     </div>
                   )}
                 </div>
-                <span className="text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
+                <div className="text-right">
+                  <span className="text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
+                  {item.assignedToIds.length > 1 && (
+                    <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price * item.quantity / item.assignedToIds.length)} ea</p>
+                  )}
+                </div>
               </button>
             );
           })}

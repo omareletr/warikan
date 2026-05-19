@@ -10,7 +10,7 @@ export function calculateSplit(
   const overallSubtotal = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalFees = fees.reduce((sum, fee) => sum + fee.amount, 0);
 
-  return people.map((person) => {
+  const totals = people.map((person) => {
     const assignedItems = lineItems
       .filter((item) => item.assignedToIds.includes(person.id))
       .map((item) => ({
@@ -33,10 +33,30 @@ export function calculateSplit(
       taxShare,
       tipShare,
       feesShare,
+      coveredExtra: 0,
       total: subtotal + taxShare + tipShare + feesShare,
       items: assignedItems,
     };
   });
+
+  const coveredTotal = totals
+    .filter((pt) => pt.person.covered)
+    .reduce((sum, pt) => sum + pt.total, 0);
+  const payerCount = totals.filter((pt) => !pt.person.covered && pt.total > 0).length;
+
+  if (coveredTotal > 0 && payerCount > 0) {
+    const extra = coveredTotal / payerCount;
+    for (const pt of totals) {
+      if (pt.person.covered) {
+        pt.total = 0;
+      } else if (pt.total > 0) {
+        pt.coveredExtra = extra;
+        pt.total += extra;
+      }
+    }
+  }
+
+  return totals;
 }
 
 export function formatCurrency(amount: number): string {

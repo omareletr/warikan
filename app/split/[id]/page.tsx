@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, ChevronUp, Trash2, Pencil, CreditCard, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Gift, Trash2, Pencil, CreditCard, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -118,9 +118,15 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
                 <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                   <Card className="overflow-hidden p-0">
                     <button className="flex w-full items-center gap-4 p-5" onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">{initials(pt.person.name)}</div>
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
+                        {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
+                      </div>
                       <span className="flex-1 text-left text-base font-medium">{pt.person.name}</span>
-                      <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
+                      {pt.person.covered ? (
+                        <span className="text-sm font-medium text-amber-400">Covered</span>
+                      ) : (
+                        <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
+                      )}
                       {expanded ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                     </button>
                     {expanded && (
@@ -135,6 +141,12 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
                         <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tax</span><span className="tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
                         <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tip</span><span className="tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
                         {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
+                        {pt.coveredExtra > 0 && (
+                          <div className="flex justify-between py-2 text-base text-amber-400">
+                            <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}</span>
+                            <span className="tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
+                          </div>
+                        )}
                       </motion.div>
                     )}
                   </Card>

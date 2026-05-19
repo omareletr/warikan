@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, X, QrCode } from "lucide-react";
+import { ArrowLeft, Check, Copy, Gift, X, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -96,28 +96,36 @@ export default function PaymentPage() {
         <div className="mt-8 flex flex-col gap-4">
           {totals.map((pt, i) => (
             <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="p-5">
+              <Card className={`p-5 ${pt.person.covered ? "opacity-50" : ""}`}>
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">{initials(pt.person.name)}</div>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
+                    {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
+                  </div>
                   <div className="flex-1">
                     <p className="text-base font-medium">{pt.person.name}</p>
-                    <p className="text-2xl font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</p>
+                    {pt.person.covered ? (
+                      <p className="text-base text-amber-400">Covered by group</p>
+                    ) : (
+                      <p className="text-2xl font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</p>
+                    )}
                   </div>
                 </div>
-                <div className="mt-4 flex gap-3">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => copyAmount(pt.person.id, pt.total)}>
-                    {copiedId === pt.person.id ? (
-                      <><Check className="h-3.5 w-3.5 text-primary" />Copied</>
-                    ) : (
-                      <><Copy className="h-3.5 w-3.5" />Copy</>
-                    )}
-                  </Button>
-                  {venmoUsername && (
-                    <Button size="sm" className="flex-1 gap-1.5" onClick={() => openVenmo(pt.total)}>
-                      Venmo {formatCurrency(pt.total)}
+                {!pt.person.covered && (
+                  <div className="mt-4 flex gap-3">
+                    <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => copyAmount(pt.person.id, pt.total)}>
+                      {copiedId === pt.person.id ? (
+                        <><Check className="h-3.5 w-3.5 text-primary" />Copied</>
+                      ) : (
+                        <><Copy className="h-3.5 w-3.5" />Copy</>
+                      )}
                     </Button>
-                  )}
-                </div>
+                    {venmoUsername && (
+                      <Button size="sm" className="flex-1 gap-1.5" onClick={() => openVenmo(pt.total)}>
+                        Venmo {formatCurrency(pt.total)}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </Card>
             </motion.div>
           ))}

@@ -15,6 +15,7 @@ export interface Fee {
 export interface Person {
   id: string;
   name: string;
+  covered?: boolean;
 }
 
 export interface Split {
@@ -35,6 +36,7 @@ export interface PersonTotal {
   taxShare: number;
   tipShare: number;
   feesShare: number;
+  coveredExtra: number;
   total: number;
   items: { name: string; quantity: number; price: number; splitCount: number }[];
 }

@@ -1,3 +1,4 @@
+import { Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { initials, formatCurrency } from "@/lib/calculate";
 import type { Person } from "@/lib/types";
@@ -20,20 +21,24 @@ interface PersonAvatarProps {
 }
 
 export function PersonAvatar({ person, selected, runningTotal, onClick, colorIndex = 0 }: PersonAvatarProps) {
-  const color = AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
+  const color = person.covered
+    ? { bg: "bg-amber-500/15", text: "text-amber-400", ring: "ring-amber-400", activeBg: "bg-amber-500" }
+    : AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-1.5">
       <div className={cn(
-        "flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-all duration-200",
+        "relative flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-all duration-200",
         selected
           ? `${color.activeBg} text-white ring-2 ${color.ring} ring-offset-2 ring-offset-background shadow-[0_0_16px_rgba(52,211,153,0.3)]`
           : `${color.bg} ${color.text}`
       )}>
-        {initials(person.name)}
+        {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
       </div>
-      <span className="max-w-[72px] text-center text-sm leading-tight line-clamp-2">{person.name}</span>
+      <span className={cn("max-w-[72px] text-center text-sm leading-tight line-clamp-2", person.covered && "text-muted-foreground")}>{person.name}</span>
       {runningTotal !== undefined && (
-        <span className="text-sm tabular-nums text-primary">{formatCurrency(runningTotal)}</span>
+        <span className={cn("text-sm tabular-nums", person.covered ? "text-amber-400" : "text-primary")}>
+          {person.covered ? "Covered" : formatCurrency(runningTotal)}
+        </span>
       )}
     </button>
   );

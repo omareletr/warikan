@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -41,11 +41,21 @@ export default function ScanPage() {
   const { setImage, setReceiptData } = useSplitFlow();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleFile(file: File) {
-    const base64 = await readFileAsBase64(file);
-    setImage(base64, file.type);
-    router.push("/split/review");
+    setError(null);
+    try {
+      if (!file.type.startsWith("image/")) {
+        setError("Please select an image file.");
+        return;
+      }
+      const base64 = await readFileAsBase64(file);
+      setImage(base64, file.type);
+      router.push("/split/review");
+    } catch {
+      setError("Couldn't read that file. Try uploading a different photo.");
+    }
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -70,6 +80,9 @@ export default function ScanPage() {
         <p className="text-center text-base text-muted-foreground">
           Take a photo of your receipt or upload one from your gallery.
         </p>
+        {error && (
+          <p className="w-full max-w-xs rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">{error}</p>
+        )}
         <div className="mt-4 flex w-full max-w-xs flex-col gap-4">
           <Button className="h-16 gap-3 rounded-2xl text-base font-semibold" onClick={() => cameraInputRef.current?.click()}>
             <Camera className="h-5 w-5" />

@@ -21,6 +21,7 @@ export default function PaymentPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [venmoUsername, setVenmoUsername] = useState("");
   const [showQR, setShowQR] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setVenmoUsername(getVenmoUsername());
@@ -54,7 +55,8 @@ export default function PaymentPage() {
     return `${window.location.origin}/pay#${encoded}`;
   }
 
-  function handleDone() {
+  async function handleDone() {
+    setSaving(true);
     const split: Split = {
       id: state.editingSplitId ?? crypto.randomUUID(),
       date: new Date().toISOString(),
@@ -131,7 +133,7 @@ export default function PaymentPage() {
                 Share QR
               </Button>
             )}
-            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={handleDone}>All Done</Button>
+            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" disabled={saving} onClick={handleDone}>{saving ? "Saving..." : "All Done"}</Button>
           </div>
         </div>
       </div>

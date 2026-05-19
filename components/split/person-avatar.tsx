@@ -2,21 +2,32 @@ import { cn } from "@/lib/utils";
 import { initials, formatCurrency } from "@/lib/calculate";
 import type { Person } from "@/lib/types";
 
+const AVATAR_COLORS = [
+  { bg: "bg-emerald-500/15", text: "text-emerald-400", ring: "ring-emerald-400", activeBg: "bg-emerald-500" },
+  { bg: "bg-sky-500/15", text: "text-sky-400", ring: "ring-sky-400", activeBg: "bg-sky-500" },
+  { bg: "bg-violet-500/15", text: "text-violet-400", ring: "ring-violet-400", activeBg: "bg-violet-500" },
+  { bg: "bg-amber-500/15", text: "text-amber-400", ring: "ring-amber-400", activeBg: "bg-amber-500" },
+  { bg: "bg-rose-500/15", text: "text-rose-400", ring: "ring-rose-400", activeBg: "bg-rose-500" },
+  { bg: "bg-cyan-500/15", text: "text-cyan-400", ring: "ring-cyan-400", activeBg: "bg-cyan-500" },
+];
+
 interface PersonAvatarProps {
   person: Person;
   selected?: boolean;
   runningTotal?: number;
   onClick?: () => void;
+  colorIndex?: number;
 }
 
-export function PersonAvatar({ person, selected, runningTotal, onClick }: PersonAvatarProps) {
+export function PersonAvatar({ person, selected, runningTotal, onClick, colorIndex = 0 }: PersonAvatarProps) {
+  const color = AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-1.5">
       <div className={cn(
         "flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-all duration-200",
         selected
-          ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_16px_rgba(52,211,153,0.3)]"
-          : "bg-primary/15 text-primary"
+          ? `${color.activeBg} text-white ring-2 ${color.ring} ring-offset-2 ring-offset-background shadow-[0_0_16px_rgba(52,211,153,0.3)]`
+          : `${color.bg} ${color.text}`
       )}>
         {initials(person.name)}
       </div>

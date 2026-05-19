@@ -141,12 +141,12 @@ export default function ReviewPage() {
             <div className="flex flex-col gap-5">
               <div>
                 <label className="mb-2 block text-base text-muted-foreground">Tax</label>
-                <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" onChange={(e) => updateTax(parseFloat(e.target.value) || 0)} />
+                <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
               </div>
               <div>
                 <label className="mb-2 block text-base text-muted-foreground">Tip</label>
                 <TipSelector subtotal={subtotal} tipAmount={state.tipAmount} onTipChange={updateTip} />
-                <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="0.00" className="mt-3" onChange={(e) => updateTip(parseFloat(e.target.value) || 0)} />
+                <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="mt-3" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
               </div>
             </div>
           </section>

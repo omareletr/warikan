@@ -60,9 +60,10 @@ export default function HomePage() {
             <Link href="/split/scan">Start Split</Link>
           </Button>
           <div>
-            <p className="mb-4 text-base font-semibold text-muted-foreground">
+            <p className="mb-1 text-base font-semibold text-muted-foreground">
               Recent Splits
             </p>
+            <p className="mb-4 text-xs text-muted-foreground/60">Tap to view details or edit</p>
             <div className="flex flex-col gap-4">
               {visibleSplits.map((split, i) => (
                 <motion.div

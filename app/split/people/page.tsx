@@ -19,7 +19,14 @@ export default function PeoplePage() {
   function addPerson() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setPeople([...state.people, { id: crypto.randomUUID(), name: trimmed }]);
+    let finalName = trimmed;
+    const existing = state.people.map((p) => p.name);
+    if (existing.includes(trimmed)) {
+      let n = 2;
+      while (existing.includes(`${trimmed} (${n})`)) n++;
+      finalName = `${trimmed} (${n})`;
+    }
+    setPeople([...state.people, { id: crypto.randomUUID(), name: finalName }]);
     setName("");
   }
 

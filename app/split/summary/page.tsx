@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +15,7 @@ export default function SummaryPage() {
   const router = useRouter();
   const { state } = useSplitFlow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
@@ -29,6 +30,7 @@ export default function SummaryPage() {
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="text-xl font-semibold">{state.restaurantName}</p>}
         <p className="mt-2 text-4xl font-bold tabular-nums text-gradient">{formatCurrency(grandTotal)}</p>
+        <p className="mt-1 text-xs text-muted-foreground/60">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
       </div>
 
@@ -54,7 +56,7 @@ export default function SummaryPage() {
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="border-t border-border/50 px-5 pb-5 pt-4">
                       {pt.items.map((item, j) => (
                         <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
-                          <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm">(÷{item.splitCount})</span>}</span>
+                          <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground/60">split {item.splitCount} ways</span>}</span>
                           <span className="tabular-nums">{formatCurrency(item.price)}</span>
                         </div>
                       ))}
@@ -73,7 +75,17 @@ export default function SummaryPage() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Done</Button>
+          <div className="flex gap-3">
+            <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={async () => {
+              const text = totals.map((pt) => `${pt.person.name}: ${formatCurrency(pt.total)}`).join("\n");
+              await navigator.clipboard.writeText(text);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}>
+              {copied ? <><Check className="h-4 w-4 text-primary" />Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
+            </Button>
+            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Done</Button>
+          </div>
         </div>
       </div>
     </motion.main>

@@ -23,8 +23,8 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
     onUpdate({
       ...item,
       name: name.trim() || item.name,
-      quantity: parseInt(quantity) || 1,
-      price: parseFloat(price) || 0,
+      quantity: Math.max(1, parseInt(quantity) || 1),
+      price: Math.max(0, parseFloat(price) || 0),
     });
     setEditing(false);
   }
@@ -40,7 +40,7 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
 
   if (editing) {
     return (
-      <div className="flex flex-col gap-2 py-3.5">
+      <div className="flex flex-col gap-2 py-3.5" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) save(); }}>
         <div className="flex items-center gap-2">
           <Input
             value={quantity}

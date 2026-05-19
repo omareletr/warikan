@@ -19,6 +19,7 @@ export default function AssignPage() {
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
 
   function toggleAssignment(itemId: string) {
+    navigator.vibrate?.(10);
     updateLineItems(state.lineItems.map((item) => {
       if (item.id !== itemId) return item;
       const assigned = item.assignedToIds.includes(selectedPersonId);
@@ -33,7 +34,15 @@ export default function AssignPage() {
     }, 0);
   }
 
+  function assignAllToSelected() {
+    updateLineItems(state.lineItems.map((item) => {
+      if (item.assignedToIds.includes(selectedPersonId)) return item;
+      return { ...item, assignedToIds: [...item.assignedToIds, selectedPersonId] };
+    }));
+  }
+
   const allAssigned = state.lineItems.every((item) => item.assignedToIds.length > 0);
+  const allAssignedToMe = state.lineItems.every((item) => item.assignedToIds.includes(selectedPersonId));
 
   return (
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-36 pt-14">
@@ -46,14 +55,21 @@ export default function AssignPage() {
         className="-mx-6 mt-8 flex gap-5 overflow-x-auto px-7 py-2 pb-4"
         style={{ maskImage: "linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent)" }}
       >
-        {state.people.map((person) => (
-          <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} />
+        {state.people.map((person, i) => (
+          <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
         ))}
       </div>
 
-      <p className="mb-3 mt-6 text-base font-semibold text-muted-foreground">
-        Tap to assign to {state.people.find((p) => p.id === selectedPersonId)?.name}
-      </p>
+      <div className="mb-3 mt-6 flex items-center justify-between">
+        <p className="text-base font-semibold text-muted-foreground">
+          Tap to assign to {state.people.find((p) => p.id === selectedPersonId)?.name}
+        </p>
+        {!allAssignedToMe && (
+          <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignAllToSelected}>
+            Assign All
+          </Button>
+        )}
+      </div>
 
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-2">

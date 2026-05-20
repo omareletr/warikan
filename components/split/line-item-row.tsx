@@ -97,17 +97,6 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
           {(parseInt(quantity) || 1) > 1 && (
             <span className="shrink-0 text-xs text-muted-foreground">each</span>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-            onClick={() => setShowConfirm(true)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="shrink-0 px-2" onClick={save}>
-            Done
-          </Button>
         </div>
         {deleteDialog}
       </>

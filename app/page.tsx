@@ -96,9 +96,10 @@ export default function HomePage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="flex min-h-dvh flex-col px-6 pt-12 pb-10"
+      className="flex min-h-dvh flex-col px-6 pb-10"
     >
       {/* Top bar */}
+      <div className="sticky-header -mx-6 px-6 pt-12 pb-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-lg font-semibold text-gradient">Warikan</span>
@@ -119,6 +120,7 @@ export default function HomePage() {
             </span>
           </Button>
         )}
+      </div>
       </div>
 
       {/* Center content */}

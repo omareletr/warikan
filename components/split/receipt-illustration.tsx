@@ -13,7 +13,7 @@ const torn = (phase: string) => phase === "tearing" || phase === "torn";
 
 export function ReceiptIllustration({ phase }: ReceiptIllustrationProps) {
   const isTorn = torn(phase);
-  const transition = { type: "tween" as const, duration: 0.6, ease: [0.22, 1, 0.36, 1] };
+  const transition = { type: "tween" as const, duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
 
   return (
     <svg

@@ -79,28 +79,30 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
 
   return (
     <>
-      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48 pt-14">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
-          </Button>
-          <h1 className="flex-1 text-xl font-bold">Split Details</h1>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Trash2 className="h-5 w-5 text-destructive" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Split</DialogTitle>
-                <DialogDescription>This will permanently remove this split. This action cannot be undone.</DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
+        <div className="sticky-header -mx-6 px-6 pt-14 pb-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
+            </Button>
+            <h1 className="flex-1 text-xl font-bold">Split Details</h1>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete Split</DialogTitle>
+                  <DialogDescription>This will permanently remove this split. This action cannot be undone.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="mt-8 text-center">

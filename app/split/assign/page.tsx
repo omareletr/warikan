@@ -97,7 +97,7 @@ export default function AssignPage() {
 
   return (
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
-      <div className="sticky top-0 z-10 bg-background px-6 pt-14 pb-4">
+      <div className="sticky-header px-6 pt-14 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold">Assign Dishes</h1>

@@ -99,12 +99,14 @@ export default function ReviewPage() {
   const totalFees = state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-80 pt-14">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
-        </Button>
-        <h1 className="text-xl font-bold">Review Items</h1>
+    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-80">
+      <div className="sticky-header -mx-6 px-6 pt-14 pb-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
+          </Button>
+          <h1 className="text-xl font-bold">Review Items</h1>
+        </div>
       </div>
 
       {loading && (

@@ -21,10 +21,12 @@ export default function SummaryPage() {
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40 pt-14">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <h1 className="text-xl font-bold">Summary</h1>
+    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
+      <div className="sticky-header -mx-6 px-6 pt-14 pb-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <h1 className="text-xl font-bold">Summary</h1>
+        </div>
       </div>
 
       <div className="mt-8 text-center">

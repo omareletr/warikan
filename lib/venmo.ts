@@ -16,7 +16,7 @@ export function buildVenmoDeepLink(recipient: string, amount: number, note: stri
     amount: amount.toFixed(2),
     note,
   });
-  return `venmo://paycharge?${params.toString()}`;
+  return `venmo://paycharge?${params.toString().replace(/\+/g, "%20")}`;
 }
 
 interface PayPerson {

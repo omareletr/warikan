@@ -100,7 +100,7 @@ export default function AssignPage() {
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
-          <h1 className="text-xl font-bold">Assign Dishes</h1>
+          <h1 className="text-xl font-bold">Assign dishes</h1>
         </div>
 
         <div className="mt-4 -mx-3 rounded-3xl border border-border/30 bg-card/80 shadow-md shadow-black/10">

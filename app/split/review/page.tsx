@@ -105,7 +105,7 @@ export default function ReviewPage() {
           <Button variant="ghost" size="icon" asChild>
             <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
-          <h1 className="text-xl font-bold">Review Items</h1>
+          <h1 className="text-xl font-bold">Review items</h1>
         </div>
       </div>
 

@@ -85,7 +85,7 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
             <Button variant="ghost" size="icon" asChild>
               <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
-            <h1 className="flex-1 text-xl font-bold">Split Details</h1>
+            <h1 className="flex-1 text-xl font-bold">Split details</h1>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -94,7 +94,7 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Delete Split</DialogTitle>
+                  <DialogTitle>Delete split</DialogTitle>
                   <DialogDescription>This will permanently remove this split. This action cannot be undone.</DialogDescription>
                 </DialogHeader>
                 <DialogFooter>

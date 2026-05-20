@@ -83,7 +83,6 @@ export default function PaymentPage() {
             </Button>
             <h1 className="text-xl font-bold">Payment</h1>
           </div>
-          <p className="mt-2 text-base text-muted-foreground">Copy amounts or pay directly with Venmo.</p>
         </div>
 
         <div className="mt-6">
@@ -165,7 +164,7 @@ export default function PaymentPage() {
             <Button variant="ghost" size="icon" className="absolute right-3 top-3 text-muted-foreground" onClick={() => setShowQR(false)}>
               <X className="h-5 w-5" />
             </Button>
-            <p className="mb-1 text-xl font-bold">Scan to Pay</p>
+            <p className="mb-1 text-xl font-bold">Scan to pay</p>
             <p className="mb-7 text-sm text-muted-foreground">Everyone scans this, picks their name, and pays on Venmo.</p>
             <div className="flex justify-center">
               <div className="rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.5)] ring-2 ring-primary/30">

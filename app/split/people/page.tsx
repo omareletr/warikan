@@ -69,7 +69,7 @@ export default function PeoplePage() {
           <Button variant="ghost" size="icon" asChild>
             <Link href="/split/review"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
-          <h1 className="text-xl font-bold">Who&apos;s Splitting?</h1>
+          <h1 className="text-xl font-bold">Who&apos;s splitting?</h1>
         </div>
       </div>
 

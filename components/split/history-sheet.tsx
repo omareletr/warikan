@@ -23,7 +23,7 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8 pt-6 max-h-[75dvh]">
         <SheetHeader className="mb-4 text-left">
-          <SheetTitle>Recent Splits</SheetTitle>
+          <SheetTitle>Recent splits</SheetTitle>
         </SheetHeader>
         <ScrollArea className="h-full">
           {splits.length === 0 ? (

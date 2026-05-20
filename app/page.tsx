@@ -99,7 +99,7 @@ export default function HomePage() {
       className="flex min-h-dvh flex-col px-6 pb-10"
     >
       {/* Top bar */}
-      <div className="sticky-header -mx-6 px-6 pt-12 pb-3">
+      <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-lg font-semibold text-gradient">Warikan</span>

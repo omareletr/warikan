@@ -76,7 +76,7 @@ export default function PaymentPage() {
   return (
     <>
       <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
-        <div className="sticky-header -mx-6 px-6 pt-14 pb-3">
+        <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild>
               <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/split/summary"}><ArrowLeft className="h-5 w-5" /></Link>

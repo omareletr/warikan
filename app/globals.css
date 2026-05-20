@@ -30,6 +30,7 @@
     @apply border-border;
     -webkit-user-select: none;
     user-select: none;
+    -webkit-touch-callout: none;
   }
 
   input, textarea, [contenteditable] {

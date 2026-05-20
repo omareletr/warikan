@@ -103,9 +103,9 @@ export default function AssignPage() {
           <h1 className="text-xl font-bold">Assign Dishes</h1>
         </div>
 
-        <div className="mt-4 -mx-2 rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl shadow-md shadow-black/10">
+        <div className="mt-4 -mx-3 rounded-3xl border border-border/30 bg-card/80 shadow-md shadow-black/10">
           <div
-            className="flex gap-5 overflow-x-auto px-5 py-3"
+            className="flex gap-5 overflow-x-auto px-6 py-4"
             style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
           >
             {state.people.map((person, i) => (

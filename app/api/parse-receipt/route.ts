@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "GEMINI_API_KEY not configured" },
+      { error: "server_error" },
       { status: 500 }
     );
   }
@@ -90,8 +90,9 @@ export async function POST(request: NextRequest) {
 
   if (!geminiResponse.ok) {
     const errText = await geminiResponse.text();
+    console.error("Upstream API error:", geminiResponse.status, errText);
     return NextResponse.json(
-      { error: "Gemini API error", details: errText },
+      { error: "upstream_error" },
       { status: 502 }
     );
   }
@@ -105,8 +106,9 @@ export async function POST(request: NextRequest) {
     const parsed = JSON.parse(cleaned);
     return NextResponse.json(parsed);
   } catch {
+    console.error("Response parse failure:", rawText.slice(0, 500));
     return NextResponse.json(
-      { error: "Failed to parse Gemini response", raw: rawText },
+      { error: "parse_error" },
       { status: 502 }
     );
   }

@@ -32,6 +32,19 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    user-select: none;
+  }
+
+  input, textarea, [contenteditable] {
+    user-select: text;
+  }
+
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
   }
 }
 

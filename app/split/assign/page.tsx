@@ -97,19 +97,21 @@ export default function AssignPage() {
 
   return (
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
-      <div className="sticky top-0 z-10 bg-background px-6 pt-14 pb-2 border-b border-border/20">
+      <div className="sticky top-0 z-10 bg-background px-6 pt-14 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold">Assign Dishes</h1>
         </div>
 
-        <div
-          className="-mx-6 mt-6 flex gap-5 overflow-x-auto px-7 py-2 pb-3"
-          style={{ maskImage: "linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent)" }}
-        >
-          {state.people.map((person, i) => (
-            <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
-          ))}
+        <div className="mt-4 -mx-2 rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl shadow-md shadow-black/10">
+          <div
+            className="flex gap-5 overflow-x-auto px-5 py-3"
+            style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
+          >
+            {state.people.map((person, i) => (
+              <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
+            ))}
+          </div>
         </div>
       </div>
 

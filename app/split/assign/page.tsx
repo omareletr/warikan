@@ -6,7 +6,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { formatCurrency, initials } from "@/lib/calculate";
@@ -97,33 +96,35 @@ export default function AssignPage() {
   );
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40 pt-14">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <h1 className="text-xl font-bold">Assign Dishes</h1>
+    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
+      <div className="sticky top-0 z-10 bg-background px-6 pt-14 pb-2 border-b border-border/20">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <h1 className="text-xl font-bold">Assign Dishes</h1>
+        </div>
+
+        <div
+          className="-mx-6 mt-6 flex gap-5 overflow-x-auto px-7 py-2 pb-3"
+          style={{ maskImage: "linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent)" }}
+        >
+          {state.people.map((person, i) => (
+            <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
+          ))}
+        </div>
       </div>
 
-      <div
-        className="-mx-6 mt-8 flex gap-5 overflow-x-auto px-7 py-2 pb-4"
-        style={{ maskImage: "linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent)" }}
-      >
-        {state.people.map((person, i) => (
-          <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
-        ))}
-      </div>
+      <div className="px-6">
+        <div className="mb-3 mt-6 flex items-center justify-between">
+          <p className="text-base font-semibold text-muted-foreground">
+            Tap to assign to {state.people.find((p) => p.id === selectedPersonId)?.name}
+          </p>
+          {canAssignMore && (
+            <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignAllToSelected}>
+              Assign All
+            </Button>
+          )}
+        </div>
 
-      <div className="mb-3 mt-6 flex items-center justify-between">
-        <p className="text-base font-semibold text-muted-foreground">
-          Tap to assign to {state.people.find((p) => p.id === selectedPersonId)?.name}
-        </p>
-        {canAssignMore && (
-          <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignAllToSelected}>
-            Assign All
-          </Button>
-        )}
-      </div>
-
-      <ScrollArea className="flex-1">
         <div className="flex flex-col gap-2">
           {state.lineItems.map((item) => {
             if (item.quantity > 1) {
@@ -236,7 +237,7 @@ export default function AssignPage() {
             );
           })}
         </div>
-      </ScrollArea>
+      </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">

@@ -102,7 +102,7 @@ export default function ReviewPage() {
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-80 pt-14">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/split/scan"}><ArrowLeft className="h-5 w-5" /></Link>
+          <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
         </Button>
         <h1 className="text-xl font-bold">Review Items</h1>
       </div>

@@ -51,4 +51,10 @@
   .text-gradient {
     @apply bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent;
   }
+  .tear-glow-left {
+    filter: drop-shadow(2px 0 8px rgba(52, 211, 153, 0.18));
+  }
+  .tear-glow-right {
+    filter: drop-shadow(-2px 0 8px rgba(52, 211, 153, 0.18));
+  }
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`dark ${GeistSans.variable}`}>
-      <body className={`${GeistSans.className} min-h-dvh`}>{children}</body>
+      <body className={`${GeistSans.className} min-h-dvh`}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

@@ -1,89 +1,192 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { UtensilsCrossed, Loader2 } from "lucide-react";
+import { Camera, ImagePlus, FlaskConical, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReceiptIllustration } from "@/components/split/receipt-illustration";
+import { HistorySheet } from "@/components/split/history-sheet";
+import { useSplitFlow } from "@/lib/split-flow-context";
 import { getSplits } from "@/lib/splits";
-import type { Split } from "@/lib/types";
-import { SplitCard } from "@/components/split/split-card";
 
-const INITIAL_SHOW = 10;
+const DEMO_RECEIPT = {
+  restaurantName: "Helmand Palace",
+  lineItems: [
+    { id: crypto.randomUUID(), name: "Qabelee", quantity: 1, price: 19.99, assignedToIds: [] },
+    { id: crypto.randomUUID(), name: "Mourgh Kabab", quantity: 2, price: 16.99, assignedToIds: [] },
+    { id: crypto.randomUUID(), name: "Banjan", quantity: 3, price: 8.99, assignedToIds: [] },
+    { id: crypto.randomUUID(), name: "Kofta Kabab", quantity: 1, price: 17.99, assignedToIds: [] },
+    { id: crypto.randomUUID(), name: "Kaddo", quantity: 1, price: 8.99, assignedToIds: [] },
+    { id: crypto.randomUUID(), name: "Bread", quantity: 1, price: 3.99, assignedToIds: [] },
+    { id: crypto.randomUUID(), name: "Rice Pudding", quantity: 4, price: 6.99, assignedToIds: [] },
+  ],
+  fees: [] as { id: string; name: string; amount: number }[],
+  taxAmount: 12.07,
+  tipAmount: 25.18,
+};
+
+type Phase = "intact" | "tearing" | "torn";
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function HomePage() {
-  const [splits, setSplits] = useState<Split[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [showAll, setShowAll] = useState(false);
+  const router = useRouter();
+  const { setImage, setReceiptData } = useSplitFlow();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  const [phase, setPhase] = useState<Phase>("intact");
+  const [mounted, setMounted] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [splitCount, setSplitCount] = useState(0);
 
   useEffect(() => {
-    setSplits(getSplits());
-    setLoaded(true);
+    const alreadyPlayed = sessionStorage.getItem("warikan_intro_played") === "1";
+    setPhase(alreadyPlayed ? "torn" : "intact");
+    setSplitCount(getSplits().length);
+    setMounted(true);
   }, []);
 
-  const visibleSplits = showAll ? splits : splits.slice(0, INITIAL_SHOW);
+  useEffect(() => {
+    if (!mounted || phase !== "intact") return;
+    const t1 = setTimeout(() => setPhase("tearing"), 900);
+    return () => clearTimeout(t1);
+  }, [mounted, phase]);
 
-  if (!loaded) return (
-    <main className="flex min-h-dvh items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </main>
-  );
+  useEffect(() => {
+    if (phase !== "tearing") return;
+    const t2 = setTimeout(() => {
+      setPhase("torn");
+      sessionStorage.setItem("warikan_intro_played", "1");
+    }, 700);
+    return () => clearTimeout(t2);
+  }, [phase]);
+
+  async function handleFile(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    try {
+      const base64 = await readFileAsBase64(file);
+      setImage(base64, file.type);
+      router.push("/split/review");
+    } catch {
+      // ignore — user can try again
+    }
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  if (!mounted) return null;
+
+  const isTorn = phase === "tearing" || phase === "torn";
+  const showButtons = phase === "torn";
 
   return (
     <motion.main
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex min-h-dvh flex-col px-6 pt-14 pb-8"
+      transition={{ duration: 0.35 }}
+      className="flex min-h-dvh flex-col px-6 pt-12 pb-10"
     >
-      <h1 className="text-3xl font-bold tracking-tight text-gradient">
-        Warikan
-      </h1>
+      {/* Top bar */}
+      <div className="flex items-center justify-between">
+        <span className="text-lg font-semibold text-gradient">Warikan</span>
+        {splitCount > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative h-11 w-11"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <History className="h-5 w-5 text-muted-foreground" />
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+              {splitCount > 9 ? "9+" : splitCount}
+            </span>
+          </Button>
+        )}
+      </div>
 
-      {splits.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-          <div className="rounded-2xl bg-primary/10 p-5">
-            <UtensilsCrossed className="h-12 w-12 text-primary" />
-          </div>
-          <div>
-            <p className="text-xl font-semibold">Your first split starts here.</p>
-            <p className="mt-2 text-base text-muted-foreground">
-              Scan a receipt and stop doing math in your head.
-            </p>
-          </div>
-          <Button asChild className="mt-4 h-14 w-full max-w-xs rounded-2xl text-base font-semibold">
-            <Link href="/split/scan">Start Split</Link>
-          </Button>
+      {/* Center content */}
+      <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="relative flex flex-col items-center">
+          {/* Receipt illustration */}
+          <ReceiptIllustration phase={phase} />
+
+          {/* Action buttons — fade in between torn halves */}
+          <motion.div
+            className="mt-6 flex w-full max-w-[220px] flex-col gap-3"
+            animate={{
+              opacity: showButtons ? 1 : 0,
+              y: showButtons ? 0 : 10,
+            }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          >
+            <Button
+              className="h-14 gap-3 rounded-2xl text-base font-semibold glow-sm"
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="h-5 w-5" />
+              Scan Receipt
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 gap-3 rounded-2xl text-base font-semibold"
+              onClick={() => uploadInputRef.current?.click()}
+            >
+              <ImagePlus className="h-5 w-5" />
+              Upload Photo
+            </Button>
+          </motion.div>
         </div>
-      ) : (
-        <div className="mt-8 flex flex-1 flex-col gap-8">
-          <Button asChild className="h-14 w-full rounded-2xl text-base font-semibold">
-            <Link href="/split/scan">Start Split</Link>
-          </Button>
-          <div>
-            <p className="mb-1 text-base font-semibold text-muted-foreground">
-              Recent Splits
-            </p>
-            <p className="mb-4 text-xs text-muted-foreground/60">Tap to view details or edit</p>
-            <div className="flex flex-col gap-4">
-              {visibleSplits.map((split, i) => (
-                <motion.div
-                  key={split.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <SplitCard split={split} />
-                </motion.div>
-              ))}
-              {!showAll && splits.length > INITIAL_SHOW && (
-                <Button variant="ghost" className="text-muted-foreground" onClick={() => setShowAll(true)}>
-                  Show {splits.length - INITIAL_SHOW} more
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
+
+      {/* Demo link */}
+      <motion.div
+        className="flex justify-center"
+        animate={{ opacity: showButtons ? 1 : 0 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+      >
+        <Button
+          variant="ghost"
+          className="h-10 gap-2 text-sm text-muted-foreground"
+          onClick={() => {
+            setReceiptData(DEMO_RECEIPT);
+            router.push("/split/review");
+          }}
+        >
+          <FlaskConical className="h-3.5 w-3.5" />
+          Try demo receipt
+        </Button>
+      </motion.div>
+
+      {/* Hidden file inputs */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleInputChange}
+      />
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleInputChange}
+      />
+
+      <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
     </motion.main>
   );
 }

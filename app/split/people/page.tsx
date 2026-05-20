@@ -118,9 +118,8 @@ export default function PeoplePage() {
                   )}
                   {person.covered && !editingId && <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>}
                 </div>
-                <Button variant="ghost" className={cn("h-9 shrink-0 gap-1 px-2 text-xs", person.covered ? "text-amber-400" : "text-muted-foreground")} onClick={() => toggleCovered(person.id)}>
-                  <Gift className="h-3.5 w-3.5" />
-                  {person.covered ? "Covered" : "Cover"}
+                <Button variant="ghost" size="icon" className={cn("h-9 w-9", person.covered ? "text-amber-400" : "text-muted-foreground")} onClick={() => toggleCovered(person.id)}>
+                  <Gift className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => removePerson(person.id)}>
                   <X className="h-4 w-4" />

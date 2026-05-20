@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Camera, ImagePlus, FlaskConical, History } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ReceiptIllustration } from "@/components/split/receipt-illustration";
 import { HistorySheet } from "@/components/split/history-sheet";
@@ -40,7 +41,6 @@ function readFileAsBase64(file: File): Promise<string> {
 export default function HomePage() {
   const router = useRouter();
   const { setImage, setReceiptData } = useSplitFlow();
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [phase, setPhase] = useState<Phase>("intact");
@@ -133,10 +133,12 @@ export default function HomePage() {
           >
             <Button
               className="h-14 gap-3 rounded-2xl text-base font-semibold glow-sm"
-              onClick={() => cameraInputRef.current?.click()}
+              asChild
             >
-              <Camera className="h-5 w-5" />
-              Scan Receipt
+              <Link href="/split/scan">
+                <Camera className="h-5 w-5" />
+                Scan Receipt
+              </Link>
             </Button>
             <Button
               variant="outline"
@@ -169,15 +171,7 @@ export default function HomePage() {
         </Button>
       </motion.div>
 
-      {/* Hidden file inputs */}
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleInputChange}
-      />
+      {/* Hidden file input for gallery upload */}
       <input
         ref={uploadInputRef}
         type="file"

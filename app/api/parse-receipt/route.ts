@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+
 const GEMINI_PROMPT = `Analyze this receipt image and extract the following information as JSON:
 
 {
@@ -37,6 +45,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "image and mimeType are required" },
       { status: 400 }
+    );
+  }
+
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+    return NextResponse.json(
+      { error: "unsupported_media_type" },
+      { status: 415 }
     );
   }
 

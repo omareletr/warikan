@@ -26,6 +26,18 @@ const ReceiptSchema = z.object({
 
 const MAX_BASE64_LENGTH = 13_400_000; // ~10 MB decoded
 
+const ALLOWED_ORIGINS = [
+  "https://warikan0.netlify.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+
+function isAllowedOrigin(value: string): boolean {
+  if (ALLOWED_ORIGINS.some((o) => value.startsWith(o))) return true;
+  // Netlify deploy previews: deploy-preview-*--warikan0.netlify.app
+  return /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app/.test(value);
+}
+
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -56,6 +68,12 @@ Rules:
 - Return ONLY valid JSON, no markdown fences, no explanation`;
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? "";
+  const referer = request.headers.get("referer") ?? "";
+  if (!isAllowedOrigin(origin) && !isAllowedOrigin(referer)) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

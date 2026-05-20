@@ -2,5 +2,8 @@
   command = "npm run build"
   publish = ".next"
 
+[context.staging]
+  command = "npm run build"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"

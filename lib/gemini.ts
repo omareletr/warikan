@@ -1,6 +1,6 @@
 export interface ParsedReceipt {
   restaurantName: string | null;
-  lineItems: { name: string; price: number }[];
+  lineItems: { name: string; quantity: number; price: number }[];
   taxAmount: number | null;
   fees: { name: string; amount: number }[];
   tipAmount: number | null;

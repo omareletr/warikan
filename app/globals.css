@@ -28,15 +28,15 @@
 
   * {
     @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground antialiased;
     user-select: none;
   }
 
   input, textarea, [contenteditable] {
     user-select: text;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
   }
 
   * {

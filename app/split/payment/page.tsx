@@ -150,17 +150,30 @@ export default function PaymentPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm px-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
+          onClick={() => setShowQR(false)}
         >
-          <Button variant="ghost" size="icon" className="absolute right-4 top-4" onClick={() => setShowQR(false)}>
-            <X className="h-6 w-6" />
-          </Button>
-          <p className="mb-2 text-xl font-bold">Scan to Pay</p>
-          <p className="mb-8 text-base text-muted-foreground">Everyone scans this code, picks their name, and pays on Venmo.</p>
-          <div className="rounded-3xl bg-white p-6">
-            <QRCodeSVG value={getQRUrl()} size={240} />
-          </div>
-          <p className="mt-6 text-sm text-muted-foreground">Paying @{venmoUsername}</p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            className="relative w-full max-w-sm rounded-3xl border border-border/30 bg-card p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button variant="ghost" size="icon" className="absolute right-3 top-3 text-muted-foreground" onClick={() => setShowQR(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+            <p className="mb-1 text-xl font-bold">Scan to Pay</p>
+            <p className="mb-7 text-sm text-muted-foreground">Everyone scans this, picks their name, and pays on Venmo.</p>
+            <div className="flex justify-center">
+              <div className="rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.5)] ring-2 ring-primary/30">
+                <div className="rounded-2xl bg-white p-5">
+                  <QRCodeSVG value={getQRUrl()} size={220} />
+                </div>
+              </div>
+            </div>
+            <p className="mt-6 text-center text-sm text-muted-foreground">Paying @{venmoUsername}</p>
+          </motion.div>
         </motion.div>
       )}
     </>

@@ -30,13 +30,14 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
         "relative flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-all duration-200",
         selected
           ? `${color.activeBg} text-white ring-2 ${color.ring} ring-offset-2 ring-offset-background shadow-[0_0_16px_rgba(52,211,153,0.3)]`
-          : `${color.bg} ${color.text}`
+          : `${color.bg} ${color.text}`,
+        !selected && !person.covered && runningTotal !== undefined && runningTotal === 0 && "border-2 border-dashed border-muted-foreground/30"
       )}>
         {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
       </div>
       <span className={cn("max-w-[72px] text-center text-sm leading-tight line-clamp-2", person.covered && "text-muted-foreground")}>{person.name}</span>
       {runningTotal !== undefined && (
-        <span className={cn("text-sm tabular-nums", person.covered ? "text-amber-400" : "text-primary")}>
+        <span className={cn("text-sm tabular-nums", person.covered ? "text-amber-400" : runningTotal === 0 ? "text-muted-foreground" : "text-primary")}>
           {person.covered ? "Covered" : formatCurrency(runningTotal)}
         </span>
       )}

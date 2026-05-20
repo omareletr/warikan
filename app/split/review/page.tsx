@@ -32,7 +32,10 @@ export default function ReviewPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: state.image, mimeType: state.imageMimeType }),
         });
-        if (!res.ok) throw new Error("Failed to parse receipt");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { details?: string; error?: string }).details ?? (err as { details?: string; error?: string }).error ?? "Failed to parse receipt");
+        }
         const data = await res.json();
         setReceiptData({
           restaurantName: data.restaurantName ?? "",
@@ -47,8 +50,10 @@ export default function ReviewPage() {
           taxAmount: data.taxAmount ?? 0,
           tipAmount: data.tipAmount ?? 0,
         });
-      } catch {
-        setError("Couldn't parse the receipt. You can add items manually.");
+      } catch (e) {
+        console.error(e);
+        const detail = e instanceof Error ? e.message : "Unknown error";
+        setError(`Couldn't parse the receipt: ${detail}`);
       } finally {
         setLoading(false);
       }

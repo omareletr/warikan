@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { LineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculate";
 
@@ -15,6 +16,7 @@ interface LineItemRowProps {
 
 export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
   const [editing, setEditing] = useState(!item.name);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity.toString());
   const [price, setPrice] = useState(item.price.toString());
@@ -38,81 +40,107 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
 
   const lineTotal = item.price * item.quantity;
 
+  const deleteDialog = (
+    <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remove item?</DialogTitle>
+          <DialogDescription>
+            <span className="font-medium text-foreground">{item.name || "This item"}</span>
+            {" "}will be removed from the receipt.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-row gap-3 pt-2">
+          <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>
+            Cancel
+          </Button>
+          <Button variant="destructive" className="flex-1" onClick={() => { setShowConfirm(false); onRemove(); }}>
+            Remove
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (editing) {
     return (
-      <div className="flex flex-col gap-2 py-3.5" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) save(); }}>
-        <div className="flex items-center gap-2">
+      <>
+        <div
+          className="flex items-center gap-3 py-2"
+          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) save(); }}
+        >
           <Input
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="w-14"
-            type="number"
-            min="1"
-            placeholder="Qty"
+            className="w-12 px-2 text-center"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="1"
             onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
           />
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1"
+            className="flex-1 min-w-0"
             autoFocus
             onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
           />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Input
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full"
-              type="number"
-              step="0.01"
-              placeholder="Price"
-              onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
-            />
-            {(parseInt(quantity) || 1) > 1 && <span className="absolute -bottom-4 right-0 text-[10px] text-muted-foreground">each</span>}
-          </div>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={onRemove}>
+          <Input
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-20 px-2 text-right tabular-nums"
+            inputMode="decimal"
+            pattern="[0-9.]*"
+            placeholder="0.00"
+            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          />
+          {(parseInt(quantity) || 1) > 1 && (
+            <span className="shrink-0 text-xs text-muted-foreground">each</span>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+            onClick={() => setShowConfirm(true)}
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={cancel}>
-            <X className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={save}>
+          <Button variant="ghost" size="sm" className="shrink-0 px-2" onClick={save}>
             Done
           </Button>
         </div>
-      </div>
+        {deleteDialog}
+      </>
     );
   }
 
   return (
-    <div
-      className="flex cursor-pointer items-center justify-between py-3.5"
-      onClick={() => setEditing(true)}
-    >
-      <div className="flex items-center gap-2">
-        {item.quantity > 1 && (
-          <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">{item.quantity}</span>
-        )}
-        <span className="text-base">{item.name}</span>
+    <>
+      <div
+        className="flex cursor-pointer items-center justify-between py-3.5"
+        onClick={() => setEditing(true)}
+      >
+        <div className="flex items-center gap-2">
+          {item.quantity > 1 && (
+            <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">{item.quantity}</span>
+          )}
+          <span className="text-base">{item.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-base font-medium tabular-nums">
+            {formatCurrency(lineTotal)}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground hover:text-destructive"
+            onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-base font-medium tabular-nums">
-          {formatCurrency(lineTotal)}
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-muted-foreground hover:text-destructive"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+      {deleteDialog}
+    </>
   );
 }

@@ -25,6 +25,9 @@ function readFileAsBase64(file: File): Promise<string> {
   });
 }
 
+const BRACKET_COLOR_IDLE = "rgba(255, 255, 255, 0.4)";
+const BRACKET_COLOR_ACTIVE = "rgba(52, 211, 153, 1)";
+
 export default function ScanPage() {
   const router = useRouter();
   const { setImage } = useSplitFlow();
@@ -48,9 +51,7 @@ export default function ScanPage() {
       })
       .then((s) => {
         stream = s;
-        if (videoRef.current) {
-          videoRef.current.srcObject = s;
-        }
+        if (videoRef.current) videoRef.current.srcObject = s;
       })
       .catch(() => setPermissionDenied(true));
     return () => stream?.getTracks().forEach((t) => t.stop());
@@ -60,7 +61,6 @@ export default function ScanPage() {
     if (capturedRef.current || !videoRef.current) return;
     capturedRef.current = true;
     setStatus("capturing");
-
     const video = videoRef.current;
     const canvas = captureCanvasRef.current!;
     canvas.width = video.videoWidth || 1280;
@@ -68,13 +68,12 @@ export default function ScanPage() {
     canvas.getContext("2d")!.drawImage(video, 0, 0);
     const base64 = canvas.toDataURL("image/jpeg", 0.92).split(",")[1];
     setImage(base64, "image/jpeg");
-    router.push("/split/review");
+    setTimeout(() => router.push("/split/review"), 900);
   }, [setImage, router]);
 
   // Auto-detection loop
   useEffect(() => {
     if (permissionDenied) return;
-
     const interval = setInterval(() => {
       const video = videoRef.current;
       const canvas = sampleCanvasRef.current;
@@ -88,31 +87,25 @@ export default function ScanPage() {
       const lums = new Float32Array(pixelCount);
       let brightCount = 0;
       for (let i = 0; i < pixelCount; i++) {
-        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        const lum = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
         lums[i] = lum;
         if (lum > BRIGHT_THRESHOLD) brightCount++;
       }
 
-      const brightPct = brightCount / pixelCount;
-
       let instability = 0;
       if (prevLumRef.current) {
-        for (let i = 0; i < pixelCount; i++) {
+        for (let i = 0; i < pixelCount; i++)
           instability += Math.abs(lums[i] - prevLumRef.current[i]);
-        }
         instability /= pixelCount;
       }
       prevLumRef.current = lums;
 
-      const detected = brightPct > BRIGHT_PCT_MIN && instability < INSTABILITY_MAX;
+      const detected = brightCount / pixelCount > BRIGHT_PCT_MIN && instability < INSTABILITY_MAX;
 
       if (detected) {
         consecutiveRef.current += 1;
         setStatus(consecutiveRef.current >= CHECKS_REQUIRED ? "capturing" : "steady");
-        if (consecutiveRef.current >= CHECKS_REQUIRED) {
-          capture();
-        }
+        if (consecutiveRef.current >= CHECKS_REQUIRED) capture();
       } else {
         consecutiveRef.current = 0;
         setStatus("searching");
@@ -129,14 +122,11 @@ export default function ScanPage() {
       const base64 = await readFileAsBase64(file);
       setImage(base64, file.type);
       router.push("/split/review");
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }
 
-  const bracketColor = status === "steady" || status === "capturing"
-    ? "rgba(52, 211, 153, 1)"
-    : "rgba(255, 255, 255, 0.4)";
+  const isActive = status !== "searching";
+  const bracketColor = isActive ? BRACKET_COLOR_ACTIVE : BRACKET_COLOR_IDLE;
 
   const statusText = {
     searching: "Point camera at receipt",
@@ -159,6 +149,18 @@ export default function ScanPage() {
       <canvas ref={sampleCanvasRef} width={SAMPLE_W} height={SAMPLE_H} className="hidden" />
       <canvas ref={captureCanvasRef} className="hidden" />
 
+      {/* Shutter flash on capture */}
+      <AnimatePresence>
+        {status === "capturing" && (
+          <motion.div
+            className="absolute inset-0 bg-white pointer-events-none"
+            initial={{ opacity: 0.3 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Permission denied overlay */}
       <AnimatePresence>
         {permissionDenied && (
@@ -179,13 +181,8 @@ export default function ScanPage() {
         )}
       </AnimatePresence>
 
-      {/* Dim vignette */}
-      {!permissionDenied && (
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/50 pointer-events-none" />
-      )}
-
       {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-12 pb-4">
+      <div className="absolute top-0 left-0 right-0 flex items-center px-4 pt-12 pb-4">
         <Button
           variant="ghost"
           size="icon"
@@ -198,37 +195,60 @@ export default function ScanPage() {
 
       {/* Scanner frame + status */}
       {!permissionDenied && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-none">
-          {/* Corner bracket guide */}
-          <div className="relative" style={{ width: 260, height: 340 }}>
-            {/* Top-left */}
-            <svg style={{ position: "absolute", top: 0, left: 0 }} width="36" height="36">
-              <path d="M 2 34 L 2 2 L 34 2" fill="none" stroke={bracketColor} strokeWidth="2.5" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
-            </svg>
-            {/* Top-right */}
-            <svg style={{ position: "absolute", top: 0, right: 0 }} width="36" height="36">
-              <path d="M 2 2 L 34 2 L 34 34" fill="none" stroke={bracketColor} strokeWidth="2.5" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
-            </svg>
-            {/* Bottom-left */}
-            <svg style={{ position: "absolute", bottom: 0, left: 0 }} width="36" height="36">
-              <path d="M 34 34 L 2 34 L 2 2" fill="none" stroke={bracketColor} strokeWidth="2.5" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
-            </svg>
-            {/* Bottom-right */}
-            <svg style={{ position: "absolute", bottom: 0, right: 0 }} width="36" height="36">
-              <path d="M 2 2 L 34 2" fill="none" stroke={bracketColor} strokeWidth="2.5" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
-              <path d="M 34 2 L 34 34" fill="none" stroke={bracketColor} strokeWidth="2.5" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
-            </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 pointer-events-none">
 
-            {/* Scan line when capturing */}
-            {status === "capturing" && (
+          {/* Corner bracket frame — 310×400 */}
+          <div className="relative" style={{ width: 310, height: 400 }}>
+
+            {/* Glow pulse wrapper for all 4 corners */}
+            {(["tl", "tr", "bl", "br"] as const).map((corner) => (
               <motion.div
-                className="absolute left-0 right-0 h-px"
-                style={{ background: "rgba(52, 211, 153, 0.7)" }}
-                initial={{ top: 0 }}
-                animate={{ top: "100%" }}
-                transition={{ duration: 0.6, ease: "linear" }}
-              />
-            )}
+                key={corner}
+                className="absolute"
+                style={{
+                  top: corner.startsWith("t") ? 0 : "auto",
+                  bottom: corner.startsWith("b") ? 0 : "auto",
+                  left: corner.endsWith("l") ? 0 : "auto",
+                  right: corner.endsWith("r") ? 0 : "auto",
+                }}
+                animate={isActive ? {
+                  filter: [
+                    "drop-shadow(0 0 4px rgba(52,211,153,0.4))",
+                    "drop-shadow(0 0 12px rgba(52,211,153,1))",
+                    "drop-shadow(0 0 4px rgba(52,211,153,0.4))",
+                  ],
+                } : { filter: "drop-shadow(0 0 0px transparent)" }}
+                transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+              >
+                <svg width="56" height="56">
+                  {corner === "tl" && <path d="M 3 53 L 3 3 L 53 3" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />}
+                  {corner === "tr" && <path d="M 3 3 L 53 3 L 53 53" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />}
+                  {corner === "bl" && <path d="M 53 53 L 3 53 L 3 3" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />}
+                  {corner === "br" && (
+                    <>
+                      <path d="M 3 53 L 53 53" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
+                      <path d="M 53 3 L 53 53" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
+                    </>
+                  )}
+                </svg>
+              </motion.div>
+            ))}
+
+            {/* Gradient scan beam */}
+            <AnimatePresence>
+              {status === "capturing" && (
+                <motion.div
+                  className="absolute left-0 right-0 pointer-events-none"
+                  style={{
+                    height: 44,
+                    background: "linear-gradient(to bottom, transparent, rgba(52,211,153,0.55) 40%, rgba(52,211,153,0.55) 60%, transparent)",
+                  }}
+                  initial={{ top: -44 }}
+                  animate={{ top: "100%" }}
+                  transition={{ duration: 0.85, ease: "easeInOut", repeat: 1, repeatType: "reverse" }}
+                />
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Status text */}
@@ -236,11 +256,9 @@ export default function ScanPage() {
             key={status}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-sm font-medium text-white/80"
+            className="text-sm font-medium"
             style={{
-              color: status === "steady" || status === "capturing"
-                ? "rgba(52, 211, 153, 0.9)"
-                : "rgba(255,255,255,0.7)",
+              color: isActive ? "rgba(52, 211, 153, 0.95)" : "rgba(255,255,255,0.65)",
             }}
           >
             {statusText}
@@ -248,16 +266,15 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Bottom bar */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center pb-12 pt-6">
-        <Button
-          variant="ghost"
-          className="h-10 gap-2 text-sm text-white/50 hover:text-white/80"
+      {/* Bottom bar — liquid glass upload button */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center pb-12">
+        <button
+          className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur-md active:scale-95 transition-transform"
           onClick={() => uploadInputRef.current?.click()}
         >
           <ImagePlus className="h-4 w-4" />
           Upload photo instead
-        </Button>
+        </button>
       </div>
 
       <input

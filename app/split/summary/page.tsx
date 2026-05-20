@@ -94,7 +94,7 @@ export default function SummaryPage() {
             }}>
               {copied ? <><Check className="h-4 w-4 text-primary" />Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
             </Button>
-            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Done</Button>
+            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Payment</Button>
           </div>
         </div>
       </div>

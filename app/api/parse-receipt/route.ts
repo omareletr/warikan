@@ -24,6 +24,8 @@ const ReceiptSchema = z.object({
   tipAmount: z.number().min(0).max(99999).nullable(),
 });
 
+const MAX_BASE64_LENGTH = 13_400_000; // ~10 MB decoded
+
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -76,6 +78,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "unsupported_media_type" },
       { status: 415 }
+    );
+  }
+
+  if (image.length > MAX_BASE64_LENGTH) {
+    return NextResponse.json(
+      { error: "image_too_large" },
+      { status: 413 }
     );
   }
 

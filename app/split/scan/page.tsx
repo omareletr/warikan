@@ -118,6 +118,10 @@ export default function ScanPage() {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Photo too large. Please upload a photo under 10 MB or use the camera to scan directly.");
+      return;
+    }
     try {
       const base64 = await readFileAsBase64(file);
       setImage(base64, file.type);

@@ -95,7 +95,12 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Delete split</DialogTitle>
-                  <DialogDescription>This will permanently remove this split. This action cannot be undone.</DialogDescription>
+                  <DialogDescription asChild>
+                    <div>
+                      <p className="font-medium text-foreground">{split.restaurantName ?? "Split"} · {date} · {formatCurrency(split.totalAmount)}</p>
+                      <p className="mt-1">This will be permanently removed and cannot be undone.</p>
+                    </div>
+                  </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                   <Button variant="destructive" onClick={handleDelete}>Delete</Button>
@@ -145,7 +150,7 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
                         {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
                         {pt.coveredExtra > 0 && (
                           <div className="flex justify-between py-2 text-base text-amber-400">
-                            <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}</span>
+                            <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}&apos;s share</span>
                             <span className="tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
                           </div>
                         )}

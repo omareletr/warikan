@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,12 @@ export default function PayPage() {
             </Card>
           </motion.div>
         ))}
+      </div>
+
+      <div className="mt-10 text-center">
+        <Link href="/" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+          Start your own split
+        </Link>
       </div>
     </motion.main>
   );

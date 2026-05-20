@@ -72,7 +72,7 @@ export default function SummaryPage() {
                       {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
                       {pt.coveredExtra > 0 && (
                         <div className="flex justify-between py-2 text-base text-amber-400">
-                          <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}</span>
+                          <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}&apos;s share</span>
                           <span className="tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
                         </div>
                       )}

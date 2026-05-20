@@ -23,6 +23,7 @@ export default function PaymentPage() {
   const [showQR, setShowQR] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [venmoFailed, setVenmoFailed] = useState(false);
 
   useEffect(() => {
     setVenmoUsername(getVenmoUsername());
@@ -36,15 +37,23 @@ export default function PaymentPage() {
   }
 
   async function copyAmount(personId: string, amount: number) {
-    await navigator.clipboard.writeText(amount.toFixed(2));
-    setCopiedId(personId);
-    setTimeout(() => setCopiedId(null), 2000);
+    try {
+      await navigator.clipboard.writeText(amount.toFixed(2));
+      setCopiedId(personId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      // clipboard unavailable — silently ignore, no false feedback
+    }
   }
 
   function openVenmo(amount: number) {
     const note = state.restaurantName ? `${state.restaurantName} split` : "Warikan split";
     const url = buildVenmoDeepLink(venmoUsername, amount, note);
+    setVenmoFailed(false);
     window.location.href = url;
+    setTimeout(() => {
+      if (!document.hidden) setVenmoFailed(true);
+    }, 1500);
   }
 
   function getQRUrl(): string {
@@ -110,7 +119,7 @@ export default function PaymentPage() {
                     {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                   </div>
                   <div className="flex-1">
-                    <p className="text-base font-medium">{pt.person.name}</p>
+                    <p className="truncate text-base font-medium">{pt.person.name}</p>
                     {pt.person.covered ? (
                       <p className="text-base text-amber-400">Covered by group</p>
                     ) : (
@@ -138,6 +147,9 @@ export default function PaymentPage() {
             </motion.div>
           ))}
         </div>
+        {venmoFailed && (
+          <p className="mt-4 text-center text-sm text-muted-foreground">Venmo not found — make sure the app is installed.</p>
+        )}
       </motion.main>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">

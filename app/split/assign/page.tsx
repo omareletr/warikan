@@ -215,7 +215,7 @@ export default function AssignPage() {
                   {isAssignedToMe && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
                   <span className="text-base">{item.name}</span>
                   {item.assignedToIds.length > 0 && (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       {item.assignedToIds.map((pid) => {
                         const person = state.people.find((p) => p.id === pid);
                         if (!person) return null;

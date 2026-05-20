@@ -30,7 +30,7 @@ export default function SummaryPage() {
       </div>
 
       <div className="mt-8 text-center">
-        {state.restaurantName && <p className="text-xl font-semibold">{state.restaurantName}</p>}
+        {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
         <p className="mt-2 text-4xl font-bold tabular-nums text-gradient">{formatCurrency(grandTotal)}</p>
         <p className="mt-1 text-xs text-muted-foreground/60">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
@@ -48,7 +48,7 @@ export default function SummaryPage() {
                     <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
                       {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                     </div>
-                    <span className="flex-1 text-left text-base font-medium">{pt.person.name}</span>
+                    <span className="flex-1 truncate text-left text-base font-medium">{pt.person.name}</span>
                     {pt.person.covered ? (
                       <span className="text-sm font-medium text-amber-400">Covered</span>
                     ) : pt.total > 0 ? (
@@ -90,9 +90,13 @@ export default function SummaryPage() {
           <div className="flex gap-3">
             <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={async () => {
               const text = totals.map((pt) => `${pt.person.name}: ${formatCurrency(pt.total)}`).join("\n");
-              await navigator.clipboard.writeText(text);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
+              try {
+                await navigator.clipboard.writeText(text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              } catch {
+                // clipboard unavailable — silently ignore, no false feedback
+              }
             }}>
               {copied ? <><Check className="h-4 w-4 text-primary" />Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
             </Button>

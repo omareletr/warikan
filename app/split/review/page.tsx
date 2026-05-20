@@ -20,6 +20,7 @@ export default function ReviewPage() {
   const { state, setReceiptData, updateLineItems, updateRestaurantName, updateTax, updateTip } = useSplitFlow();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     if (!state.image || state.lineItems.length > 0) return;
@@ -34,7 +35,9 @@ export default function ReviewPage() {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error((err as { details?: string; error?: string }).details ?? (err as { details?: string; error?: string }).error ?? "Failed to parse receipt");
+          const code = (err as { error?: string }).error;
+          if (code === "timeout") throw new Error("timeout");
+          throw new Error("parse_failed");
         }
         const data = await res.json();
         setReceiptData({
@@ -51,15 +54,14 @@ export default function ReviewPage() {
           tipAmount: data.tipAmount ?? 0,
         });
       } catch (e) {
-        console.error(e);
-        const detail = e instanceof Error ? e.message : "Unknown error";
-        setError(`Couldn't parse the receipt: ${detail}`);
+        const msg = e instanceof Error ? e.message : "";
+        setError(msg === "timeout" ? "timeout" : "parse_failed");
       } finally {
         setLoading(false);
       }
     }
     parseReceipt();
-  }, [state.image, state.imageMimeType, state.lineItems.length, setReceiptData]);
+  }, [state.image, state.imageMimeType, state.lineItems.length, setReceiptData, retryKey]);
 
   function addItem() {
     const newItem: LineItem = { id: crypto.randomUUID(), name: "", quantity: 1, price: 0, assignedToIds: [] };
@@ -117,7 +119,24 @@ export default function ReviewPage() {
       )}
 
       {error && (
-        <p className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-4 text-base text-destructive">{error}</p>
+        <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-5">
+          <p className="text-base font-medium text-destructive">
+            {error === "timeout" ? "Receipt parsing timed out." : "We couldn't read this receipt."}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {error === "timeout"
+              ? "The request took too long. Try again or add items manually."
+              : "Try a clearer photo with better lighting, or add items manually below."}
+          </p>
+          <div className="mt-4 flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => { setError(null); setRetryKey((k) => k + 1); }}>
+              Try again
+            </Button>
+            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setError(null)}>
+              Add items manually
+            </Button>
+          </div>
+        </div>
       )}
 
       {!loading && (

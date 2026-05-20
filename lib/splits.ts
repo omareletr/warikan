@@ -20,7 +20,11 @@ export function saveSplit(split: Split): void {
   } else {
     splits.unshift(split);
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(splits));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(splits));
+  } catch {
+    throw new Error("Could not save split — storage may be full.");
+  }
 }
 
 export function getSplitById(id: string): Split | null {

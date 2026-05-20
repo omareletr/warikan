@@ -42,20 +42,36 @@ export async function POST(request: NextRequest) {
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-  const geminiResponse = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { inlineData: { mimeType, data: image } },
-            { text: GEMINI_PROMPT },
-          ],
-        },
-      ],
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  let geminiResponse: Response;
+  try {
+    geminiResponse = await fetch(url, {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType, data: image } },
+              { text: GEMINI_PROMPT },
+            ],
+          },
+        ],
+      }),
+    });
+  } catch (e) {
+    clearTimeout(timeout);
+    const isTimeout = e instanceof Error && e.name === "AbortError";
+    return NextResponse.json(
+      { error: isTimeout ? "timeout" : "network_error" },
+      { status: isTimeout ? 504 : 502 }
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!geminiResponse.ok) {
     const errText = await geminiResponse.text();

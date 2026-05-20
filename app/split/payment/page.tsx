@@ -22,6 +22,7 @@ export default function PaymentPage() {
   const [venmoUsername, setVenmoUsername] = useState("");
   const [showQR, setShowQR] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setVenmoUsername(getVenmoUsername());
@@ -57,6 +58,7 @@ export default function PaymentPage() {
 
   async function handleDone() {
     setSaving(true);
+    setSaveError(null);
     const split: Split = {
       id: state.editingSplitId ?? crypto.randomUUID(),
       date: new Date().toISOString(),
@@ -68,9 +70,14 @@ export default function PaymentPage() {
       totalAmount: state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0),
       people: state.people,
     };
-    saveSplit(split);
-    reset();
-    router.push("/");
+    try {
+      saveSplit(split);
+      reset();
+      router.push("/");
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Could not save split.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -135,6 +142,9 @@ export default function PaymentPage() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+          {saveError && (
+            <p className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{saveError}</p>
+          )}
           <div className="flex gap-3">
             {venmoUsername && (
               <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={() => setShowQR(true)}>

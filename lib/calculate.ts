@@ -1,5 +1,18 @@
 import type { LineItem, Fee, Person, PersonTotal } from "./types";
 
+// Distributes `total` across `values` so that rounded shares sum exactly to `total`.
+function largestRemainder(values: number[], total: number): number[] {
+  const floored = values.map((v) => Math.floor(v * 100) / 100);
+  const remainder = Math.round((total - floored.reduce((a, b) => a + b, 0)) * 100);
+  const order = values
+    .map((v, i) => ({ i, frac: (v * 100) % 1 }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < remainder && k < order.length; k++) {
+    floored[order[k].i] = Math.round((floored[order[k].i] + 0.01) * 100) / 100;
+  }
+  return floored;
+}
+
 export function calculateSplit(
   people: Person[],
   lineItems: LineItem[],
@@ -59,6 +72,11 @@ export function calculateSplit(
       }
     }
   }
+
+  // Round totals so individual amounts sum exactly to the grand total.
+  const grandTotal = overallSubtotal + taxAmount + tipAmount + totalFees;
+  const rounded = largestRemainder(totals.map((pt) => pt.total), grandTotal);
+  totals.forEach((pt, i) => { pt.total = rounded[i]; });
 
   return totals;
 }

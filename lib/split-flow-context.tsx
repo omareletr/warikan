@@ -1,7 +1,9 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { LineItem, Fee, Person, Split } from "./types";
+
+const SESSION_KEY = "warikan_flow";
 
 interface SplitFlowState {
   image: string | null;
@@ -27,6 +29,16 @@ const initialState: SplitFlowState = {
   editingSplitId: null,
 };
 
+function loadFromSession(): SplitFlowState {
+  if (typeof window === "undefined") return initialState;
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? { ...initialState, ...JSON.parse(raw) } : initialState;
+  } catch {
+    return initialState;
+  }
+}
+
 interface SplitFlowContextValue {
   state: SplitFlowState;
   setImage: (image: string, mimeType: string) => void;
@@ -50,7 +62,11 @@ interface SplitFlowContextValue {
 const SplitFlowContext = createContext<SplitFlowContextValue | null>(null);
 
 export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<SplitFlowState>(initialState);
+  const [state, setState] = useState<SplitFlowState>(loadFromSession);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch {}
+  }, [state]);
 
   const setImage = useCallback((image: string, mimeType: string) => {
     setState((prev) => ({ ...prev, image, imageMimeType: mimeType }));
@@ -116,6 +132,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
 
   const reset = useCallback(() => {
     setState(initialState);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
   }, []);
 
   return (

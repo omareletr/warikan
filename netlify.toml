@@ -4,6 +4,8 @@
 
 [context.staging]
   command = "npm run build"
+  [context.staging.environment]
+    NEXT_PUBLIC_IS_STAGING = "true"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

@@ -1,4 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const ReceiptSchema = z.object({
+  restaurantName: z.string().max(200).nullable(),
+  lineItems: z
+    .array(
+      z.object({
+        name: z.string().max(200),
+        quantity: z.number().min(0).max(999).optional().default(1),
+        price: z.number().min(0).max(99999),
+      })
+    )
+    .max(100),
+  taxAmount: z.number().min(0).max(99999).nullable(),
+  fees: z
+    .array(
+      z.object({
+        name: z.string().max(200),
+        amount: z.number().min(0).max(99999),
+      })
+    )
+    .max(20),
+  tipAmount: z.number().min(0).max(99999).nullable(),
+});
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -104,7 +128,12 @@ export async function POST(request: NextRequest) {
   try {
     const cleaned = rawText.replace(/```json\n?|```\n?/g, "").trim();
     const parsed = JSON.parse(cleaned);
-    return NextResponse.json(parsed);
+    const validated = ReceiptSchema.safeParse(parsed);
+    if (!validated.success) {
+      console.error("Response validation failed:", validated.error.issues);
+      return NextResponse.json({ error: "parse_error" }, { status: 502 });
+    }
+    return NextResponse.json(validated.data);
   } catch {
     console.error("Response parse failure:", rawText.slice(0, 500));
     return NextResponse.json(

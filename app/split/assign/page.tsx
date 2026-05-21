@@ -160,7 +160,7 @@ export default function AssignPage() {
                       ? "border-transparent opacity-40 cursor-default"
                       : isAssignedToMe
                       ? "border-primary/40 bg-primary/5 cursor-pointer active:opacity-75"
-                      : "border-transparent cursor-pointer hover:bg-secondary active:scale-[0.98]"
+                      : "border-transparent cursor-pointer active:scale-[0.98]"
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -221,7 +221,7 @@ export default function AssignPage() {
                   "flex items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
                   isAssignedToMe
                     ? "border-primary/40 bg-primary/5 active:opacity-75"
-                    : "border-transparent hover:bg-secondary active:scale-[0.98]"
+                    : "border-transparent active:scale-[0.98]"
                 )}
               >
                 <div className="flex items-center gap-2.5">

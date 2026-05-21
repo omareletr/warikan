@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { SplitCard } from "@/components/split/split-card";
 import { getSplits } from "@/lib/splits";
 
@@ -21,11 +20,11 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8 pt-6 max-h-[75dvh]">
-        <SheetHeader className="mb-4 text-left">
+      <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8 pt-6 max-h-[75dvh] flex flex-col gap-0">
+        <SheetHeader className="mb-4 text-left shrink-0">
           <SheetTitle>Recent splits</SheetTitle>
         </SheetHeader>
-        <ScrollArea className="h-full">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {splits.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">No splits yet.</p>
           ) : (
@@ -44,7 +43,7 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
               )}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </SheetContent>
     </Sheet>
   );

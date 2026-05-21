@@ -79,18 +79,6 @@ export default function AssignPage() {
     }, 0);
   }
 
-  function assignAllToSelected() {
-    updateLineItems(state.lineItems.map((item) => {
-      if (item.quantity <= 1) {
-        if (item.assignedToIds.includes(selectedPersonId)) return item;
-        return { ...item, assignedToIds: [...item.assignedToIds, selectedPersonId] };
-      }
-      const unclaimed = item.quantity - item.assignedToIds.length;
-      if (unclaimed <= 0) return item;
-      return { ...item, assignedToIds: [...item.assignedToIds, ...Array(unclaimed).fill(selectedPersonId)] };
-    }));
-  }
-
   function assignRestToSelected() {
     updateLineItems(state.lineItems.map((item) => {
       if (item.quantity <= 1) {
@@ -105,12 +93,6 @@ export default function AssignPage() {
 
   const allAssigned = state.lineItems.every((item) =>
     item.quantity <= 1 ? item.assignedToIds.length > 0 : item.assignedToIds.length >= item.quantity
-  );
-
-  const canAssignMore = state.lineItems.some((item) =>
-    item.quantity <= 1
-      ? !item.assignedToIds.includes(selectedPersonId)
-      : item.quantity - item.assignedToIds.length > 0
   );
 
   const hasUnclaimed = state.lineItems.some((item) =>
@@ -144,18 +126,11 @@ export default function AssignPage() {
           <p className="text-base font-semibold text-muted-foreground">
             Tap to assign to {state.people.find((p) => p.id === selectedPersonId)?.name}
           </p>
-          <div className="flex gap-1">
-            {hasUnclaimed && (
-              <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignRestToSelected}>
-                Assign Rest
-              </Button>
-            )}
-            {canAssignMore && (
-              <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignAllToSelected}>
-                Assign All
-              </Button>
-            )}
-          </div>
+          {hasUnclaimed && (
+            <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignRestToSelected}>
+              Assign Rest
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">

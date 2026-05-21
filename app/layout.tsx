@@ -1,13 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-syne",
-});
 
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
@@ -30,8 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${plusJakartaSans.variable} ${ibmPlexMono.variable}`}>
-      <body className={`${plusJakartaSans.className} min-h-dvh`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${ibmPlexMono.variable}`}>
+      <head>
+        <link href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&display=swap" rel="stylesheet" />
+      </head>
+      <body className="min-h-dvh" style={{ fontFamily: "'Clash Grotesk', sans-serif" }} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -40,8 +40,9 @@ export default function PaymentPage() {
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
 
   function handleVenmoChange(value: string) {
-    setVenmoUsername(value);
-    saveVenmoUsername(value);
+    const stripped = value.replace(/^@+/, "");
+    setVenmoUsername(stripped);
+    saveVenmoUsername(stripped);
   }
 
   async function copyAmount(personId: string, amount: number) {
@@ -112,11 +113,15 @@ export default function PaymentPage() {
 
         <div className="mt-6">
           <label className="mb-2 block text-base text-muted-foreground">Venmo username</label>
-          <Input
-            value={venmoUsername}
-            onChange={(e) => handleVenmoChange(e.target.value)}
-            placeholder="@yourvenmo"
-          />
+          <div className="relative flex items-center">
+            <span className="pointer-events-none absolute left-3 text-muted-foreground">@</span>
+            <Input
+              value={venmoUsername}
+              onChange={(e) => handleVenmoChange(e.target.value)}
+              placeholder="yourvenmo"
+              className="pl-7"
+            />
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-4">

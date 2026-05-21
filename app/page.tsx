@@ -43,14 +43,14 @@ export default function HomePage() {
   const { setImage, setReceiptData, reset } = useSplitFlow();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const [phase, setPhase] = useState<Phase>("intact");
+  const [phase, setPhase] = useState<Phase>("torn");
   const [mounted, setMounted] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [splitCount, setSplitCount] = useState(0);
 
   useEffect(() => {
     const alreadyPlayed = sessionStorage.getItem("warikan_intro_played") === "1";
-    setPhase(alreadyPlayed ? "torn" : "intact");
+    if (!alreadyPlayed) setPhase("intact");
     setSplitCount(getSplits().length);
     setMounted(true);
   }, []);
@@ -87,13 +87,11 @@ export default function HomePage() {
     if (file) handleFile(file);
   }
 
-  if (!mounted) return null;
-
   const isTorn = phase === "tearing" || phase === "torn";
   const showButtons = phase === "torn";
 
   return (
-    <motion.main className="flex min-h-dvh flex-col px-6 pb-10">
+    <main className="flex min-h-full flex-col px-6 pb-10">
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
       <div className="flex items-center justify-between">
@@ -185,6 +183,6 @@ export default function HomePage() {
       />
 
       <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
-    </motion.main>
+    </main>
   );
 }

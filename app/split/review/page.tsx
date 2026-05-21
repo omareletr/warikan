@@ -199,7 +199,7 @@ export default function ReviewPage() {
                 <label className="mb-2 block text-base text-muted-foreground">Tax</label>
                 <div className="relative flex items-center">
                   <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
-                  <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" className="h-11 pl-7" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
+                  <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" className="h-11 pl-6" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
                 </div>
               </div>
               <div>
@@ -207,7 +207,7 @@ export default function ReviewPage() {
                 <TipSelector subtotal={subtotal} tipAmount={state.tipAmount} onTipChange={updateTip} />
                 <div className="relative mt-3 flex items-center">
                   <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
-                  <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="h-11 pl-7" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
+                  <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="h-11 pl-6" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
                 </div>
               </div>
             </div>

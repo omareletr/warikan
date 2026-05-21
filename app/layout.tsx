@@ -1,14 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { GeistSans } from "geist/font/sans";
-import { IBM_Plex_Mono } from "next/font/google";
+import { Syne, IBM_Plex_Mono } from "next/font/google";
+import { Providers } from "@/components/providers";
+import "./globals.css";
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-syne",
+});
 
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-space-mono",
 });
-import { Providers } from "@/components/providers";
-import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Warikan",
@@ -25,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${GeistSans.variable} ${ibmPlexMono.variable}`}>
-      <body className={`${GeistSans.className} min-h-dvh`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${syne.variable} ${ibmPlexMono.variable}`}>
+      <body className={`${syne.className} min-h-dvh`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

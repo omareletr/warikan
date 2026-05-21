@@ -91,7 +91,7 @@ export default function HomePage() {
   const showButtons = phase === "torn";
 
   return (
-    <main className="flex min-h-dvh flex-col px-6 pb-10">
+    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-10">
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
       <div className="flex items-center justify-between">

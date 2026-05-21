@@ -39,7 +39,7 @@ function Stage({ children }: { children: React.ReactNode }) {
           animate="center"
           exit="exit"
           onAnimationStart={() => setTransitioning(true)}
-          className="absolute inset-0 overflow-y-auto overscroll-contain"
+          className="absolute inset-0"
           style={{ willChange: "transform, opacity" }}
         >
           {children}

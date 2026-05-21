@@ -46,7 +46,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["'Clash Grotesk'", "sans-serif"],
+        sans: ["var(--font-syne)", "sans-serif"],
         mono: ["var(--font-space-mono)", "monospace"],
       },
       borderRadius: {

@@ -53,7 +53,7 @@ export default function SummaryPage() {
               ? { bg: "bg-amber-500/15", text: "text-amber-400" }
               : AVATAR_COLORS[i % AVATAR_COLORS.length];
             return (
-              <motion.div key={pt.person.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, layout: { duration: 0.28, ease: "easeInOut" } }}>
+              <motion.div key={pt.person.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, layout: { duration: 0.4, ease: "easeInOut" } }}>
                 <Card className="p-0 transition-all duration-150 active:scale-[0.98]">
                   <button className="flex w-full items-center gap-4 p-5" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
                     <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>
@@ -67,13 +67,13 @@ export default function SummaryPage() {
                     ) : (
                       <span className="text-sm font-medium text-muted-foreground">Not splitting</span>
                     )}
-                    <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.28, ease: "easeInOut" }}>
+                    <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.4, ease: "easeInOut" }}>
                       <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     </motion.div>
                   </button>
                   <AnimatePresence initial={false}>
                   {expanded && (
-                    <motion.div key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: "easeInOut" }} className="overflow-hidden">
+                    <motion.div key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.4, ease: "easeInOut" }} className="overflow-hidden">
                       <div className="border-t border-border/50 px-5 pb-5 pt-4">
                       {pt.items.map((item, j) => (
                         <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">

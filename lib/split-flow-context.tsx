@@ -62,11 +62,19 @@ interface SplitFlowContextValue {
 const SplitFlowContext = createContext<SplitFlowContextValue | null>(null);
 
 export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<SplitFlowState>(loadFromSession);
+  const [state, setState] = useState<SplitFlowState>(initialState);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    const saved = loadFromSession();
+    if (saved !== initialState) setState(saved);
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
     try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch {}
-  }, [state]);
+  }, [state, loaded]);
 
   const setImage = useCallback((image: string, mimeType: string) => {
     setState((prev) => ({ ...prev, image, imageMimeType: mimeType }));

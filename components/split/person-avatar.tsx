@@ -25,14 +25,13 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
     ? { bg: "bg-amber-500/15", text: "text-amber-400", ring: "ring-amber-400", activeBg: "bg-amber-500", outline: "outline-amber-400" }
     : AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1.5">
+    <button onClick={onClick} className={cn("flex flex-col items-center gap-1.5 transition-opacity duration-200",
+      !selected && !person.covered && runningTotal !== undefined && runningTotal === 0 && "opacity-50"
+    )}>
       <div className={cn(
         "relative flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-all duration-200",
         selected ? `${color.activeBg} text-white` : `${color.bg} ${color.text}`,
-        !person.covered && runningTotal !== undefined && runningTotal === 0 &&
-          `outline outline-2 outline-dashed outline-offset-2 ${color.outline}`,
-        ((!person.covered && runningTotal !== undefined && runningTotal > 0 && selected) || (person.covered && selected)) &&
-          `ring-2 ${color.ring} ring-offset-2 ring-offset-background shadow-[0_0_16px_rgba(52,211,153,0.3)]`,
+        selected && `ring-2 ${color.ring} ring-offset-2 ring-offset-background shadow-[0_0_16px_rgba(52,211,153,0.3)]`,
       )}>
         {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
       </div>

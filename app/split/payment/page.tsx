@@ -119,7 +119,8 @@ export default function PaymentPage() {
               value={venmoUsername}
               onChange={(e) => handleVenmoChange(e.target.value)}
               placeholder="yourvenmo"
-              className="pl-7"
+              className="pl-8"
+              autoCapitalize="none"
             />
           </div>
         </div>

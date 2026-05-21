@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
   let geminiResponse: Response;
   try {
@@ -181,8 +181,15 @@ export async function POST(request: NextRequest) {
   }
 
   const geminiData = await geminiResponse.json();
-  const rawText =
-    geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  // Gemini 2.5 Flash may return thinking content (thought: true) before the actual response part.
+  // Filter those out and join the remaining text parts.
+  const parts: { text?: string; thought?: boolean }[] =
+    geminiData?.candidates?.[0]?.content?.parts ?? [];
+  const rawText = parts
+    .filter((p) => !p.thought)
+    .map((p) => p.text ?? "")
+    .join("")
+    .trim();
 
   try {
     const cleaned = rawText.replace(/```json\n?|```\n?/g, "").trim();

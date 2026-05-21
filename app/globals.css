@@ -34,6 +34,15 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  button, [role="button"], a {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus, [role="button"]:focus, a:focus {
+    outline: none;
+  }
+
   input, textarea, [contenteditable] {
     -webkit-user-select: text;
     user-select: text;

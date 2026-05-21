@@ -66,11 +66,13 @@ export default function PeoplePage() {
     setEditingId(null);
   }
 
+  if (!loaded) return null;
+
   return (
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" size="icon" asChild aria-label="Go back">
             <Link href="/split/review"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <h1 className="text-xl font-bold">Who&apos;s splitting?</h1>
@@ -122,10 +124,10 @@ export default function PeoplePage() {
                   )}
                   {person.covered && !editingId && <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>}
                 </div>
-                <Button variant="ghost" size="icon" className={cn("h-9 w-9", person.covered ? "text-amber-400" : "text-muted-foreground")} onClick={() => toggleCovered(person.id)}>
+                <Button variant="ghost" size="icon" className={cn("h-9 w-9", person.covered ? "text-amber-400" : "text-muted-foreground")} aria-label={person.covered ? "Remove birthday/covered mode" : "Mark as covered (birthday mode)"} onClick={() => toggleCovered(person.id)}>
                   <Gift className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => removePerson(person.id)}>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" aria-label={`Remove ${person.name}`} onClick={() => removePerson(person.id)}>
                   <X className="h-4 w-4" />
                 </Button>
               </motion.div>

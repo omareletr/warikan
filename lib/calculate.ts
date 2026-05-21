@@ -39,7 +39,8 @@ export function calculateSplit(
 
     const subtotal = assignedItems.reduce((sum, item) => sum + item.price, 0);
 
-    const ratio = overallSubtotal > 0 ? subtotal / overallSubtotal : 0;
+    const equalRatio = people.length > 0 ? 1 / people.length : 0;
+    const ratio = overallSubtotal > 0 ? subtotal / overallSubtotal : equalRatio;
     const taxShare = taxAmount * ratio;
     const tipShare = tipAmount * ratio;
     const feesShare = totalFees * ratio;
@@ -71,6 +72,9 @@ export function calculateSplit(
         pt.total += extra;
       }
     }
+  } else if (coveredTotal > 0 && payerCount === 0) {
+    // Everyone is covered — zero out all totals.
+    for (const pt of totals) pt.total = 0;
   }
 
   // Round totals so individual amounts sum exactly to the grand total.

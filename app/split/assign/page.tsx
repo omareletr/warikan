@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -19,6 +19,8 @@ export default function AssignPage() {
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
+
+  if (!loaded) return null;
 
   function personColor(personId: string) {
     const person = state.people.find((p) => p.id === personId);
@@ -103,7 +105,7 @@ export default function AssignPage() {
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold">Assign dishes</h1>
         </div>
 

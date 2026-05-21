@@ -40,6 +40,10 @@ function isAllowedOrigin(value: string): boolean {
   return /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app/.test(value);
 }
 
+if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  console.warn("[parse-receipt] Upstash env vars missing — rate limiting is disabled");
+}
+
 const ratelimit =
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
     ? new Ratelimit({

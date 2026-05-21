@@ -33,6 +33,8 @@ export default function PaymentPage() {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
+  if (!loaded) return null;
+
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
 
   function handleVenmoChange(value: string) {
@@ -98,7 +100,7 @@ export default function PaymentPage() {
       <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild aria-label="Go back">
               <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/split/summary"}><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <h1 className="text-xl font-bold">Payment</h1>
@@ -184,13 +186,15 @@ export default function PaymentPage() {
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            className="relative w-full max-w-sm rounded-3xl border border-border/30 bg-card p-8"
+            role="dialog"
+          aria-labelledby="qr-title"
+          className="relative w-full max-w-sm rounded-3xl border border-border/30 bg-card p-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <Button variant="ghost" size="icon" className="absolute right-3 top-3 text-muted-foreground" onClick={() => setShowQR(false)}>
+            <Button variant="ghost" size="icon" className="absolute right-3 top-3 text-muted-foreground" aria-label="Close" onClick={() => setShowQR(false)}>
               <X className="h-5 w-5" />
             </Button>
-            <p className="mb-1 text-xl font-bold">Scan to pay</p>
+            <p id="qr-title" className="mb-1 text-xl font-bold">Scan to pay</p>
             <p className="mb-7 text-sm text-muted-foreground">Everyone scans this, picks their name, and pays on Venmo.</p>
             <div className="flex justify-center">
               <div className="rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.5)] ring-2 ring-primary/30">

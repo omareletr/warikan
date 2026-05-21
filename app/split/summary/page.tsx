@@ -21,6 +21,8 @@ export default function SummaryPage() {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
+  if (!loaded) return null;
+
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
 
@@ -28,7 +30,7 @@ export default function SummaryPage() {
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold">Summary</h1>
         </div>
       </div>
@@ -48,7 +50,7 @@ export default function SummaryPage() {
             return (
               <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card className="p-0 overflow-hidden transition-all duration-150 active:scale-[0.98]">
-                  <button className="flex w-full items-center gap-4 p-5 active:bg-secondary/30" onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
+                  <button className="flex w-full items-center gap-4 p-5 active:bg-secondary/30" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
                     <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
                       {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                     </div>

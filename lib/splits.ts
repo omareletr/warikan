@@ -6,8 +6,13 @@ export function getSplits(): Split[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Split[]) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Split[];
+    if (!Array.isArray(parsed)) throw new Error("invalid");
+    return parsed;
   } catch {
+    console.error("Warikan: split history corrupted — clearing storage.");
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
     return [];
   }
 }

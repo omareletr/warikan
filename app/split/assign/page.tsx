@@ -178,20 +178,22 @@ export default function AssignPage() {
                       <span className="text-xs text-muted-foreground tabular-nums">{totalClaims}/{item.quantity}</span>
                     </div>
 
-                    {Object.entries(claimsByPerson).map(([pid, count]) => {
-                      const person = state.people.find((p) => p.id === pid);
-                      if (!person) return null;
-                      const color = personColor(pid);
-                      return (
-                        <button
-                          key={pid}
-                          onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
-                          className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium active:opacity-70", color.bg, color.text)}
-                        >
-                          {initials(person.name)}{count > 1 ? ` ×${count}` : ""}
-                        </button>
-                      );
-                    })}
+                    <div className="flex gap-1.5">
+                      {Object.entries(claimsByPerson).map(([pid, count]) => {
+                        const person = state.people.find((p) => p.id === pid);
+                        if (!person) return null;
+                        const color = personColor(pid);
+                        return (
+                          <button
+                            key={pid}
+                            onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
+                            className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium active:opacity-70", color.bg, color.text)}
+                          >
+                            {initials(person.name)}{count > 1 ? ` ×${count}` : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
 
                     <span className="ml-auto text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)}/ea</span>
                   </div>

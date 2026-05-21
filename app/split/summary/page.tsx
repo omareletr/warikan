@@ -67,13 +67,13 @@ export default function SummaryPage() {
                     ) : (
                       <span className="text-sm font-medium text-muted-foreground">Not splitting</span>
                     )}
-                    <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.4, ease: "easeInOut" }}>
+                    <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.22, ease: "easeInOut" }}>
                       <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     </motion.div>
                   </button>
                   <AnimatePresence initial={false}>
                   {expanded && (
-                    <motion.div key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.4, ease: "easeInOut" }} className="overflow-hidden">
+                    <motion.div key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: "easeInOut" }} className="overflow-hidden">
                       <div className="border-t border-border/50 px-5 pb-5 pt-4">
                       {pt.items.map((item, j) => (
                         <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">

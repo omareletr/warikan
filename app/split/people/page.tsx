@@ -69,7 +69,7 @@ export default function PeoplePage() {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col px-6 pb-40">
+    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">

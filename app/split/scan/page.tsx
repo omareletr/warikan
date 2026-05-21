@@ -141,7 +141,7 @@ export default function ScanPage() {
   }[status];
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
+    <div className="absolute inset-0 bg-black overflow-hidden">
       {/* Live camera feed */}
       <video
         ref={videoRef}

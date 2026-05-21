@@ -17,7 +17,7 @@ import type { Split } from "@/lib/types";
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { state, reset } = useSplitFlow();
+  const { state, loaded, reset } = useSplitFlow();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [venmoUsername, setVenmoUsername] = useState("");
   const [showQR, setShowQR] = useState(false);
@@ -28,6 +28,10 @@ export default function PaymentPage() {
   useEffect(() => {
     setVenmoUsername(getVenmoUsername());
   }, []);
+
+  useEffect(() => {
+    if (loaded && state.lineItems.length === 0) router.replace("/");
+  }, [loaded, state.lineItems.length, router]);
 
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
 

@@ -40,7 +40,7 @@ function readFileAsBase64(file: File): Promise<string> {
 
 export default function HomePage() {
   const router = useRouter();
-  const { setImage, setReceiptData } = useSplitFlow();
+  const { setImage, setReceiptData, reset } = useSplitFlow();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [phase, setPhase] = useState<Phase>("intact");
@@ -74,6 +74,7 @@ export default function HomePage() {
     if (!file.type.startsWith("image/")) return;
     try {
       const base64 = await readFileAsBase64(file);
+      reset();
       setImage(base64, file.type);
       router.push("/split/review");
     } catch {
@@ -169,6 +170,7 @@ export default function HomePage() {
           variant="ghost"
           className="h-10 gap-2 text-sm text-muted-foreground"
           onClick={() => {
+            reset();
             setReceiptData(DEMO_RECEIPT);
             router.push("/split/review");
           }}

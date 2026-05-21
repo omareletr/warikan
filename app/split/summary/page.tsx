@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -13,9 +13,13 @@ import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 
 export default function SummaryPage() {
   const router = useRouter();
-  const { state } = useSplitFlow();
+  const { state, loaded } = useSplitFlow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (loaded && state.lineItems.length === 0) router.replace("/");
+  }, [loaded, state.lineItems.length, router]);
 
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);

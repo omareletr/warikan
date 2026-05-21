@@ -30,7 +30,9 @@ const BRACKET_COLOR_ACTIVE = "rgba(52, 211, 153, 1)";
 
 export default function ScanPage() {
   const router = useRouter();
-  const { setImage } = useSplitFlow();
+  const { setImage, reset } = useSplitFlow();
+
+  useEffect(() => { reset(); }, []);
   const videoRef = useRef<HTMLVideoElement>(null);
   const sampleCanvasRef = useRef<HTMLCanvasElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);

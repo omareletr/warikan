@@ -43,6 +43,9 @@ export function encodePayData(
   return btoa(JSON.stringify(data));
 }
 
+const SAFE_TEXT = /^[\w\s'.,&!?():/-]{1,200}$/;
+const SAFE_USERNAME = /^[\w.-]{1,50}$/;
+
 export function decodePayData(hash: string): {
   venmoUsername: string;
   people: { name: string; amount: number }[];
@@ -52,10 +55,18 @@ export function decodePayData(hash: string): {
     const raw = hash.startsWith("#") ? hash.slice(1) : hash;
     if (!raw) return null;
     const data: PayData = JSON.parse(atob(raw));
+    if (
+      typeof data.v !== "string" ||
+      !SAFE_USERNAME.test(data.v) ||
+      !Array.isArray(data.p) ||
+      data.p.length === 0 ||
+      data.p.length > 50 ||
+      data.p.some((p) => typeof p.n !== "string" || !SAFE_TEXT.test(p.n) || typeof p.a !== "number" || p.a < 0 || p.a > 99999)
+    ) return null;
     return {
       venmoUsername: data.v,
       people: data.p.map((p) => ({ name: p.n, amount: p.a })),
-      restaurantName: data.r,
+      restaurantName: data.r && SAFE_TEXT.test(data.r) ? data.r : undefined,
     };
   } catch {
     return null;

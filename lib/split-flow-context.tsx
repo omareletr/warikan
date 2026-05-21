@@ -41,6 +41,7 @@ function loadFromSession(): SplitFlowState {
 
 interface SplitFlowContextValue {
   state: SplitFlowState;
+  loaded: boolean;
   setImage: (image: string, mimeType: string) => void;
   setReceiptData: (data: {
     restaurantName?: string;
@@ -147,6 +148,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
     <SplitFlowContext.Provider
       value={{
         state,
+        loaded,
         setImage,
         setReceiptData,
         setPeople,

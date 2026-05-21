@@ -13,8 +13,12 @@ import { cn } from "@/lib/utils";
 
 export default function AssignPage() {
   const router = useRouter();
-  const { state, updateLineItems } = useSplitFlow();
+  const { state, loaded, updateLineItems } = useSplitFlow();
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
+
+  useEffect(() => {
+    if (loaded && state.lineItems.length === 0) router.replace("/");
+  }, [loaded, state.lineItems.length, router]);
 
   function personColor(personId: string) {
     const person = state.people.find((p) => p.id === personId);

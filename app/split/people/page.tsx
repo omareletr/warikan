@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -15,9 +15,13 @@ import { cn } from "@/lib/utils";
 
 export default function PeoplePage() {
   const router = useRouter();
-  const { state, setPeople } = useSplitFlow();
+  const { state, loaded, setPeople } = useSplitFlow();
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (loaded && state.lineItems.length === 0) router.replace("/");
+  }, [loaded, state.lineItems.length, router]);
   const [editingName, setEditingName] = useState("");
 
   function addPerson() {

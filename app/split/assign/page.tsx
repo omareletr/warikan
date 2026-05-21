@@ -91,6 +91,18 @@ export default function AssignPage() {
     }));
   }
 
+  function assignRestToSelected() {
+    updateLineItems(state.lineItems.map((item) => {
+      if (item.quantity <= 1) {
+        if (item.assignedToIds.length > 0) return item;
+        return { ...item, assignedToIds: [selectedPersonId] };
+      }
+      const unclaimed = item.quantity - item.assignedToIds.length;
+      if (unclaimed <= 0) return item;
+      return { ...item, assignedToIds: [...item.assignedToIds, ...Array(unclaimed).fill(selectedPersonId)] };
+    }));
+  }
+
   const allAssigned = state.lineItems.every((item) =>
     item.quantity <= 1 ? item.assignedToIds.length > 0 : item.assignedToIds.length >= item.quantity
   );
@@ -99,6 +111,12 @@ export default function AssignPage() {
     item.quantity <= 1
       ? !item.assignedToIds.includes(selectedPersonId)
       : item.quantity - item.assignedToIds.length > 0
+  );
+
+  const hasUnclaimed = state.lineItems.some((item) =>
+    item.quantity <= 1
+      ? item.assignedToIds.length === 0
+      : item.assignedToIds.length < item.quantity
   );
 
   return (
@@ -126,11 +144,18 @@ export default function AssignPage() {
           <p className="text-base font-semibold text-muted-foreground">
             Tap to assign to {state.people.find((p) => p.id === selectedPersonId)?.name}
           </p>
-          {canAssignMore && (
-            <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignAllToSelected}>
-              Assign All
-            </Button>
-          )}
+          <div className="flex gap-1">
+            {hasUnclaimed && (
+              <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignRestToSelected}>
+                Assign Rest
+              </Button>
+            )}
+            {canAssignMore && (
+              <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignAllToSelected}>
+                Assign All
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">

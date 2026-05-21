@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
+import { consumePopFlag } from "@/lib/nav-flag";
 import { Button } from "@/components/ui/button";
 import { decodePayData, buildVenmoDeepLink } from "@/lib/venmo";
 
@@ -14,6 +15,7 @@ interface PayInfo {
 }
 
 export default function PayPage() {
+  const [fromPop] = useState(() => consumePopFlag());
   const [data, setData] = useState<PayInfo | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -48,7 +50,7 @@ export default function PayPage() {
   }
 
   return (
-    <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex min-h-dvh flex-col px-6 pt-14 pb-8">
+    <motion.main initial={fromPop ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="flex min-h-dvh flex-col px-6 pt-14 pb-8">
       {data && (
         <>
           <div className="text-center">

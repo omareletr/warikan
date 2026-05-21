@@ -37,14 +37,14 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
   }, [id]);
 
   if (!loaded) return (
-    <main className="flex min-h-dvh items-center justify-center">
+    <main className="flex min-h-full items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </main>
   );
 
   if (!split) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
+      <main className="flex min-h-full flex-col items-center justify-center px-6 text-center">
         <p className="text-xl font-bold">Split not found</p>
         <p className="mt-2 text-base text-muted-foreground">This split may have been deleted.</p>
         <Button className="mt-6" asChild><Link href="/">Go Home</Link></Button>
@@ -81,7 +81,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <motion.main className="flex min-h-dvh flex-col px-6 pb-48">
+      <main className="flex min-h-full flex-col px-6 pb-48">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -127,7 +127,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
                 ? { bg: "bg-amber-500/15", text: "text-amber-400" }
                 : AVATAR_COLORS[i % AVATAR_COLORS.length];
               return (
-                <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                <div key={pt.person.id}>
                   <Card className="p-0 transition-all duration-150 active:scale-[0.98]">
                     <button className="flex w-full items-center gap-4 p-5" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
                       <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>
@@ -168,15 +168,15 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
                     )}
                     </AnimatePresence>
                   </Card>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         </div>
-      </motion.main>
+      </main>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="nav-blur rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           <div className="flex flex-col gap-3">
             <div className="flex gap-3">
               <Button variant="outline" className="h-12 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={handleEdit}>

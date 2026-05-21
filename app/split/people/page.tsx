@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { motion } from "framer-motion";
 import { ArrowLeft, Gift, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,10 +68,8 @@ export default function PeoplePage() {
     setEditingId(null);
   }
 
-  if (!loaded) return null;
-
   return (
-    <motion.main className="flex min-h-dvh flex-col px-6 pb-40">
+    <main className="flex min-h-full flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -82,18 +79,20 @@ export default function PeoplePage() {
         </div>
       </div>
 
-      <div className="mt-8 flex gap-3">
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a name" onKeyDown={(e) => e.key === "Enter" && addPerson()} />
-        <Button onClick={addPerson} disabled={!name.trim()}>Add</Button>
-      </div>
+      {loaded && (
+        <div className="mt-8 flex gap-3">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a name" onKeyDown={(e) => e.key === "Enter" && addPerson()} />
+          <Button onClick={addPerson} disabled={!name.trim()}>Add</Button>
+        </div>
+      )}
 
-      {state.people.length > 0 && (
+      {loaded && state.people.length > 0 && (
         <div className="mt-8">
           <p className="mb-4 text-base font-semibold text-muted-foreground">In This Split</p>
           <div ref={listRef} className="flex flex-col gap-3">
             {state.people.map((person, i) => {
               const cannotCover = !person.covered && state.people.filter(p => !p.covered).length <= 2;
-              return (<motion.div key={person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+              return (<div key={person.id}
                 className={cn(
                   "flex items-center gap-4 rounded-2xl border p-4",
                   person.covered ? "border-amber-500/40 bg-amber-500/5" : "border-border/30 bg-card/40"
@@ -134,19 +133,19 @@ export default function PeoplePage() {
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" aria-label={`Remove ${person.name}`} onClick={() => removePerson(person.id)}>
                   <X className="h-4 w-4" />
                 </Button>
-              </motion.div>);
+              </div>);
             })}
           </div>
         </div>
       )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={state.people.length < 2} onClick={() => router.push("/split/assign")}>
-            {state.people.length < 2 ? "Add at least 2 people" : `Continue with ${state.people.length} people`}
+        <div className="nav-blur rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+          <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || state.people.length < 2} onClick={() => router.push("/split/assign")}>
+            {!loaded ? "Loading..." : state.people.length < 2 ? "Add at least 2 people" : `Continue with ${state.people.length} people`}
           </Button>
         </div>
       </div>
-    </motion.main>
+    </main>
   );
 }

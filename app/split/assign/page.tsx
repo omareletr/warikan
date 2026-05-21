@@ -20,8 +20,6 @@ export default function AssignPage() {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
-  if (!loaded) return null;
-
   function personColor(personId: string) {
     const person = state.people.find((p) => p.id === personId);
     if (person?.covered) return { bg: "bg-amber-500/15", text: "text-amber-400" };
@@ -102,29 +100,31 @@ export default function AssignPage() {
   );
 
   return (
-    <motion.main className="flex min-h-dvh flex-col pb-40">
+    <main className="flex min-h-full flex-col pb-40">
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold">Assign dishes</h1>
         </div>
 
-        <div className="mt-4 -mx-3 rounded-3xl border border-border/30 bg-card/80 shadow-md shadow-black/10">
-          <div
-            className="flex gap-5 overflow-x-auto px-6 py-4"
-            style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
-          >
-            {state.people.map((person, i) => (
-              <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
-            ))}
+        {loaded && (
+          <div className="mt-4 -mx-3 rounded-3xl border border-border/30 bg-card/80 shadow-md shadow-black/10">
+            <div
+              className="flex gap-5 overflow-x-auto px-6 py-4"
+              style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
+            >
+              {state.people.map((person, i) => (
+                <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="px-6">
         <div className="mb-3 mt-6 flex items-center justify-between">
           <p className="text-base font-semibold text-muted-foreground">
-            Tap to assign to {state.people.find((p) => p.id === selectedPersonId)?.name}
+            {loaded ? `Tap to assign to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
           </p>
           {hasUnclaimed && (
             <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignRestToSelected}>
@@ -255,12 +255,12 @@ export default function AssignPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!allAssigned} onClick={() => router.push("/split/summary")}>
-            {allAssigned ? "Continue" : "Assign all dishes to continue"}
+        <div className="nav-blur rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+          <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || !allAssigned} onClick={() => router.push("/split/summary")}>
+            {!loaded ? "Loading..." : allAssigned ? "Continue" : "Assign all dishes to continue"}
           </Button>
         </div>
       </div>
-    </motion.main>
+    </main>
   );
 }

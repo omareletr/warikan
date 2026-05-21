@@ -35,9 +35,7 @@ export default function PaymentPage() {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
-  if (!loaded) return null;
-
-  const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
+  const totals = loaded ? calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees) : [];
 
   function handleVenmoChange(value: string) {
     const stripped = value.replace(/^@+/, "");
@@ -101,7 +99,7 @@ export default function PaymentPage() {
 
   return (
     <>
-      <motion.main className="flex min-h-dvh flex-col px-6 pb-40">
+      <main className="flex min-h-full flex-col px-6 pb-40">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -127,7 +125,7 @@ export default function PaymentPage() {
 
         <div className="mt-8 flex flex-col gap-4">
           {totals.map((pt, i) => (
-            <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+            <div key={pt.person.id}>
               <Card className={`p-5 ${pt.person.covered ? "opacity-50" : ""}`}>
                 <div className="flex items-center gap-4">
                   <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : `${AVATAR_COLORS[i % AVATAR_COLORS.length].bg} ${AVATAR_COLORS[i % AVATAR_COLORS.length].text}`}`}>
@@ -159,16 +157,16 @@ export default function PaymentPage() {
                   </div>
                 )}
               </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
         {venmoFailed && (
           <p className="mt-4 text-center text-sm text-muted-foreground">Venmo not found — make sure the app is installed.</p>
         )}
-      </motion.main>
+      </main>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="nav-blur rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           {saveError && (
             <p className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{saveError}</p>
           )}
@@ -179,7 +177,7 @@ export default function PaymentPage() {
                 Share QR
               </Button>
             )}
-            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" disabled={saving} onClick={handleDone}>{saving ? "Saving..." : "All Done"}</Button>
+            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" disabled={!loaded || saving} onClick={handleDone}>{!loaded ? "Loading..." : saving ? "Saving..." : "All Done"}</Button>
           </div>
         </div>
       </div>

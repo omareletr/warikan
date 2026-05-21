@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,13 +102,11 @@ export default function ReviewPage() {
     router.push("/split/people");
   }
 
-  if (!loaded) return null;
-
   const subtotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const totalFees = state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main className="flex min-h-dvh flex-col px-6 pb-72">
+    <main className="flex min-h-full flex-col px-6 pb-72">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -119,10 +116,10 @@ export default function ReviewPage() {
         </div>
       </div>
 
-      {loading && (
+      {(!loaded || loading) && (
         <div className="flex flex-1 flex-col items-center justify-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-base text-muted-foreground">Parsing your receipt...</p>
+          <p className="text-base text-muted-foreground">{loading ? "Parsing your receipt..." : "Loading..."}</p>
         </div>
       )}
 
@@ -147,7 +144,7 @@ export default function ReviewPage() {
         </div>
       )}
 
-      {!loading && (
+      {loaded && !loading && (
         <div className="mt-8 flex flex-col gap-8">
           <section>
             <label className="mb-2 block text-base font-semibold text-muted-foreground">Restaurant</label>
@@ -216,11 +213,11 @@ export default function ReviewPage() {
       )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="nav-blur rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           {state.lineItems.length > 0 && <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />}
           <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
         </div>
       </div>
-    </motion.main>
+    </main>
   );
 }

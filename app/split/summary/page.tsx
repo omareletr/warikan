@@ -38,7 +38,9 @@ export default function SummaryPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <NumberFlow value={grandTotal} format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }} className="mt-2 text-4xl font-bold tabular-nums text-gradient" />
+        <p className="mt-2 text-4xl font-bold tabular-nums text-gradient">
+          <NumberFlow value={grandTotal} format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }} />
+        </p>
         <p className="mt-1 text-xs text-muted-foreground/60">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
       </div>

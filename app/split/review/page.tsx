@@ -43,6 +43,7 @@ export default function ReviewPage() {
           body: JSON.stringify({ image: state.image, mimeType: state.imageMimeType }),
         });
         if (!res.ok) {
+          if (res.status === 504 || res.status === 524) throw new Error("timeout");
           const err = await res.json().catch(() => ({}));
           const code = (err as { error?: string }).error;
           if (code === "timeout") throw new Error("timeout");

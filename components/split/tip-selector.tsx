@@ -40,7 +40,7 @@ export function TipSelector({
         variant="outline"
         pressed={tipAmount === 0 && activePercent === undefined}
         onPressedChange={() => onTipChange(0)}
-        className="h-11 px-3 text-sm text-muted-foreground"
+        className="h-11 px-3 text-base"
       >
         None
       </Toggle>

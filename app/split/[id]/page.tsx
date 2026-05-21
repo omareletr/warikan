@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -22,7 +22,8 @@ import { getSplitById, deleteSplit } from "@/lib/splits";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import type { Split } from "@/lib/types";
 
-export default function SplitDetailPage({ params }: { params: { id: string } }) {
+export default function SplitDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const { loadSplit } = useSplitFlow();
   const [split, setSplit] = useState<Split | null>(null);
@@ -30,9 +31,9 @@ export default function SplitDetailPage({ params }: { params: { id: string } }) 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    setSplit(getSplitById(params.id));
+    setSplit(getSplitById(id));
     setLoaded(true);
-  }, [params.id]);
+  }, [id]);
 
   if (!loaded) return (
     <main className="flex min-h-dvh items-center justify-center">

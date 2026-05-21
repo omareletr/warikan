@@ -5,13 +5,14 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { LineItemRow } from "@/components/split/line-item-row";
 import { TipSelector } from "@/components/split/tip-selector";
 import { SummaryBar } from "@/components/split/summary-bar";
+import { ReceiptSkeleton } from "@/components/split/receipt-skeleton";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
@@ -119,12 +120,7 @@ export default function ReviewPage() {
         </div>
       </div>
 
-      {(!loaded || loading) && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-base text-muted-foreground">{loading ? "Parsing your receipt..." : "Loading..."}</p>
-        </div>
-      )}
+      {(!loaded || loading) && <ReceiptSkeleton />}
 
       {error && (
         <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-5">

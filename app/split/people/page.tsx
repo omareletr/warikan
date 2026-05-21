@@ -88,8 +88,9 @@ export default function PeoplePage() {
         <div className="mt-8">
           <p className="mb-4 text-base font-semibold text-muted-foreground">In This Split</p>
           <div className="flex flex-col gap-3">
-            {state.people.map((person, i) => (
-              <motion.div key={person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+            {state.people.map((person, i) => {
+              const cannotCover = !person.covered && state.people.filter(p => !p.covered).length <= 2;
+              return (<motion.div key={person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                 className={cn(
                   "flex items-center gap-4 rounded-2xl border p-4",
                   person.covered ? "border-amber-500/40 bg-amber-500/5" : "border-border/30 bg-card/40"
@@ -124,14 +125,14 @@ export default function PeoplePage() {
                   )}
                   {person.covered && !editingId && <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>}
                 </div>
-                <Button variant="ghost" size="icon" className={cn("h-9 w-9", person.covered ? "text-amber-400" : "text-muted-foreground")} aria-label={person.covered ? "Remove birthday/covered mode" : "Mark as covered (birthday mode)"} onClick={() => toggleCovered(person.id)}>
+                <Button variant="ghost" size="icon" disabled={cannotCover} className={cn("h-9 w-9 disabled:opacity-30", person.covered ? "text-amber-400" : "text-muted-foreground")} aria-label={cannotCover ? "Need at least 2 people to split — can't cover everyone" : person.covered ? "Remove birthday/covered mode" : "Mark as covered (birthday mode)"} onClick={() => toggleCovered(person.id)}>
                   <Gift className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" aria-label={`Remove ${person.name}`} onClick={() => removePerson(person.id)}>
                   <X className="h-4 w-4" />
                 </Button>
-              </motion.div>
-            ))}
+              </motion.div>);
+            })}
           </div>
         </div>
       )}

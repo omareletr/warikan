@@ -119,7 +119,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="mt-10">
-          <p className="mb-4 text-base font-semibold text-muted-foreground">Each Person Owes</p>
+          <p className="mb-4 text-base font-semibold text-muted-foreground">Each person owes</p>
           <div className="flex flex-col gap-3">
             {totals.map((pt, i) => {
               const expanded = expandedId === pt.person.id;

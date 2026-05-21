@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { LineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculate";
+import { cn } from "@/lib/utils";
 
 interface LineItemRowProps {
   item: LineItem;
@@ -85,18 +86,25 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
             autoFocus
             onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
           />
-          <Input
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-20 px-2 text-right tabular-nums"
-            inputMode="decimal"
-            pattern="[0-9.]*"
-            placeholder="0.00"
-            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
-          />
-          {(parseInt(quantity) || 1) > 1 && (
-            <span className="shrink-0 text-xs text-muted-foreground">each</span>
-          )}
+          <div className="relative">
+            <Input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className={cn(
+                "w-20 px-2 text-right tabular-nums",
+                (parseInt(quantity) || 1) > 1 && "pr-7"
+              )}
+              inputMode="decimal"
+              pattern="[0-9.]*"
+              placeholder="0.00"
+              onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+            />
+            {(parseInt(quantity) || 1) > 1 && (
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                /ea
+              </span>
+            )}
+          </div>
         </div>
         {deleteDialog}
       </>

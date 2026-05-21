@@ -193,9 +193,9 @@ export default function AssignPage() {
                           <button
                             key={pid}
                             onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
-                            className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium active:opacity-70", color.bg, color.text)}
+                            className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold active:opacity-70", color.bg, color.text)}
                           >
-                            {person.covered ? <Gift className="h-3.5 w-3.5" /> : initials(person.name)}{count > 1 ? ` ×${count}` : ""}
+                            {person.covered ? <Gift className="h-3 w-3" /> : initials(person.name)}
                           </button>
                         );
                       })}
@@ -229,7 +229,7 @@ export default function AssignPage() {
                         if (!person) return null;
                         const color = personColor(pid);
                         return (
-                          <motion.span key={pid} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }} className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium", color.bg, color.text)}>
+                          <motion.span key={pid} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }} className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text)}>
                             {initials(person.name)}
                           </motion.span>
                         );

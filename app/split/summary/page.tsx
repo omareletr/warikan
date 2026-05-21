@@ -17,15 +17,20 @@ export default function SummaryPage() {
   const { state, loaded } = useSplitFlow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [displayTotal, setDisplayTotal] = useState(0);
 
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
-  if (!loaded) return null;
-
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
+
+  useEffect(() => {
+    setDisplayTotal(grandTotal);
+  }, [grandTotal]);
+
+  if (!loaded) return null;
 
   return (
     <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
@@ -38,7 +43,7 @@ export default function SummaryPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <NumberFlow value={grandTotal} format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }} className="mt-2 text-4xl font-bold tabular-nums text-emerald-400" />
+        <NumberFlow value={displayTotal} format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }} className="mt-2 text-4xl font-bold tabular-nums text-emerald-400" />
         <p className="mt-1 text-xs text-muted-foreground/60">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
       </div>

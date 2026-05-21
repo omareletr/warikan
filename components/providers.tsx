@@ -10,37 +10,30 @@ const DURATION = 0.32;
 
 type Custom = { dir: 1 | -1; skip: boolean };
 
-// iOS UINavigationController semantics, with a skip-animation flag for
-// navigations the browser already animated (iOS swipe-back, browser back
-// button → popstate). For those we land at center with duration 0 so we
-// don't replay an animation on top of the native one.
+// "Reveal" model — the iOS swipe-back mental model applied in both directions:
+//
+//   - The OUTGOING page does the big motion (slides fully off-screen).
+//   - The INCOMING page is layered UNDER it and just parallaxes a small
+//     offset into position as the outgoing page exposes it.
+//
+//   Forward push: outgoing slides off LEFT, incoming parallaxes from +25% to 0.
+//   Back pop:     outgoing slides off RIGHT, incoming parallaxes from -25% to 0.
+//   Popstate (iOS swipe-back, browser back): skip — Safari already animated it.
 const slideVariants: Variants = {
   enter: ({ dir, skip }: Custom) => ({
-    x: skip ? "0%" : dir === 1 ? "100%" : "-25%",
-    zIndex: dir === 1 ? 2 : 1,
+    x: skip ? "0%" : dir === 1 ? "25%" : "-25%",
+    zIndex: 1,
   }),
-  center: ({ dir, skip }: Custom) => ({
-    x: "0%",
-    zIndex: dir === 1 ? 2 : 1,
-    transition: { duration: skip ? 0 : DURATION, ease: EASE, zIndex: { duration: 0 } },
-  }),
-  exit: ({ dir, skip }: Custom) => ({
-    x: skip ? "0%" : dir === 1 ? "-25%" : "100%",
-    opacity: skip ? 0 : 1,
-    zIndex: dir === 1 ? 1 : 2,
-    transition: { duration: skip ? 0 : DURATION, ease: EASE, zIndex: { duration: 0 } },
-  }),
-};
-
-const dimVariants: Variants = {
-  enter: ({ dir, skip }: Custom) => ({ opacity: skip ? 0 : dir === 1 ? 0 : 0.35 }),
   center: ({ skip }: Custom) => ({
-    opacity: 0,
-    transition: { duration: skip ? 0 : DURATION, ease: EASE },
+    x: "0%",
+    zIndex: 1,
+    transition: { duration: skip ? 0 : DURATION, ease: EASE, zIndex: { duration: 0 } },
   }),
   exit: ({ dir, skip }: Custom) => ({
-    opacity: skip ? 0 : dir === 1 ? 0.35 : 0,
-    transition: { duration: skip ? 0 : DURATION, ease: EASE },
+    x: skip ? "0%" : dir === 1 ? "-100%" : "100%",
+    opacity: skip ? 0 : 1,
+    zIndex: 2,
+    transition: { duration: skip ? 0 : DURATION, ease: EASE, zIndex: { duration: 0 } },
   }),
 };
 
@@ -62,19 +55,15 @@ function Stage({ children }: { children: React.ReactNode }) {
           className="absolute inset-0 bg-background"
           style={{
             willChange: "transform",
-            boxShadow: "-12px 0 28px rgba(0, 0, 0, 0.55)",
+            // Two-sided shadow: the trailing edge of whichever page is
+            // sliding off has a soft shadow that falls onto the page being
+            // revealed underneath. Off-screen edges get clipped by the
+            // stage's overflow-hidden.
+            boxShadow:
+              "-14px 0 32px rgba(0, 0, 0, 0.55), 14px 0 32px rgba(0, 0, 0, 0.55)",
           }}
         >
           {children}
-          <motion.div
-            custom={custom}
-            variants={dimVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            className="pointer-events-none absolute inset-0 bg-black"
-            style={{ willChange: "opacity" }}
-          />
         </motion.div>
       </AnimatePresence>
     </div>

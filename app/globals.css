@@ -26,6 +26,10 @@
     --radius: 0.75rem;
   }
 
+  html {
+    overflow-anchor: none;
+  }
+
   * {
     @apply border-border;
     -webkit-user-select: none;

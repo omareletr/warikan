@@ -8,12 +8,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
     <SplitFlowProvider>
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="sync" initial={false}>
         <motion.div
           key={pathname}
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1, transition: { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] } }}
-          exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15, ease: "easeIn" } }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.18, ease: "easeOut" } }}
+          exit={{ opacity: 0, transition: { duration: 0.12, ease: "easeIn" } }}
           className="flex min-h-dvh flex-col"
         >
           {children}

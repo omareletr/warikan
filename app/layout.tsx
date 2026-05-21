@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Syne, IBM_Plex_Mono } from "next/font/google";
+import { DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const syne = Syne({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-syne",
 });
 
@@ -30,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${syne.variable} ${ibmPlexMono.variable}`}>
-      <body className={`${syne.className} min-h-dvh`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${dmSans.variable} ${ibmPlexMono.variable}`}>
+      <body className={`${dmSans.className} min-h-dvh`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

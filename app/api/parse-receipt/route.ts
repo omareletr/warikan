@@ -158,6 +158,9 @@ export async function POST(request: NextRequest) {
             ],
           },
         ],
+        generationConfig: {
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
   } catch (e) {

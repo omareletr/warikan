@@ -124,7 +124,7 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
           <span className="text-base">{item.name}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-base font-medium tabular-nums">
+          <span className="font-mono text-base font-medium tabular-nums">
             {formatCurrency(lineTotal)}
           </span>
           <Button

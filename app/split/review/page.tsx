@@ -180,7 +180,7 @@ export default function ReviewPage() {
                 {state.fees.map((fee) => (
                   <div key={fee.id} className="flex items-center justify-between py-3.5 text-base">
                     <span>{fee.name}</span>
-                    <span className="font-medium tabular-nums">${fee.amount.toFixed(2)}</span>
+                    <span className="font-mono font-medium tabular-nums">${fee.amount.toFixed(2)}</span>
                   </div>
                 ))}
               </div>

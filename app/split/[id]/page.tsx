@@ -127,7 +127,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
                 ? { bg: "bg-amber-500/15", text: "text-amber-400" }
                 : AVATAR_COLORS[i % AVATAR_COLORS.length];
               return (
-                <motion.div key={pt.person.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, layout: { duration: 0.4, ease: "easeInOut" } }}>
+                <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                   <Card className="p-0 transition-all duration-150 active:scale-[0.98]">
                     <button className="flex w-full items-center gap-4 p-5" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
                       <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>

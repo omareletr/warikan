@@ -17,6 +17,7 @@ export default function SummaryPage() {
   const router = useRouter();
   const { state, loaded } = useSplitFlow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -55,7 +56,11 @@ export default function SummaryPage() {
             return (
               <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card className="p-0 transition-all duration-150 active:scale-[0.98]">
-                  <button className="flex w-full items-center gap-4 p-5" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
+                  <button className="flex w-full items-center gap-4 p-5" aria-expanded={expanded} onClick={() => {
+                    if (expanded) { setExpandedId(null); }
+                    else if (expandedId !== null) { setPendingId(pt.person.id); setExpandedId(null); }
+                    else { setExpandedId(pt.person.id); }
+                  }}>
                     <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>
                       {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                     </div>
@@ -71,7 +76,7 @@ export default function SummaryPage() {
                       <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     </motion.div>
                   </button>
-                  <AnimatePresence initial={false}>
+                  <AnimatePresence initial={false} onExitComplete={() => { if (pendingId !== null) { setExpandedId(pendingId); setPendingId(null); } }}>
                   {expanded && (
                     <motion.div key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: "easeInOut" }} className="overflow-hidden">
                       <div className="border-t border-border/50 px-5 pb-5 pt-4">

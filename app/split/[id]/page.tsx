@@ -3,8 +3,8 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, ChevronUp, Gift, Trash2, Pencil, CreditCard, Users, Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -128,8 +128,8 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
                 : AVATAR_COLORS[i % AVATAR_COLORS.length];
               return (
                 <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className="overflow-hidden p-0">
-                    <button className="flex w-full items-center gap-4 p-5" onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
+                  <Card className="p-0 transition-all duration-150 active:scale-[0.98]">
+                    <button className="flex w-full items-center gap-4 p-5" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
                       <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>
                         {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                       </div>
@@ -139,10 +139,14 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
                       ) : (
                         <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
                       )}
-                      {expanded ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+                      <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.28, ease: "easeInOut" }}>
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      </motion.div>
                     </button>
+                    <AnimatePresence initial={false}>
                     {expanded && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="border-t border-border/50 px-5 pb-5 pt-4">
+                      <motion.div key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: "easeInOut" }} className="overflow-hidden">
+                        <div className="border-t border-border/50 px-5 pb-5 pt-4">
                         {pt.items.map((item, j) => (
                           <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
                             <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground/60">split {item.splitCount} ways</span>}</span>
@@ -159,8 +163,10 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
                             <span className="tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
                           </div>
                         )}
+                        </div>
                       </motion.div>
                     )}
+                    </AnimatePresence>
                   </Card>
                 </motion.div>
               );

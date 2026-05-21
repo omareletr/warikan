@@ -37,14 +37,14 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
   }, [id]);
 
   if (!loaded) return (
-    <main className="flex min-h-full items-center justify-center">
+    <main className="flex h-full items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </main>
   );
 
   if (!split) {
     return (
-      <main className="flex min-h-full flex-col items-center justify-center px-6 text-center">
+      <main className="flex h-full flex-col items-center justify-center px-6 text-center">
         <p className="text-xl font-bold">Split not found</p>
         <p className="mt-2 text-base text-muted-foreground">This split may have been deleted.</p>
         <Button className="mt-6" asChild><Link href="/">Go Home</Link></Button>
@@ -81,7 +81,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <main className="flex min-h-full flex-col px-6 pb-48">
+      <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-48">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild aria-label="Go back">

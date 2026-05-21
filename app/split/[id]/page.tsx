@@ -20,6 +20,7 @@ import {
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { getSplitById, deleteSplit } from "@/lib/splits";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
+import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import type { Split } from "@/lib/types";
 
 export default function SplitDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -122,11 +123,14 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
           <div className="flex flex-col gap-3">
             {totals.map((pt, i) => {
               const expanded = expandedId === pt.person.id;
+              const color = pt.person.covered
+                ? { bg: "bg-amber-500/15", text: "text-amber-400" }
+                : AVATAR_COLORS[i % AVATAR_COLORS.length];
               return (
                 <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                   <Card className="overflow-hidden p-0">
                     <button className="flex w-full items-center gap-4 p-5" onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
-                      <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>
                         {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                       </div>
                       <span className="flex-1 text-left text-base font-medium">{pt.person.name}</span>

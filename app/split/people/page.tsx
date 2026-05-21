@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { initials } from "@/lib/calculate";
+import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import type { Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -100,7 +101,7 @@ export default function PeoplePage() {
               >
                 <div className={cn(
                   "flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold",
-                  person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"
+                  person.covered ? "bg-amber-500/15 text-amber-400" : `${AVATAR_COLORS[i % AVATAR_COLORS.length].bg} ${AVATAR_COLORS[i % AVATAR_COLORS.length].text}`
                 )}>
                   {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
                 </div>

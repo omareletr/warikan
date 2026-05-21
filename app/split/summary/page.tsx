@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AnimatedTotal } from "@/components/split/animated-total";
+import { AVATAR_COLORS } from "@/components/split/person-avatar";
 
 export default function SummaryPage() {
   const router = useRouter();
@@ -48,11 +49,14 @@ export default function SummaryPage() {
         <div className="flex flex-col gap-3">
           {totals.map((pt, i) => {
             const expanded = expandedId === pt.person.id;
+            const color = pt.person.covered
+              ? { bg: "bg-amber-500/15", text: "text-amber-400" }
+              : AVATAR_COLORS[i % AVATAR_COLORS.length];
             return (
               <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card className="p-0 overflow-hidden transition-all duration-150 active:scale-[0.98]">
                   <button className="flex w-full items-center gap-4 p-5 active:bg-secondary/30" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
-                    <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>
                       {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                     </div>
                     <span className="flex-1 truncate text-left text-base font-medium">{pt.person.name}</span>

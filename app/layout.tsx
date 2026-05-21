@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`dark ${GeistSans.variable}`}>
-      <body className={`${GeistSans.className} min-h-dvh`}>
+      <body className={`${GeistSans.className} min-h-dvh`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

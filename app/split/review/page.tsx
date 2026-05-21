@@ -195,12 +195,12 @@ export default function ReviewPage() {
             <div className="flex flex-col gap-5">
               <div>
                 <label className="mb-2 block text-base text-muted-foreground">Tax</label>
-                <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
+                <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" className="h-11" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
               </div>
               <div>
                 <label className="mb-2 block text-base text-muted-foreground">Tip</label>
                 <TipSelector subtotal={subtotal} tipAmount={state.tipAmount} onTipChange={updateTip} />
-                <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="mt-3" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
+                <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="mt-3 h-11" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
               </div>
             </div>
           </section>
@@ -209,8 +209,8 @@ export default function ReviewPage() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />
-          <Button className="mt-4 h-14 w-full rounded-2xl text-base font-semibold" disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
+          {state.lineItems.length > 0 && <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />}
+          <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
         </div>
       </div>
     </motion.main>

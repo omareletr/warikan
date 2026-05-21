@@ -121,7 +121,7 @@ export default function PaymentPage() {
             <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card className={`p-5 ${pt.person.covered ? "opacity-50" : ""}`}>
                 <div className="flex items-center gap-4">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : "bg-primary/15 text-primary"}`}>
                     {pt.person.covered ? <Gift className="h-5 w-5" /> : initials(pt.person.name)}
                   </div>
                   <div className="flex-1">

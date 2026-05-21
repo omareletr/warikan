@@ -76,7 +76,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
     if (!loaded) return;
     // Exclude raw image data — it can be up to 10 MB and contains PII.
     const { image: _img, imageMimeType: _mime, ...persistable } = state;
-    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(persistable)); } catch {}
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(persistable)); } catch (e) { console.error("Failed to save session state:", e); }
   }, [state, loaded]);
 
   const setImage = useCallback((image: string, mimeType: string) => {

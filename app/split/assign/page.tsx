@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { useSplitFlow } from "@/lib/split-flow-context";
@@ -195,7 +195,7 @@ export default function AssignPage() {
                             onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
                             className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium active:opacity-70", color.bg, color.text)}
                           >
-                            {initials(person.name)}{count > 1 ? ` ×${count}` : ""}
+                            {person.covered ? <Gift className="h-3.5 w-3.5" /> : initials(person.name)}{count > 1 ? ` ×${count}` : ""}
                           </button>
                         );
                       })}

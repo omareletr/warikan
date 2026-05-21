@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
-import { Space_Mono } from "next/font/google";
+import { IBM_Plex_Mono } from "next/font/google";
 
-const spaceMono = Space_Mono({
+const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-space-mono",
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${GeistSans.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`dark ${GeistSans.variable} ${ibmPlexMono.variable}`}>
       <body className={`${GeistSans.className} min-h-dvh`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

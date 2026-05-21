@@ -12,7 +12,7 @@ export function AnimatedTotal({ amount }: { amount: number }) {
   }).format(amount).replace("$", "");
 
   return (
-    <div className="mt-2 flex items-center justify-center text-4xl font-bold tabular-nums text-emerald-400">
+    <div className="mt-2 flex items-center justify-center font-mono text-4xl font-bold tabular-nums text-emerald-400">
       <span>$</span>
       <SlotCounter
         value={formatted}

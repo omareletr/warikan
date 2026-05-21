@@ -165,7 +165,7 @@ export default function AssignPage() {
                       <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">×{item.quantity}</span>
                       <span className="text-base">{item.name}</span>
                     </div>
-                    <span className="text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
+                    <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -201,7 +201,7 @@ export default function AssignPage() {
                       })}
                     </div>
 
-                    <span className="ml-auto text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)}/ea</span>
+                    <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)}/ea</span>
                   </div>
                 </div>
               );
@@ -238,9 +238,9 @@ export default function AssignPage() {
                   )}
                 </div>
                 <div className="text-right">
-                  <span className="text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
+                  <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
                   {item.assignedToIds.length > 1 && (
-                    <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / item.assignedToIds.length)} ea</p>
+                    <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / item.assignedToIds.length)} ea</p>
                   )}
                 </div>
               </button>

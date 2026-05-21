@@ -132,7 +132,7 @@ export default function PaymentPage() {
                     {pt.person.covered ? (
                       <p className="text-base text-amber-400">Covered by group</p>
                     ) : (
-                      <p className="text-2xl font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</p>
+                      <p className="font-mono text-2xl font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</p>
                     )}
                   </div>
                 </div>

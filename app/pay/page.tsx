@@ -23,7 +23,7 @@ export default function PayPage() {
 
   if (loaded && !data) {
     return (
-      <main className="flex h-full flex-col items-center justify-center px-6 text-center">
+      <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
         <p className="text-xl font-bold">Invalid link</p>
         <p className="mt-2 text-base text-muted-foreground">This payment link is missing or expired. Ask the payer to share a new QR code.</p>
       </main>
@@ -47,7 +47,7 @@ export default function PayPage() {
   }
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pt-14 pb-8">
+    <main className="flex min-h-dvh flex-col px-6 pt-14 pb-8">
       {data && (
         <>
           <div className="text-center">

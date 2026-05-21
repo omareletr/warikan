@@ -106,7 +106,7 @@ export default function ReviewPage() {
   const totalFees = state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-72">
+    <main className="flex min-h-dvh flex-col px-6 pb-72">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -213,7 +213,7 @@ export default function ReviewPage() {
       )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="nav-blur rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           {state.lineItems.length > 0 && <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />}
           <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
         </div>

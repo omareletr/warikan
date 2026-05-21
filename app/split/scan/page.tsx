@@ -141,7 +141,7 @@ export default function ScanPage() {
   }[status];
 
   return (
-    <div className="absolute inset-0 bg-black overflow-hidden">
+    <div className="fixed inset-0 bg-black overflow-hidden">
       {/* Live camera feed */}
       <video
         ref={videoRef}
@@ -275,7 +275,7 @@ export default function ScanPage() {
       {/* Bottom bar — liquid glass upload button */}
       <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center pb-12">
         <button
-          className="nav-blur flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur-md active:scale-95 transition-transform"
+          className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur-md active:scale-95 transition-transform"
           onClick={() => uploadInputRef.current?.click()}
         >
           <ImagePlus className="h-4 w-4" />

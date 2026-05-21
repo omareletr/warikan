@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
+import { AnimatedTotal } from "@/components/split/animated-total";
 
 export default function SummaryPage() {
   const router = useRouter();
@@ -37,14 +38,7 @@ export default function SummaryPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <motion.p
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.15 }}
-          className="mt-2 text-4xl font-bold tabular-nums text-gradient"
-        >
-          {formatCurrency(grandTotal)}
-        </motion.p>
+        <AnimatedTotal amount={grandTotal} />
         <p className="mt-1 text-xs text-muted-foreground/60">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
       </div>

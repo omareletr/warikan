@@ -99,7 +99,7 @@ export default function PaymentPage() {
 
   return (
     <>
-      <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-40">
+      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -125,7 +125,7 @@ export default function PaymentPage() {
 
         <div className="mt-8 flex flex-col gap-4">
           {totals.map((pt, i) => (
-            <div key={pt.person.id}>
+            <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card className={`p-5 ${pt.person.covered ? "opacity-50" : ""}`}>
                 <div className="flex items-center gap-4">
                   <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${pt.person.covered ? "bg-amber-500/15 text-amber-400" : `${AVATAR_COLORS[i % AVATAR_COLORS.length].bg} ${AVATAR_COLORS[i % AVATAR_COLORS.length].text}`}`}>
@@ -157,13 +157,13 @@ export default function PaymentPage() {
                   </div>
                 )}
               </Card>
-            </div>
+            </motion.div>
           ))}
         </div>
         {venmoFailed && (
           <p className="mt-4 text-center text-sm text-muted-foreground">Venmo not found — make sure the app is installed.</p>
         )}
-      </main>
+      </motion.main>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">

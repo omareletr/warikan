@@ -27,7 +27,7 @@ export default function SummaryPage() {
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-40">
+    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
@@ -51,7 +51,7 @@ export default function SummaryPage() {
               ? { bg: "bg-amber-500/15", text: "text-amber-400" }
               : AVATAR_COLORS[i % AVATAR_COLORS.length];
             return (
-              <div key={pt.person.id}>
+              <motion.div key={pt.person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card className="p-0 transition-all duration-150 active:scale-[0.98]">
                   <button className="flex w-full items-center gap-4 p-5" aria-expanded={expanded} onClick={() => setExpandedId(expanded ? null : pt.person.id)}>
                     <div className={`flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold ${color.bg} ${color.text}`}>
@@ -94,7 +94,7 @@ export default function SummaryPage() {
                   )}
                   </AnimatePresence>
                 </Card>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -119,6 +119,6 @@ export default function SummaryPage() {
           </div>
         </div>
       </div>
-    </main>
+    </motion.main>
   );
 }

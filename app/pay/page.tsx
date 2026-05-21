@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { decodePayData, buildVenmoDeepLink } from "@/lib/venmo";
@@ -23,7 +24,7 @@ export default function PayPage() {
 
   if (loaded && !data) {
     return (
-      <main className="flex h-full flex-col items-center justify-center px-6 text-center">
+      <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
         <p className="text-xl font-bold">Invalid link</p>
         <p className="mt-2 text-base text-muted-foreground">This payment link is missing or expired. Ask the payer to share a new QR code.</p>
       </main>
@@ -47,7 +48,7 @@ export default function PayPage() {
   }
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pt-14 pb-8">
+    <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex min-h-dvh flex-col px-6 pt-14 pb-8">
       {data && (
         <>
           <div className="text-center">
@@ -60,20 +61,21 @@ export default function PayPage() {
 
           <div className="flex flex-col gap-4">
             {data.people.map((person, i) => (
-              <Card
-                key={i}
-                className="flex cursor-pointer items-center gap-4 p-5 transition-all duration-150 active:scale-[0.98]"
-                onClick={() => openVenmo(person.amount)}
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">
-                  {initials(person.name)}
-                </div>
-                <div className="flex-1">
-                  <p className="text-base font-medium">{person.name}</p>
-                  <p className="font-mono text-2xl font-semibold tabular-nums text-primary">{formatCurrency(person.amount)}</p>
-                </div>
-                <Button size="sm">Pay</Button>
-              </Card>
+              <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                <Card
+                  className="flex cursor-pointer items-center gap-4 p-5 transition-all duration-150 active:scale-[0.98]"
+                  onClick={() => openVenmo(person.amount)}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">
+                    {initials(person.name)}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-base font-medium">{person.name}</p>
+                    <p className="font-mono text-2xl font-semibold tabular-nums text-primary">{formatCurrency(person.amount)}</p>
+                  </div>
+                  <Button size="sm">Pay</Button>
+                </Card>
+              </motion.div>
             ))}
           </div>
 
@@ -84,6 +86,6 @@ export default function PayPage() {
           </div>
         </>
       )}
-    </main>
+    </motion.main>
   );
 }

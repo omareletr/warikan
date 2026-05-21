@@ -29,7 +29,7 @@ export default function SummaryPage() {
   if (!loaded) return null;
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
+    <motion.main className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>

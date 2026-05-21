@@ -25,3 +25,7 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Local tool directories
+.kilo/
+Anything ios May 2026/

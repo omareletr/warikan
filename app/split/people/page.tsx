@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { motion } from "framer-motion";
 import { ArrowLeft, Gift, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +70,7 @@ export default function PeoplePage() {
   }
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-40">
+    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -92,7 +93,7 @@ export default function PeoplePage() {
           <div ref={listRef} className="flex flex-col gap-3">
             {state.people.map((person, i) => {
               const cannotCover = !person.covered && state.people.filter(p => !p.covered).length <= 2;
-              return (<div key={person.id}
+              return (<motion.div key={person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                 className={cn(
                   "flex items-center gap-4 rounded-2xl border p-4",
                   person.covered ? "border-amber-500/40 bg-amber-500/5" : "border-border/30 bg-card/40"
@@ -133,7 +134,7 @@ export default function PeoplePage() {
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" aria-label={`Remove ${person.name}`} onClick={() => removePerson(person.id)}>
                   <X className="h-4 w-4" />
                 </Button>
-              </div>);
+              </motion.div>);
             })}
           </div>
         </div>
@@ -146,6 +147,6 @@ export default function PeoplePage() {
           </Button>
         </div>
       </div>
-    </main>
+    </motion.main>
   );
 }

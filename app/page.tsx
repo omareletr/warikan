@@ -91,7 +91,7 @@ export default function HomePage() {
   const showButtons = phase === "torn";
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-10">
+    <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }} className="flex min-h-dvh flex-col px-6 pb-10">
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
       <div className="flex items-center justify-between">
@@ -183,6 +183,6 @@ export default function HomePage() {
       />
 
       <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
-    </main>
+    </motion.main>
   );
 }

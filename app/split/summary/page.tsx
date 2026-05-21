@@ -27,8 +27,8 @@ export default function SummaryPage() {
 
   useEffect(() => {
     const controls = animate(0, grandTotal, {
-      duration: 0.7,
-      ease: "easeOut",
+      duration: 1.0,
+      ease: [0.16, 1, 0.3, 1],
       onUpdate: (v) => setDisplayTotal(v),
     });
     return controls.stop;

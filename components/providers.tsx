@@ -3,50 +3,58 @@
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { SplitFlowProvider } from "@/lib/split-flow-context";
-import { NavigationProvider, useNavigationDirection } from "@/lib/navigation-context";
+import { NavigationProvider, useNavigation } from "@/lib/navigation-context";
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 const DURATION = 0.32;
 
-// iOS UINavigationController semantics:
-//   Forward push: new card slides in from the right OVER the old card,
-//                 which parallaxes 25% left under a dim overlay.
-//   Back pop:     current card slides off to the right, revealing the
-//                 previous card that was parked 25% left underneath.
-// Z-ordering flips with direction so the appropriate card covers.
+type Custom = { dir: 1 | -1; skip: boolean };
+
+// iOS UINavigationController semantics, with a skip-animation flag for
+// navigations the browser already animated (iOS swipe-back, browser back
+// button → popstate). For those we land at center with duration 0 so we
+// don't replay an animation on top of the native one.
 const slideVariants: Variants = {
-  enter: (dir: 1 | -1) => ({
-    x: dir === 1 ? "100%" : "-25%",
+  enter: ({ dir, skip }: Custom) => ({
+    x: skip ? "0%" : dir === 1 ? "100%" : "-25%",
     zIndex: dir === 1 ? 2 : 1,
   }),
-  center: (dir: 1 | -1) => ({
+  center: ({ dir, skip }: Custom) => ({
     x: "0%",
     zIndex: dir === 1 ? 2 : 1,
-    transition: { duration: DURATION, ease: EASE, zIndex: { duration: 0 } },
+    transition: { duration: skip ? 0 : DURATION, ease: EASE, zIndex: { duration: 0 } },
   }),
-  exit: (dir: 1 | -1) => ({
-    x: dir === 1 ? "-25%" : "100%",
+  exit: ({ dir, skip }: Custom) => ({
+    x: skip ? "0%" : dir === 1 ? "-25%" : "100%",
+    opacity: skip ? 0 : 1,
     zIndex: dir === 1 ? 1 : 2,
-    transition: { duration: DURATION, ease: EASE, zIndex: { duration: 0 } },
+    transition: { duration: skip ? 0 : DURATION, ease: EASE, zIndex: { duration: 0 } },
   }),
 };
 
 const dimVariants: Variants = {
-  enter: (dir: 1 | -1) => ({ opacity: dir === 1 ? 0 : 0.35 }),
-  center: { opacity: 0, transition: { duration: DURATION, ease: EASE } },
-  exit: (dir: 1 | -1) => ({ opacity: dir === 1 ? 0.35 : 0, transition: { duration: DURATION, ease: EASE } }),
+  enter: ({ dir, skip }: Custom) => ({ opacity: skip ? 0 : dir === 1 ? 0 : 0.35 }),
+  center: ({ skip }: Custom) => ({
+    opacity: 0,
+    transition: { duration: skip ? 0 : DURATION, ease: EASE },
+  }),
+  exit: ({ dir, skip }: Custom) => ({
+    opacity: skip ? 0 : dir === 1 ? 0.35 : 0,
+    transition: { duration: skip ? 0 : DURATION, ease: EASE },
+  }),
 };
 
 function Stage({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const direction = useNavigationDirection();
+  const { direction, skipAnim } = useNavigation();
+  const custom: Custom = { dir: direction.current, skip: skipAnim.current };
 
   return (
     <div className="relative h-dvh w-screen overflow-hidden">
-      <AnimatePresence mode="sync" initial={false} custom={direction.current}>
+      <AnimatePresence mode="sync" initial={false} custom={custom}>
         <motion.div
           key={pathname}
-          custom={direction.current}
+          custom={custom}
           variants={slideVariants}
           initial="enter"
           animate="center"
@@ -59,7 +67,7 @@ function Stage({ children }: { children: React.ReactNode }) {
         >
           {children}
           <motion.div
-            custom={direction.current}
+            custom={custom}
             variants={dimVariants}
             initial="enter"
             animate="center"

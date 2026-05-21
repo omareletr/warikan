@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { z } from "zod";
 
 const ReceiptSchema = z.object({
@@ -38,6 +40,15 @@ function isAllowedOrigin(value: string): boolean {
   return /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app/.test(value);
 }
 
+const ratelimit =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Ratelimit({
+        redis: Redis.fromEnv(),
+        limiter: Ratelimit.slidingWindow(10, "1 h"),
+        prefix: "warikan:rl",
+      })
+    : null;
+
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -72,6 +83,23 @@ export async function POST(request: NextRequest) {
   const referer = request.headers.get("referer") ?? "";
   if (!isAllowedOrigin(origin) && !isAllowedOrigin(referer)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  if (ratelimit) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      request.headers.get("x-real-ip") ??
+      "anonymous";
+    const { success, reset } = await ratelimit.limit(ip);
+    if (!success) {
+      return NextResponse.json(
+        { error: "rate_limited" },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) },
+        }
+      );
+    }
   }
 
   const apiKey = process.env.GEMINI_API_KEY;

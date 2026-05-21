@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSplitFlow } from "@/lib/split-flow-context";
+import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplitById, deleteSplit } from "@/lib/splits";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
@@ -27,6 +28,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const router = useRouter();
   const { loadSplit } = useSplitFlow();
+  const [fromPop] = useState(() => consumePopFlag());
   const [split, setSplit] = useState<Split | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
+      <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild aria-label="Go back">

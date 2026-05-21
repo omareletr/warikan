@@ -8,12 +8,14 @@ import { ArrowLeft, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { useSplitFlow } from "@/lib/split-flow-context";
+import { consumePopFlag } from "@/lib/nav-flag";
 import { formatCurrency, initials } from "@/lib/calculate";
 import { cn } from "@/lib/utils";
 
 export default function AssignPage() {
   const router = useRouter();
   const { state, loaded, updateLineItems } = useSplitFlow();
+  const [fromPop] = useState(() => consumePopFlag());
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
 
   useEffect(() => {
@@ -100,7 +102,7 @@ export default function AssignPage() {
   );
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useSplitFlow } from "@/lib/split-flow-context";
+import { consumePopFlag } from "@/lib/nav-flag";
 import { initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import type { Person } from "@/lib/types";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 export default function PeoplePage() {
   const router = useRouter();
   const { state, loaded, setPeople } = useSplitFlow();
+  const [fromPop] = useState(() => consumePopFlag());
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
@@ -70,7 +72,7 @@ export default function PeoplePage() {
   }
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">

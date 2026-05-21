@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ReceiptIllustration } from "@/components/split/receipt-illustration";
 import { HistorySheet } from "@/components/split/history-sheet";
 import { useSplitFlow } from "@/lib/split-flow-context";
+import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplits } from "@/lib/splits";
 
 const DEMO_RECEIPT = {
@@ -43,6 +44,7 @@ export default function HomePage() {
   const { setImage, setReceiptData, reset } = useSplitFlow();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  const [fromPop] = useState(() => consumePopFlag());
   const [phase, setPhase] = useState<Phase>("torn");
   const [mounted, setMounted] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -91,7 +93,7 @@ export default function HomePage() {
   const showButtons = phase === "torn";
 
   return (
-    <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }} className="flex min-h-dvh flex-col px-6 pb-10">
+    <motion.main initial={fromPop ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }} className="flex min-h-dvh flex-col px-6 pb-10">
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
       <div className="flex items-center justify-between">

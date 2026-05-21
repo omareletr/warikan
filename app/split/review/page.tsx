@@ -13,12 +13,14 @@ import { LineItemRow } from "@/components/split/line-item-row";
 import { TipSelector } from "@/components/split/tip-selector";
 import { SummaryBar } from "@/components/split/summary-bar";
 import { useSplitFlow } from "@/lib/split-flow-context";
+import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
 import type { LineItem } from "@/lib/types";
 
 export default function ReviewPage() {
   const router = useRouter();
   const { state, loaded, setReceiptData, updateLineItems, updateRestaurantName, updateTax, updateTip } = useSplitFlow();
+  const [fromPop] = useState(() => consumePopFlag());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -107,7 +109,7 @@ export default function ReviewPage() {
   const totalFees = state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-72">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-72">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">

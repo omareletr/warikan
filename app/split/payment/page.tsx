@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import confetti from "canvas-confetti";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Gift, X, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -87,6 +88,7 @@ export default function PaymentPage() {
     };
     try {
       saveSplit(split);
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 }, colors: ["#10B981", "#34D399", "#ffffff", "#6EE7B7"] });
       reset();
       router.push("/");
     } catch (e) {
@@ -137,7 +139,7 @@ export default function PaymentPage() {
                   <div className="mt-4 flex gap-3">
                     <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => copyAmount(pt.person.id, pt.total)}>
                       {copiedId === pt.person.id ? (
-                        <><Check className="h-3.5 w-3.5 text-primary" />Copied</>
+                        <><motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}><Check className="h-3.5 w-3.5 text-primary" /></motion.span>Copied</>
                       ) : (
                         <><Copy className="h-3.5 w-3.5" />Copy</>
                       )}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Gift, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export default function PeoplePage() {
   const { state, loaded, setPeople } = useSplitFlow();
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [listRef] = useAutoAnimate<HTMLDivElement>();
 
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
@@ -87,7 +89,7 @@ export default function PeoplePage() {
       {state.people.length > 0 && (
         <div className="mt-8">
           <p className="mb-4 text-base font-semibold text-muted-foreground">In This Split</p>
-          <div className="flex flex-col gap-3">
+          <div ref={listRef} className="flex flex-col gap-3">
             {state.people.map((person, i) => {
               const cannotCover = !person.covered && state.people.filter(p => !p.covered).length <= 2;
               return (<motion.div key={person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}

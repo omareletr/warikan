@@ -1,6 +1,7 @@
 import { Gift } from "lucide-react";
+import NumberFlow from "@number-flow/react";
 import { cn } from "@/lib/utils";
-import { initials, formatCurrency } from "@/lib/calculate";
+import { initials } from "@/lib/calculate";
 import type { Person } from "@/lib/types";
 
 export const AVATAR_COLORS = [
@@ -38,7 +39,13 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
       <span className={cn("max-w-[72px] text-center text-sm leading-tight line-clamp-2", person.covered && "text-muted-foreground")}>{person.name}</span>
       {runningTotal !== undefined && (
         <span className={cn("text-sm tabular-nums", person.covered ? "text-amber-400" : runningTotal === 0 ? "text-muted-foreground" : "text-primary")}>
-          {person.covered ? "Covered" : formatCurrency(runningTotal)}
+          {person.covered ? "Covered" : (
+            <NumberFlow
+              value={runningTotal}
+              format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }}
+              className="tabular-nums"
+            />
+          )}
         </span>
       )}
     </button>

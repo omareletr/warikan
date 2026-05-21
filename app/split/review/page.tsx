@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -21,6 +22,7 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [itemsRef] = useAutoAnimate<HTMLDivElement>();
 
   useEffect(() => {
     if (loaded && !state.image && state.lineItems.length === 0) router.replace("/");
@@ -161,7 +163,7 @@ export default function ReviewPage() {
             {state.lineItems.length === 0 && (
               <p className="py-8 text-center text-sm text-muted-foreground">No items yet — tap Add Item to get started.</p>
             )}
-            <div className="divide-y divide-border/40">
+            <div ref={itemsRef} className="divide-y divide-border/40">
               {state.lineItems.map((item) => (
                 <LineItemRow key={item.id} item={item} onUpdate={updateItem} onRemove={() => removeItem(item.id)} />
               ))}

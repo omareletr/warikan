@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronDown, ChevronUp, Copy, Check, Gift } from "lucide-react";
+import NumberFlow from "@number-flow/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -37,7 +38,7 @@ export default function SummaryPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <p className="mt-2 text-4xl font-bold tabular-nums text-gradient">{formatCurrency(grandTotal)}</p>
+        <NumberFlow value={grandTotal} format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }} className="mt-2 text-4xl font-bold tabular-nums text-gradient" />
         <p className="mt-1 text-xs text-muted-foreground/60">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
       </div>
@@ -104,7 +105,7 @@ export default function SummaryPage() {
                 // clipboard unavailable — silently ignore, no false feedback
               }
             }}>
-              {copied ? <><Check className="h-4 w-4 text-primary" />Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
+              {copied ? <><motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}><Check className="h-4 w-4 text-primary" /></motion.span>Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
             </Button>
             <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Payment</Button>
           </div>

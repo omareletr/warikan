@@ -229,9 +229,9 @@ export default function AssignPage() {
                         if (!person) return null;
                         const color = personColor(pid);
                         return (
-                          <span key={pid} className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium", color.bg, color.text)}>
+                          <motion.span key={pid} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }} className={cn("flex h-6 items-center rounded-md px-2 text-sm font-medium", color.bg, color.text)}>
                             {initials(person.name)}
-                          </span>
+                          </motion.span>
                         );
                       })}
                     </div>

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import NumberFlow from "@number-flow/react";
 import { ArrowLeft, ChevronDown, ChevronUp, Copy, Check, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,7 +16,6 @@ export default function SummaryPage() {
   const { state, loaded } = useSplitFlow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [displayTotal, setDisplayTotal] = useState(0);
 
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
@@ -25,11 +23,6 @@ export default function SummaryPage() {
 
   const totals = calculateSplit(state.people, state.lineItems, state.taxAmount, state.tipAmount, state.fees);
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDisplayTotal(grandTotal), 150);
-    return () => clearTimeout(t);
-  }, [grandTotal]);
 
   if (!loaded) return null;
 
@@ -44,7 +37,14 @@ export default function SummaryPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <NumberFlow value={displayTotal} format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }} className="mt-2 text-4xl font-bold tabular-nums text-emerald-400" style={{ "--number-flow-duration": "0.8s" } as React.CSSProperties} />
+        <motion.p
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.15 }}
+          className="mt-2 text-4xl font-bold tabular-nums text-gradient"
+        >
+          {formatCurrency(grandTotal)}
+        </motion.p>
         <p className="mt-1 text-xs text-muted-foreground/60">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
       </div>

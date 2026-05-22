@@ -133,8 +133,9 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
                   <DialogTitle>Delete split</DialogTitle>
                   <DialogDescription asChild>
                     <div>
-                      <p className="font-medium text-foreground">{split.restaurantName ?? "Split"} · {date} · {formatCurrency(split.totalAmount)}</p>
-                      <p className="mt-1">This will be permanently removed and cannot be undone.</p>
+                      <p className="font-medium text-foreground">{split.restaurantName ?? "Split"}</p>
+                      <p className="mt-1 text-muted-foreground">{date} · {formatCurrency(split.totalAmount)}</p>
+                      <p className="mt-3">This will be permanently removed and cannot be undone.</p>
                     </div>
                   </DialogDescription>
                 </DialogHeader>

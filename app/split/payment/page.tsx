@@ -27,9 +27,9 @@ import type { PaymentAppId } from "@/lib/payment-apps";
 /* ── Payment app logo SVGs ────────────────────────────────────────────────── */
 
 function VenmoLogo({ className }: { className?: string }) {
-  // Venmo "V" icon mark — bold italic chevron, matching the app icon
+  // Venmo "V" icon mark — bold italic chevron, viewBox tightly cropped to path bounds
   return (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
+    <svg role="img" viewBox="6.6 0 12.94 15.38" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
       <path d="M18.84 2c.48.8.7 1.62.7 2.68 0 3.33-2.84 7.66-5.15 10.7h-5.3L6.6 2.6l4.67-.45 1.27 10.15c1.18-1.98 2.65-5.1 2.65-7.22 0-1.16-.2-1.96-.5-2.6z" fill="currentColor" />
     </svg>
   );

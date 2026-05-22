@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, Gift, X, QrCode } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { ArrowLeft, Check, Copy, Gift, QrCode, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,6 +56,7 @@ const APP_LOGOS: Record<PaymentAppId, (props: { className?: string }) => React.J
   paypal: PayPalLogo,
 };
 import { ShareSheet } from "@/components/split/share-sheet";
+import { QRDrawer } from "@/components/split/qr-drawer";
 import type { Split } from "@/lib/types";
 
 export default function PaymentPage() {
@@ -139,11 +139,6 @@ export default function PaymentPage() {
       state.restaurantName || undefined
     );
     return `${window.location.origin}/pay#${encoded}`;
-  }
-
-  function qrFooter(): string {
-    const prefix = currentApp.handlePrefix;
-    return `Pay via ${currentApp.name} ${prefix}${handle}`;
   }
 
   async function handleDone() {
@@ -347,6 +342,7 @@ export default function PaymentPage() {
               className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold"
               onClick={() => setShowShareSheet(true)}
             >
+              <Send className="h-4 w-4" />
               Share
             </Button>
             <Button
@@ -368,48 +364,13 @@ export default function PaymentPage() {
         onShowQR={handle ? () => setShowQR(true) : undefined}
       />
 
-      {showQR && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
-          onClick={() => setShowQR(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            role="dialog"
-            aria-labelledby="qr-title"
-            className="relative w-full max-w-sm rounded-3xl border border-border/30 bg-card p-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-3 top-3 text-muted-foreground"
-              aria-label="Close"
-              onClick={() => setShowQR(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-            <p id="qr-title" className="mb-1 text-xl font-bold">Scan to pay</p>
-            <p className="mb-7 text-sm text-muted-foreground">
-              Everyone scans this, picks their name, and pays via {currentApp.name}.
-            </p>
-            <div className="flex justify-center">
-              <div className="rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.5)] ring-2 ring-primary/30">
-                <div className="rounded-2xl bg-white p-5">
-                  <QRCodeSVG value={getShareUrl()} size={220} />
-                </div>
-              </div>
-            </div>
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              {qrFooter()}
-            </p>
-          </motion.div>
-        </motion.div>
-      )}
+      <QRDrawer
+        open={showQR}
+        onClose={() => setShowQR(false)}
+        url={loaded ? getShareUrl() : ""}
+        payAppName={currentApp.name}
+        payHandle={`${currentApp.handlePrefix}${handle}`}
+      />
     </>
   );
 }

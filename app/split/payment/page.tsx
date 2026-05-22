@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -23,6 +23,8 @@ import {
   encodePayData,
 } from "@/lib/payment-apps";
 import type { PaymentAppId } from "@/lib/payment-apps";
+import { ShareSheet } from "@/components/split/share-sheet";
+import type { Split } from "@/lib/types";
 
 /* ── Payment app logo SVGs ────────────────────────────────────────────────── */
 
@@ -56,8 +58,63 @@ const APP_LOGOS: Record<PaymentAppId, (props: { className?: string }) => React.J
   cashapp: CashAppLogo,
   paypal: PayPalLogo,
 };
-import { ShareSheet } from "@/components/split/share-sheet";
-import type { Split } from "@/lib/types";
+
+/* ── Payment app selector with sliding pill ──────────────────────────────── */
+
+function PaymentAppSelector({
+  selected,
+  onSelect,
+}: {
+  selected: PaymentAppId;
+  onSelect: (id: PaymentAppId) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Partial<Record<PaymentAppId, HTMLButtonElement>>>({});
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    const btn = buttonRefs.current[selected];
+    const container = containerRef.current;
+    if (!btn || !container) return;
+    const btnRect = btn.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    setPillStyle({
+      left: btnRect.left - containerRect.left,
+      width: btnRect.width,
+    });
+  }, [selected]);
+
+  return (
+    <div ref={containerRef} className="relative flex gap-2">
+      {/* Single always-mounted sliding pill */}
+      {pillStyle && (
+        <motion.div
+          className="absolute inset-y-0 rounded-2xl border border-primary bg-primary/10"
+          animate={{ left: pillStyle.left, width: pillStyle.width }}
+          transition={{ type: "spring", stiffness: 450, damping: 32, mass: 0.8 }}
+          style={{ top: 0, bottom: 0 }}
+        />
+      )}
+      {PAYMENT_APPS.map((app) => {
+        const Logo = APP_LOGOS[app.id];
+        const active = selected === app.id;
+        return (
+          <button
+            key={app.id}
+            ref={(el) => { if (el) buttonRefs.current[app.id] = el; }}
+            onClick={() => onSelect(app.id)}
+            className="relative flex flex-1 flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-card px-3 py-3"
+          >
+            <Logo className={`h-5 w-5 transition-colors duration-200 ${active ? "text-primary" : "text-muted-foreground"}`} />
+            <span className={`text-xs font-semibold transition-colors duration-200 ${active ? "text-primary" : "text-muted-foreground"}`}>
+              {app.name}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -211,32 +268,10 @@ export default function PaymentPage() {
         {/* Payment app selector */}
         <div className="mt-6">
           <label className="mb-2 block text-base text-muted-foreground">Payment app</label>
-          <div className="relative flex gap-2">
-            {PAYMENT_APPS.map((app) => {
-              const Logo = APP_LOGOS[app.id];
-              const active = selectedAppId === app.id;
-              return (
-                <button
-                  key={app.id}
-                  onClick={() => handleAppSelect(app.id)}
-                  className="relative flex flex-1 flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-card px-3 py-3 transition-colors duration-200"
-                >
-                  {/* Sliding active indicator */}
-                  {active && (
-                    <motion.div
-                      layoutId="payment-app-active"
-                      className="absolute inset-0 rounded-2xl border border-primary bg-primary/10"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <Logo className={`relative h-5 w-5 transition-colors duration-200 ${active ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`relative text-xs font-semibold transition-colors duration-200 ${active ? "text-primary" : "text-muted-foreground"}`}>
-                    {app.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <PaymentAppSelector
+            selected={selectedAppId}
+            onSelect={handleAppSelect}
+          />
         </div>
 
         {/* Handle input */}

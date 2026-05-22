@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -95,12 +95,21 @@ interface TearParticle {
 const HERO_SEEN_KEY = "warikan_hero_seen";
 
 export function HeroConceptA({ onReady }: HeroConceptAProps) {
-  // Always false on first render (SSR-safe). Set to true in useEffect when
-  // skipping so motion elements suppress their initial animations.
+  // useLayoutEffect fires synchronously after DOM mutation but before paint,
+  // so skipIntro is set before the browser renders — no flash, no mismatch.
+  // SSR: useLayoutEffect is nooped server-side, so skipIntro stays false there.
   const [skipIntro, setSkipIntro] = useState(false);
   const [phase, setPhase] = useState<Phase>("hidden");
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+
+  // Runs before first paint (client-only) — sets skipIntro so the JSX below
+  // can render the static final state without framer-motion animating in.
+  useLayoutEffect(() => {
+    if (sessionStorage.getItem(HERO_SEEN_KEY)) {
+      setSkipIntro(true);
+    }
+  }, []);
 
   /* Stable random floating particles (background ambience) */
   const floatingParticles = useMemo<FloatingParticle[]>(() => {
@@ -130,12 +139,15 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
   /* Phase sequencing — plays only once per browser session */
   useEffect(() => {
     if (sessionStorage.getItem(HERO_SEEN_KEY)) {
-      // Already played this session — snap to done state without animating
-      setSkipIntro(true);
+      // skipIntro already set by useLayoutEffect before paint.
+      // Just fire onReady and bail — no animation.
       setPhase("done");
       onReadyRef.current?.();
       return;
     }
+
+    // Mark seen immediately so navigating away mid-animation still counts.
+    sessionStorage.setItem(HERO_SEEN_KEY, "1");
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     const t = (fn: () => void, ms: number) => {
@@ -149,7 +161,6 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
     t(() => setPhase("text"), 2000);
     t(() => {
       setPhase("done");
-      sessionStorage.setItem(HERO_SEEN_KEY, "1");
       onReadyRef.current?.();
     }, 3200);
 

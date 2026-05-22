@@ -141,7 +141,7 @@ export default function HomePage() {
           <ReceiptIllustration phase={phase} />
 
           {/* Tagline typewriter */}
-          <div className="mt-3 mb-1 h-5 text-center">
+          <div className="mt-3 mb-1 h-5 w-[220px] text-center">
             <span className="text-sm text-muted-foreground">
               {TAGLINE.slice(0, taglineChars)}
               {taglineChars < TAGLINE.length && taglineChars > 0 && (

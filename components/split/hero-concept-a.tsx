@@ -95,10 +95,10 @@ interface TearParticle {
 const HERO_SEEN_KEY = "warikan_hero_seen";
 
 export function HeroConceptA({ onReady }: HeroConceptAProps) {
-  const [skipIntro] = useState<boolean>(() =>
-    typeof sessionStorage !== "undefined" && !!sessionStorage.getItem(HERO_SEEN_KEY)
-  );
-  const [phase, setPhase] = useState<Phase>(() => skipIntro ? "done" : "hidden");
+  // Always false on first render (SSR-safe). Set to true in useEffect when
+  // skipping so motion elements suppress their initial animations.
+  const [skipIntro, setSkipIntro] = useState(false);
+  const [phase, setPhase] = useState<Phase>("hidden");
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
@@ -130,7 +130,9 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
   /* Phase sequencing — plays only once per browser session */
   useEffect(() => {
     if (sessionStorage.getItem(HERO_SEEN_KEY)) {
-      // Already animated this session — was initialized as "done", just fire onReady
+      // Already played this session — snap to done state without animating
+      setSkipIntro(true);
+      setPhase("done");
       onReadyRef.current?.();
       return;
     }

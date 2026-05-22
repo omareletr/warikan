@@ -165,12 +165,12 @@ export default function AssignPage() {
                       : "border-transparent cursor-pointer active:scale-[0.98]"
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">×{item.quantity}</span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums flex-shrink-0">×{item.quantity}</span>
                       <span className="text-base">{item.name}</span>
                     </div>
-                    <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
+                    <span className="flex-shrink-0 ml-3 font-mono text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -226,25 +226,27 @@ export default function AssignPage() {
                     : "border-transparent active:scale-[0.98]"
                 )}
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   {isAssignedToMe && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
-                  <span className="text-base">{item.name}</span>
-                  {item.assignedToIds.length > 0 && (
-                    <div className="flex gap-1.5">
-                      {item.assignedToIds.map((pid) => {
-                        const person = state.people.find((p) => p.id === pid);
-                        if (!person) return null;
-                        const color = personColor(pid);
-                        return (
-                          <motion.span key={pid} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }} className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text)}>
-                            {initials(person.name)}
-                          </motion.span>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <span className="text-base">
+                    {item.name}
+                    {item.assignedToIds.length > 0 && (
+                      <span className="inline-flex gap-1.5 ml-1.5 align-middle">
+                        {item.assignedToIds.map((pid) => {
+                          const person = state.people.find((p) => p.id === pid);
+                          if (!person) return null;
+                          const color = personColor(pid);
+                          return (
+                            <motion.span key={pid} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }} className={cn("inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text)}>
+                              {initials(person.name)}
+                            </motion.span>
+                          );
+                        })}
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <div className="text-right">
+                <div className="flex-shrink-0 ml-3 text-right">
                   <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
                   {item.assignedToIds.length > 1 && (
                     <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / item.assignedToIds.length)} ea</p>

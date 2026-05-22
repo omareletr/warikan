@@ -95,13 +95,7 @@ export default function HomePage() {
     >
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-gradient">Warikan</span>
-            {process.env.NEXT_PUBLIC_IS_STAGING === "true" && (
-              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400">staging</span>
-            )}
-          </div>
+        <div className="flex items-center justify-end">
           {splitCount > 0 && (
             <Button
               variant="ghost"

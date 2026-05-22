@@ -143,12 +143,18 @@ export default function ScanPage() {
   return (
     <div className="absolute inset-0 bg-black overflow-hidden">
       {/* Live camera feed */}
+      {/* width/height attrs give the element fixed intrinsic dimensions immediately so iOS Safari
+          never reflows when the stream metadata arrives. translateZ forces GPU compositing
+          so object-cover is applied before the first paint rather than after. */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
+        width={1920}
+        height={1080}
         className="absolute inset-0 h-full w-full object-cover"
+        style={{ transform: "translateZ(0)" }}
       />
 
       {/* Off-screen canvases */}

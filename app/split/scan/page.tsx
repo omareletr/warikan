@@ -29,6 +29,10 @@ const EMERALD = "rgba(52, 211, 153, 1)";
 const BRACKET_COLOR_IDLE = "rgba(255, 255, 255, 0.4)";
 const BRACKET_COLOR_ACTIVE = EMERALD;
 
+// Frame dimensions
+const FRAME_W = 310;
+const FRAME_H = 400;
+
 // Corner path definitions (28px arms, origin at 0,0)
 const CORNER_PATHS = {
   tl: "M 0,28 L 0,0 L 28,0",
@@ -39,6 +43,9 @@ const CORNER_PATHS = {
 
 // Perimeter: (310 + 400) * 2 = 1420px
 const PERIMETER = 1420;
+
+// Overlay darkness
+const OVERLAY_BG = "rgba(0,0,0,0.60)";
 
 export default function ScanPage() {
   const router = useRouter();
@@ -155,9 +162,6 @@ export default function ScanPage() {
   return (
     <div className="absolute inset-0 bg-black overflow-hidden">
       {/* Live camera feed */}
-      {/* width/height attrs give the element fixed intrinsic dimensions immediately so iOS Safari
-          never reflows when the stream metadata arrives. translateZ forces GPU compositing
-          so object-cover is applied before the first paint rather than after. */}
       <video
         ref={videoRef}
         autoPlay
@@ -173,29 +177,48 @@ export default function ScanPage() {
       <canvas ref={sampleCanvasRef} width={SAMPLE_W} height={SAMPLE_H} className="hidden" />
       <canvas ref={captureCanvasRef} className="hidden" />
 
-      {/* Dark vignette overlay with punched-out scan zone */}
+      {/* Dark vignette overlay: 4 strips around the clear scan zone.
+          All strips are absolutely positioned relative to the page.
+          The centre opening is exactly FRAME_W × FRAME_H, centred on screen. */}
       {!permissionDenied && (
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <mask id="scan-mask">
-              <rect width="100%" height="100%" fill="white" />
-              {/* Punch out the scan zone — transforms from center */}
-              <rect
-                x="50%"
-                y="50%"
-                width={310}
-                height={400}
-                rx={16}
-                fill="black"
-                transform="translate(-155, -200)"
-              />
-            </mask>
-          </defs>
-          <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)" mask="url(#scan-mask)" />
-        </svg>
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Top strip */}
+          <div
+            className="absolute left-0 right-0 top-0"
+            style={{
+              background: OVERLAY_BG,
+              bottom: `calc(50% + ${FRAME_H / 2}px)`,
+            }}
+          />
+          {/* Bottom strip */}
+          <div
+            className="absolute left-0 right-0 bottom-0"
+            style={{
+              background: OVERLAY_BG,
+              top: `calc(50% + ${FRAME_H / 2}px)`,
+            }}
+          />
+          {/* Left strip (only the middle band height = frame height) */}
+          <div
+            className="absolute left-0"
+            style={{
+              background: OVERLAY_BG,
+              top: `calc(50% - ${FRAME_H / 2}px)`,
+              bottom: `calc(50% - ${FRAME_H / 2}px)`,
+              right: `calc(50% + ${FRAME_W / 2}px)`,
+            }}
+          />
+          {/* Right strip */}
+          <div
+            className="absolute right-0"
+            style={{
+              background: OVERLAY_BG,
+              top: `calc(50% - ${FRAME_H / 2}px)`,
+              bottom: `calc(50% - ${FRAME_H / 2}px)`,
+              left: `calc(50% + ${FRAME_W / 2}px)`,
+            }}
+          />
+        </div>
       )}
 
       {/* Shutter flash on capture */}
@@ -242,35 +265,34 @@ export default function ScanPage() {
         </Button>
       </div>
 
-      {/* Scanner frame + status */}
+      {/* Scanner frame + status — centred on screen */}
       {!permissionDenied && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 pointer-events-none">
 
-          {/* Frame entrance animation wrapper */}
+          {/* Frame entrance animation */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            {/* Breathing scale wrapper — only pulses when receipt detected */}
+            {/* Breathing scale — only when receipt detected */}
             <motion.div
               animate={{ scale: isActive ? [1, 1.015, 1] : 1 }}
               transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
             >
-              {/* Frame: 310×400 — contains SVG overlay (corners + perimeter) and beam */}
-              <div className="relative" style={{ width: 310, height: 400 }}>
+              {/* Frame box */}
+              <div className="relative" style={{ width: FRAME_W, height: FRAME_H }}>
 
-                {/* Combined SVG: corner brackets + perimeter rings */}
-                {/* overflow: visible so glow doesn't clip at SVG boundary */}
+                {/* Corner brackets + perimeter rings — single SVG, overflow visible for glow */}
                 <svg
-                  width={310}
-                  height={400}
+                  width={FRAME_W}
+                  height={FRAME_H}
                   className="absolute inset-0"
                   style={{ overflow: "visible" }}
                 >
-                  {/* Dim base perimeter ring — visible when active */}
+                  {/* Dim base perimeter ring */}
                   <motion.rect
-                    x={0.5} y={0.5} width={309} height={399} rx={15.5}
+                    x={0.5} y={0.5} width={FRAME_W - 1} height={FRAME_H - 1} rx={15.5}
                     stroke={EMERALD}
                     strokeWidth="1.5"
                     fill="none"
@@ -278,9 +300,9 @@ export default function ScanPage() {
                     transition={{ duration: 0.4 }}
                   />
 
-                  {/* Traveling bright segment around perimeter */}
+                  {/* Traveling bright segment */}
                   <motion.rect
-                    x={0.5} y={0.5} width={309} height={399} rx={15.5}
+                    x={0.5} y={0.5} width={FRAME_W - 1} height={FRAME_H - 1} rx={15.5}
                     stroke={EMERALD}
                     strokeWidth="2"
                     fill="none"
@@ -290,18 +312,22 @@ export default function ScanPage() {
                       : { strokeDashoffset: 0, strokeOpacity: 0 }
                     }
                     transition={isActive
-                      ? { strokeDashoffset: { duration: 2.5, ease: "linear", repeat: Infinity }, strokeOpacity: { duration: 0.3 } }
+                      ? {
+                          strokeDashoffset: { duration: 2.5, ease: "linear", repeat: Infinity },
+                          strokeOpacity: { duration: 0.3 },
+                        }
                       : { duration: 0.3 }
                     }
                   />
 
-                  {/* Corner brackets — stagger draw-in on mount */}
+                  {/* Corner brackets — pathLength draw-in with stagger */}
                   {(["tl", "tr", "bl", "br"] as const).map((corner, i) => {
+                    // Each corner path is 28×28; offset so arms touch the frame edge
                     const pos = {
                       tl: { x: 0, y: 0 },
-                      tr: { x: 282, y: 0 },
-                      bl: { x: 0, y: 372 },
-                      br: { x: 282, y: 372 },
+                      tr: { x: FRAME_W - 28, y: 0 },
+                      bl: { x: 0, y: FRAME_H - 28 },
+                      br: { x: FRAME_W - 28, y: FRAME_H - 28 },
                     }[corner];
                     return (
                       <motion.path
@@ -312,20 +338,20 @@ export default function ScanPage() {
                         strokeWidth="2.5"
                         strokeLinecap="round"
                         fill="none"
+                        style={{ transition: "stroke 0.3s" }}
                         initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 1, stroke: bracketColor }}
+                        animate={{ pathLength: 1, opacity: 1 }}
                         transition={{
                           pathLength: { duration: 0.4, ease: "easeOut", delay: i * 0.06 },
                           opacity: { duration: 0.2, delay: i * 0.06 },
-                          stroke: { duration: 0.3 },
                         }}
                       />
                     );
                   })}
                 </svg>
 
-                {/* Gradient scan beam — clipped to frame bounds */}
-                {/* Use will-change + translateZ to force a compositing layer so iOS Safari respects overflow-hidden */}
+                {/* Gradient scan beam — clipped to frame */}
+                {/* translateZ forces GPU compositing so iOS Safari respects overflow-hidden */}
                 <div
                   className="absolute inset-0 overflow-hidden rounded-sm pointer-events-none"
                   style={{ willChange: "transform", transform: "translateZ(0)" }}
@@ -336,7 +362,7 @@ export default function ScanPage() {
                         className="absolute left-0 right-0"
                         style={{ top: 0 }}
                         initial={{ y: -60 }}
-                        animate={{ y: 400 }}
+                        animate={{ y: FRAME_H + 60 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.85, ease: "easeInOut", repeat: 1, repeatType: "reverse" }}
                       >
@@ -371,15 +397,14 @@ export default function ScanPage() {
               key={status}
               className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium backdrop-blur-md"
               style={{
-                background: "rgba(0,0,0,0.35)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(0,0,0,0.45)",
+                border: "1px solid rgba(255,255,255,0.15)",
               }}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Pulsing dot indicator */}
               <motion.div
                 className="h-1.5 w-1.5 rounded-full flex-shrink-0"
                 style={{ background: isActive ? EMERALD : "rgba(255,255,255,0.4)" }}
@@ -394,7 +419,7 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Bottom bar — liquid glass upload button */}
+      {/* Bottom bar */}
       <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center pb-12">
         <button
           className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur-md active:scale-95 transition-transform"

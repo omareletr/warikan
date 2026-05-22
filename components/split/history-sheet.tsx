@@ -20,7 +20,7 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8 pt-6 max-h-[75dvh] flex flex-col gap-0">
+      <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8 pt-6 max-h-[75dvh] flex flex-col gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className="mb-4 text-left shrink-0">
           <SheetTitle>Recent splits</SheetTitle>
         </SheetHeader>

@@ -121,7 +121,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
       x: rand() * 320 - 160,
       y: rand() * 380,
       size: 2 + rand(),
-      opacity: 0.1 + rand() * 0.2,
+      opacity: 0.2 + rand() * 0.25,
       duration: 10 + rand() * 10,
       delay: rand() * -20,
     }));
@@ -135,7 +135,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
       xOffset: (rand() - 0.5) * 60,
       yOffset: (rand() - 0.5) * 60,
       rotation: (rand() - 0.5) * 360,
-      size: 1 + rand() * 1.5,
+      size: 1.5 + rand() * 1.5,
     }));
   }, []);
 
@@ -446,7 +446,7 @@ function ReceiptBody() {
       <rect
         x="0" y="8" width={RECEIPT_W} height={192}
         rx="8"
-        fill="hsl(155 18% 11% / 0.6)"
+        fill="hsl(155 18% 14% / 0.75)"
       />
 
       {/* ── Outer border glow — emerald at low opacity ── */}
@@ -456,7 +456,7 @@ function ReceiptBody() {
         fill="none"
         stroke="hsl(160 64% 52%)"
         strokeWidth="1"
-        strokeOpacity="0.15"
+        strokeOpacity="0.30"
       />
 
       {/* ── Inner white border — glass edge highlight ── */}
@@ -466,7 +466,7 @@ function ReceiptBody() {
         fill="none"
         stroke="white"
         strokeWidth="0.5"
-        strokeOpacity="0.05"
+        strokeOpacity="0.10"
       />
 
       {/* ── Top inner highlight — simulates light on glass surface ── */}
@@ -474,7 +474,7 @@ function ReceiptBody() {
         x="8" y="10" width={RECEIPT_W - 16} height="1"
         rx="0.5"
         fill="white"
-        fillOpacity="0.06"
+        fillOpacity="0.12"
       />
 
       {/* ── Perforation line at y=176 ── */}
@@ -494,28 +494,28 @@ function ReceiptBody() {
           fill="hsl(155 18% 4%)"
           stroke="hsl(160 64% 52%)"
           strokeWidth="0.5"
-          strokeOpacity="0.18"
+          strokeOpacity="0.30"
         />
       ))}
 
       {/* ── Restaurant name bar ── */}
-      <rect x="16" y="30" width="90" height="7" rx="3.5" fill="hsl(160 64% 52%)" fillOpacity="0.25" />
+      <rect x="16" y="30" width="90" height="7" rx="3.5" fill="hsl(160 64% 52%)" fillOpacity="0.38" />
 
       {/* ── Line items — slightly higher opacity + emerald tint on name bars ── */}
-      <rect x="16" y="52" width="76" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
-      <rect x="110" y="52" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
+      <rect x="16" y="52" width="76" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.18" />
+      <rect x="110" y="52" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.14" />
 
-      <rect x="16" y="65" width="60" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
-      <rect x="110" y="65" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
+      <rect x="16" y="65" width="60" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.18" />
+      <rect x="110" y="65" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.14" />
 
-      <rect x="16" y="78" width="68" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
-      <rect x="110" y="78" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
+      <rect x="16" y="78" width="68" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.18" />
+      <rect x="110" y="78" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.14" />
 
-      <rect x="16" y="91" width="52" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
-      <rect x="110" y="91" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
+      <rect x="16" y="91" width="52" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.18" />
+      <rect x="110" y="91" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.14" />
 
-      <rect x="16" y="104" width="72" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
-      <rect x="110" y="104" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
+      <rect x="16" y="104" width="72" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.18" />
+      <rect x="110" y="104" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.14" />
 
       {/* ── Divider — dashed, slightly more visible ── */}
       <line
@@ -525,18 +525,18 @@ function ReceiptBody() {
       />
 
       {/* ── Tax / tip rows ── */}
-      <rect x="16" y="128" width="44" height="4" rx="2" fill="white" fillOpacity="0.06" />
-      <rect x="110" y="128" width="34" height="4" rx="2" fill="white" fillOpacity="0.06" />
-      <rect x="16" y="138" width="28" height="4" rx="2" fill="white" fillOpacity="0.06" />
-      <rect x="110" y="138" width="34" height="4" rx="2" fill="white" fillOpacity="0.06" />
+      <rect x="16" y="128" width="44" height="4" rx="2" fill="white" fillOpacity="0.10" />
+      <rect x="110" y="128" width="34" height="4" rx="2" fill="white" fillOpacity="0.10" />
+      <rect x="16" y="138" width="28" height="4" rx="2" fill="white" fillOpacity="0.10" />
+      <rect x="110" y="138" width="34" height="4" rx="2" fill="white" fillOpacity="0.10" />
 
       {/* ── Total bar — emerald base + pulsing glow overlay ── */}
-      <rect x="16" y="155" width="128" height="8" rx="4" fill="hsl(160 64% 52%)" fillOpacity="0.15" />
-      {/* Pulsing glow overlay: animates opacity 0→1→0, fillOpacity=0.07 adds ~+0.07 at peak */}
+      <rect x="16" y="155" width="128" height="8" rx="4" fill="hsl(160 64% 52%)" fillOpacity="0.25" />
+      {/* Pulsing glow overlay: animates opacity 0→1→0, fillOpacity=0.12 adds ~+0.12 at peak */}
       <rect
         x="14" y="153" width="132" height="12" rx="6"
         fill="hsl(160 64% 52%)"
-        fillOpacity="0.07"
+        fillOpacity="0.12"
         className="receipt-total-pulse"
       />
     </>
@@ -626,7 +626,7 @@ function TearParticleEl({ particle }: { particle: TearParticle }) {
         backgroundColor: EMERALD_HEX,
         left: originX,
         top: originY,
-        boxShadow: `0 0 4px ${EMERALD_HEX}`,
+        boxShadow: `0 0 6px ${EMERALD_HEX}`,
       }}
       initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
       animate={{

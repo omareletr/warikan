@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
-import { formatCurrency, initials } from "@/lib/calculate";
+import { formatCurrency, initials, inlineInitials } from "@/lib/calculate";
 import { cn } from "@/lib/utils";
 
 export default function AssignPage() {
@@ -200,7 +200,7 @@ export default function AssignPage() {
                             onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
                             className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold active:opacity-70", color.bg, color.text)}
                           >
-                            {person.covered ? <Gift className="h-3 w-3" /> : initials(person.name)}
+                            {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
                           </button>
                         );
                       })}
@@ -238,7 +238,7 @@ export default function AssignPage() {
                           const color = personColor(pid);
                           return (
                             <motion.span key={pid} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }} className={cn("inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text)}>
-                              {initials(person.name)}
+                              {inlineInitials(person.name)}
                             </motion.span>
                           );
                         })}

@@ -48,19 +48,21 @@ const TEAR_PTS: { x: number; y: number }[] = (() => {
 })();
 
 /** SVG path for the left clip: region left of (and through) the zigzag.
- *  Start top-left → follow tear top→bottom → go to bottom-left → close. */
+ *  Start top-left → follow tear top→bottom → go to bottom-left → close.
+ *  Large margins (-500) ensure mobile Safari doesn't clip the path to the SVG viewport. */
 const TEAR_CLIP_LEFT = [
-  `M -40,-10`,
+  `M -500,-500`,
   ...TEAR_PTS.map((p) => `L ${p.x},${p.y}`),
-  `L -40,210 Z`,
+  `L -500,500 Z`,
 ].join(" ");
 
 /** SVG path for the right clip: region right of (and through) the zigzag.
- *  Start from tear bottom → follow tear bottom→top → go to top-right → bottom-right → close. */
+ *  Start from tear bottom → follow tear bottom→top → go to top-right → bottom-right → close.
+ *  Large margins (500) ensure mobile Safari doesn't clip the path to the SVG viewport. */
 const TEAR_CLIP_RIGHT = [
   `M ${TEAR_PTS[TEAR_PTS.length - 1].x},${TEAR_PTS[TEAR_PTS.length - 1].y}`,
   ...TEAR_PTS.slice().reverse().slice(1).map((p) => `L ${p.x},${p.y}`),
-  `L 200,-10 L 200,210 Z`,
+  `L 500,-500 L 500,500 Z`,
 ].join(" ");
 
 /* ─── Helpers: stable random particle data ──────────────── */
@@ -279,7 +281,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
             </radialGradient>
 
             {/* Drop shadow filter for receipt floating effect */}
-            <filter id="hero-a-drop-shadow" filterUnits="userSpaceOnUse" x="-20" y="-10" width="200" height="260">
+            <filter id="hero-a-drop-shadow" filterUnits="userSpaceOnUse" x="-60" y="-20" width="280" height="280">
               <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="black" floodOpacity="0.35" />
             </filter>
 

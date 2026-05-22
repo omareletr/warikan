@@ -284,12 +284,7 @@ export default function ReviewPage() {
           </section>
 
           <section>
-            <div className="mb-4 flex items-center gap-2">
-              <p className="text-base font-semibold text-muted-foreground">Tax & Tip</p>
-              {state.image && (state.taxAmount > 0 || state.tipAmount > 0) && (
-                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs text-primary">From receipt</span>
-              )}
-            </div>
+            <p className="mb-4 text-base font-semibold text-muted-foreground">Tax & Tip</p>
             <div className="flex flex-col gap-5">
               <div>
                 <label className="mb-2 block text-base text-muted-foreground">Tax</label>

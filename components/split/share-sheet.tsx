@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import type { PanInfo } from "framer-motion";
-import { Share2, Copy, QrCode, Check } from "lucide-react";
+import { Send, Copy, QrCode, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface ShareSheetProps {
@@ -59,7 +59,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
   const options = [
     {
       id: "share",
-      icon: Share2,
+      icon: Send,
       label: "Share link",
       sublabel: "Opens share sheet",
       action: handleShare,

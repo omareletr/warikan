@@ -144,8 +144,8 @@ export default function HomePage() {
           <div className="mt-3 mb-1 h-5 w-[220px] text-center">
             <span className="text-sm text-muted-foreground">
               {TAGLINE.slice(0, taglineChars)}
-              {taglineChars > 0 && (
-                <span className="animate-pulse">_</span>
+              {taglineChars < TAGLINE.length && taglineChars > 0 && (
+                <span className="opacity-70 animate-pulse">|</span>
               )}
             </span>
           </div>

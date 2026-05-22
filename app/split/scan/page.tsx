@@ -10,8 +10,8 @@ import { useSplitFlow } from "@/lib/split-flow-context";
 const SAMPLE_W = 160;
 const SAMPLE_H = 90;
 const BRIGHT_THRESHOLD = 180;
-const BRIGHT_PCT_MIN = 0.28;
-const INSTABILITY_MAX = 18;
+const BRIGHT_PCT_MIN = 0.45;   // receipt paper is very bright; tightened from 0.28
+const INSTABILITY_MAX = 8;     // receipts are flat/still; tightened from 18
 const CHECKS_REQUIRED = 2;
 
 type DetectionStatus = "searching" | "steady" | "capturing";
@@ -30,8 +30,8 @@ const BRACKET_COLOR_IDLE = "rgba(255, 255, 255, 0.4)";
 const BRACKET_COLOR_ACTIVE = EMERALD;
 
 // Frame dimensions
-const FRAME_W = 310;
-const FRAME_H = 400;
+const FRAME_W = 340;
+const FRAME_H = 460;
 
 // Corner path definitions (28px arms, origin at 0,0)
 const CORNER_PATHS = {
@@ -41,8 +41,8 @@ const CORNER_PATHS = {
   br: "M 28,0 L 28,28 L 0,28",
 } as const;
 
-// Perimeter: (310 + 400) * 2 = 1420px
-const PERIMETER = 1420;
+// Perimeter: (340 + 460) * 2 = 1600px
+const PERIMETER = 1600;
 
 // Overlay darkness
 const OVERLAY_BG = "rgba(0,0,0,0.60)";
@@ -265,18 +265,28 @@ export default function ScanPage() {
         </Button>
       </div>
 
-      {/* Scanner frame + status — centred on screen */}
+      {/* Scanner frame — pinned to true screen centre via absolute + translate */}
       {!permissionDenied && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 pointer-events-none">
-
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: "50%",
+            left: "50%",
+            transform: `translate(-50%, -50%)`,
+            width: FRAME_W,
+            height: FRAME_H,
+          }}
+        >
           {/* Frame entrance animation */}
           <motion.div
+            className="w-full h-full"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Breathing scale — only when receipt detected */}
             <motion.div
+              className="w-full h-full"
               animate={{ scale: isActive ? [1, 1.015, 1] : 1 }}
               transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
             >
@@ -322,7 +332,6 @@ export default function ScanPage() {
 
                   {/* Corner brackets — pathLength draw-in with stagger */}
                   {(["tl", "tr", "bl", "br"] as const).map((corner, i) => {
-                    // Each corner path is 28×28; offset so arms touch the frame edge
                     const pos = {
                       tl: { x: 0, y: 0 },
                       tr: { x: FRAME_W - 28, y: 0 },
@@ -390,8 +399,19 @@ export default function ScanPage() {
               </div>
             </motion.div>
           </motion.div>
+        </div>
+      )}
 
-          {/* Status pill — frosted glass with pulsing dot */}
+      {/* Status pill — pinned below the frame, absolutely positioned */}
+      {!permissionDenied && (
+        <div
+          className="absolute pointer-events-none flex justify-center"
+          style={{
+            top: `calc(50% + ${FRAME_H / 2}px + 24px)`,
+            left: 0,
+            right: 0,
+          }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={status}

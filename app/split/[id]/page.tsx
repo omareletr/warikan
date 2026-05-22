@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Loader2, Share2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Loader2, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -22,7 +22,9 @@ import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplitById, deleteSplit } from "@/lib/splits";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
-import { encodePayData } from "@/lib/payment-apps";
+import { encodePayData, getPaymentPreference, getPaymentApp } from "@/lib/payment-apps";
+import type { PaymentAppId } from "@/lib/payment-apps";
+import { QRCodeSVG } from "qrcode.react";
 import { ShareSheet } from "@/components/split/share-sheet";
 import type { Split } from "@/lib/types";
 
@@ -35,11 +37,22 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
   const [loaded, setLoaded] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [payAppId, setPayAppId] = useState<PaymentAppId | null>(null);
+  const [payHandle, setPayHandle] = useState<string | null>(null);
 
   useEffect(() => {
     setSplit(getSplitById(id));
     setLoaded(true);
   }, [id]);
+
+  useEffect(() => {
+    const pref = getPaymentPreference();
+    if (pref) {
+      setPayAppId(pref.appId);
+      setPayHandle(pref.handles?.[pref.appId] ?? null);
+    }
+  }, []);
 
   if (!loaded) return (
     <main className="flex min-h-dvh items-center justify-center">
@@ -59,6 +72,8 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
 
   const totals = calculateSplit(split.people, split.lineItems, split.taxAmount, split.tipAmount, split.fees);
   const date = new Date(split.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+  const payApp = payAppId ? getPaymentApp(payAppId) : null;
 
   function handleEdit() {
     if (!split) return;
@@ -85,11 +100,10 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   function getShareUrl(): string {
-    const shareTotals = calculateSplit(split!.people, split!.lineItems, split!.taxAmount, split!.tipAmount, split!.fees);
     const encoded = encodePayData(
-      null,
-      null,
-      shareTotals.filter((pt) => !pt.person.covered).map((pt) => ({ name: pt.person.name, amount: pt.total })),
+      payHandle ? payAppId : null,
+      payHandle || null,
+      totals.filter((pt) => !pt.person.covered).map((pt) => ({ name: pt.person.name, amount: pt.total })),
       split!.restaurantName
     );
     return `${window.location.origin}/pay#${encoded}`;
@@ -200,7 +214,51 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
         onClose={() => setShowShareSheet(false)}
         url={getShareUrl()}
         title={split.restaurantName ? `${split.restaurantName} split` : "Warikan split"}
+        onShowQR={payHandle ? () => setShowQR(true) : undefined}
       />
+
+      {showQR && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
+          onClick={() => setShowQR(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            role="dialog"
+            aria-labelledby="qr-title"
+            className="relative w-full max-w-sm rounded-3xl border border-border/30 bg-card p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-3 top-3 text-muted-foreground"
+              aria-label="Close"
+              onClick={() => setShowQR(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            <p id="qr-title" className="mb-1 text-xl font-bold">Scan to pay</p>
+            <p className="mb-7 text-sm text-muted-foreground">
+              Everyone scans this, picks their name, and pays via {payApp?.name}.
+            </p>
+            <div className="flex justify-center">
+              <div className="rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.5)] ring-2 ring-primary/30">
+                <div className="rounded-2xl bg-white p-5">
+                  <QRCodeSVG value={getShareUrl()} size={220} />
+                </div>
+              </div>
+            </div>
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Pay via {payApp?.name} {payApp?.handlePrefix}{payHandle}
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">

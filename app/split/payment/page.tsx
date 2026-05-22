@@ -61,6 +61,8 @@ export default function PaymentPage() {
   function handleAppSelect(appId: PaymentAppId) {
     setSelectedAppId(appId);
     setVenmoFailed(false);
+    // Persist the selected app so other pages pick up the right appId
+    savePaymentPreference(appId, handles[appId] ?? "");
   }
 
   function handleHandleChange(value: string) {

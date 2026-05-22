@@ -117,7 +117,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
   /* Stable random floating particles (background ambience) */
   const floatingParticles = useMemo<FloatingParticle[]>(() => {
     const rand = seededRandom(42);
-    return Array.from({ length: 10 }, () => ({
+    return Array.from({ length: 16 }, () => ({
       x: rand() * 320 - 160,
       y: rand() * 380,
       size: 2 + rand(),
@@ -130,7 +130,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
   /* Stable random tear particles (emitted at tear moment) */
   const tearParticles = useMemo<TearParticle[]>(() => {
     const rand = seededRandom(99);
-    return Array.from({ length: 28 }, (_, i) => ({
+    return Array.from({ length: 38 }, (_, i) => ({
       id: i,
       xOffset: (rand() - 0.5) * 60,
       yOffset: (rand() - 0.5) * 60,

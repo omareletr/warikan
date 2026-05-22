@@ -92,8 +92,15 @@ export function formatCurrency(amount: number): string {
 export function initials(name: string): string {
   return name
     .trim()
+    .replace(/\s*\(\d+\)$/, "")
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+export function inlineInitials(name: string): string {
+  const match = name.match(/^(.*?)\s*\((\d+)\)$/);
+  if (match) return (match[1].trim()[0]?.toUpperCase() ?? "") + match[2];
+  return initials(name);
 }

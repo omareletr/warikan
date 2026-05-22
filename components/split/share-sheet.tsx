@@ -89,7 +89,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/60"
+        className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       />
       <motion.div
@@ -102,7 +102,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-card px-5 pt-3 pb-12 touch-none"
+        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-border/30 bg-card px-5 pt-3 pb-12 touch-none"
       >
         <div className="mx-auto mb-6 h-1.5 w-10 rounded-full bg-muted" />
         <div className="flex flex-col">
@@ -120,7 +120,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
                   className="flex w-full items-center gap-4 py-4 text-left transition-opacity active:opacity-60"
                   onClick={option.action}
                 >
-                  <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-muted ${option.highlight ? "text-primary" : ""}`}>
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>

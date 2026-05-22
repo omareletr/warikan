@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, Gift, X, QrCode } from "lucide-react";
+import { ArrowLeft, Check, Copy, Gift, X, QrCode, Share2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export default function PaymentPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [venmoFailed, setVenmoFailed] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
 
   useEffect(() => {
     setVenmoUsername(getVenmoUsername());
@@ -65,13 +66,27 @@ export default function PaymentPage() {
     }, 1500);
   }
 
-  function getQRUrl(): string {
+  function getShareUrl(): string {
     const encoded = encodePayData(
-      venmoUsername,
+      venmoUsername || null,
       totals.map((pt) => ({ name: pt.person.name, amount: pt.total })),
       state.restaurantName || undefined
     );
     return `${window.location.origin}/pay#${encoded}`;
+  }
+
+  async function handleShare() {
+    const url = getShareUrl();
+    const title = state.restaurantName ? `${state.restaurantName} split` : "Warikan split";
+    if (navigator.share) {
+      try { await navigator.share({ url, title }); } catch { /* cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareLinkCopied(true);
+        setTimeout(() => setShareLinkCopied(false), 2000);
+      } catch { /* ignore */ }
+    }
   }
 
   async function handleDone() {
@@ -107,7 +122,12 @@ export default function PaymentPage() {
             <Button variant="ghost" size="icon" asChild aria-label="Go back">
               <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/split/summary"}><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
-            <h1 className="text-xl font-bold">Payment</h1>
+            <h1 className="flex-1 text-xl font-bold">Payment</h1>
+            {venmoUsername && (
+              <Button variant="ghost" size="icon" aria-label="Show QR code" onClick={() => setShowQR(true)}>
+                <QrCode className="h-5 w-5" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -173,12 +193,16 @@ export default function PaymentPage() {
             <p className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{saveError}</p>
           )}
           <div className="flex gap-3">
-            {venmoUsername && (
-              <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={() => setShowQR(true)}>
-                <QrCode className="h-5 w-5" />
-                Share QR
-              </Button>
-            )}
+            <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handleShare}>
+              {shareLinkCopied ? (
+                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}>
+                  <Check className="h-5 w-5 text-primary" />
+                </motion.span>
+              ) : (
+                <Share2 className="h-5 w-5" />
+              )}
+              {shareLinkCopied ? "Copied!" : "Share"}
+            </Button>
             <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" disabled={!loaded || saving} onClick={handleDone}>{!loaded ? "Loading..." : saving ? "Saving..." : "All Done"}</Button>
           </div>
         </div>
@@ -208,7 +232,7 @@ export default function PaymentPage() {
             <div className="flex justify-center">
               <div className="rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.5)] ring-2 ring-primary/30">
                 <div className="rounded-2xl bg-white p-5">
-                  <QRCodeSVG value={getQRUrl()} size={220} />
+                  <QRCodeSVG value={getShareUrl()} size={220} />
                 </div>
               </div>
             </div>

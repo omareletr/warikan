@@ -25,20 +25,18 @@ interface PayPerson {
 }
 
 interface PayData {
-  v: string;
+  v?: string;
   r?: string;
   p: PayPerson[];
 }
 
 export function encodePayData(
-  venmoUsername: string,
+  venmoUsername: string | null | undefined,
   people: { name: string; amount: number }[],
   restaurantName?: string
 ): string {
-  const data: PayData = {
-    v: venmoUsername,
-    p: people.map((p) => ({ n: p.name, a: p.amount })),
-  };
+  const data: PayData = { p: people.map((p) => ({ n: p.name, a: p.amount })) };
+  if (venmoUsername) data.v = venmoUsername;
   if (restaurantName) data.r = restaurantName;
   return btoa(JSON.stringify(data));
 }
@@ -47,7 +45,7 @@ const SAFE_TEXT = /^[\w\s'.,&!?():/-]{1,200}$/;
 const SAFE_USERNAME = /^[\w.-]{1,50}$/;
 
 export function decodePayData(hash: string): {
-  venmoUsername: string;
+  venmoUsername: string | null;
   people: { name: string; amount: number }[];
   restaurantName?: string;
 } | null {
@@ -56,15 +54,14 @@ export function decodePayData(hash: string): {
     if (!raw) return null;
     const data: PayData = JSON.parse(atob(raw));
     if (
-      typeof data.v !== "string" ||
-      !SAFE_USERNAME.test(data.v) ||
+      (data.v !== undefined && (typeof data.v !== "string" || !SAFE_USERNAME.test(data.v))) ||
       !Array.isArray(data.p) ||
       data.p.length === 0 ||
       data.p.length > 50 ||
       data.p.some((p) => typeof p.n !== "string" || !SAFE_TEXT.test(p.n) || typeof p.a !== "number" || p.a < 0 || p.a > 99999)
     ) return null;
     return {
-      venmoUsername: data.v,
+      venmoUsername: data.v ?? null,
       people: data.p.map((p) => ({ name: p.n, amount: p.a })),
       restaurantName: data.r && SAFE_TEXT.test(data.r) ? data.r : undefined,
     };

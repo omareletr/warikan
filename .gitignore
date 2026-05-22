@@ -28,4 +28,7 @@ next-env.d.ts
 
 # Local tool directories
 .kilo/
+.claude/
+
+# Local-only assets (not part of the web app)
 Anything ios May 2026/

@@ -6,7 +6,7 @@ Warikan helps groups split restaurant receipts fairly. A user photographs a rece
 ## Current State
 V1 web app is complete and deployed to https://warikan0.netlify.app. All 7 core screens are built and polished (47-item UI audit resolved). The "covered person" birthday feature is shipped.
 
-The Swift files in /Warikan/ are the old iOS codebase — do not modify or delete them. The web app lives in the project root.
+The web app lives in the project root. (The old iOS/Swift codebase was removed in a repo cleanup — it exists only in git history.)
 
 ## Tech Stack
 - **Framework:** Next.js 14+ (App Router)
@@ -243,6 +243,7 @@ Content padding to clear the bar:
   /venmo.ts                    — Venmo deep link builder + QR pay data encoding
   /utils.ts                    — cn() utility (clsx + tailwind-merge)
 /netlify.toml                  — Netlify build config with @netlify/plugin-nextjs
+/public                        — Static assets (currently empty)
 ```
 
 ## Rules for Claude Code

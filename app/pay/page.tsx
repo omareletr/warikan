@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Check, Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { Button } from "@/components/ui/button";
 import { decodePayData, buildVenmoDeepLink } from "@/lib/venmo";
 
 interface PayInfo {
-  venmoUsername: string;
+  venmoUsername: string | null;
   people: { name: string; amount: number }[];
   restaurantName?: string;
 }
@@ -18,6 +19,7 @@ export default function PayPage() {
   const [fromPop] = useState(() => consumePopFlag());
   const [data, setData] = useState<PayInfo | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   useEffect(() => {
     setData(decodePayData(window.location.hash));
@@ -28,7 +30,7 @@ export default function PayPage() {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
         <p className="text-xl font-bold">Invalid link</p>
-        <p className="mt-2 text-base text-muted-foreground">This payment link is missing or expired. Ask the payer to share a new QR code.</p>
+        <p className="mt-2 text-base text-muted-foreground">This payment link is missing or expired. Ask the organizer to share a new link.</p>
       </main>
     );
   }
@@ -36,9 +38,17 @@ export default function PayPage() {
   const total = data ? data.people.reduce((s, p) => s + p.amount, 0) : 0;
 
   function openVenmo(amount: number) {
-    if (!data) return;
+    if (!data?.venmoUsername) return;
     const note = data.restaurantName ? `${data.restaurantName} split` : "Warikan split";
     window.location.href = buildVenmoDeepLink(data.venmoUsername, amount, note);
+  }
+
+  async function copyAmount(amount: number, idx: number) {
+    try {
+      await navigator.clipboard.writeText(amount.toFixed(2));
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    } catch { /* ignore */ }
   }
 
   function formatCurrency(n: number) {
@@ -49,6 +59,8 @@ export default function PayPage() {
     return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   }
 
+  const hasVenmo = Boolean(data?.venmoUsername);
+
   return (
     <motion.main initial={fromPop ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="flex min-h-dvh flex-col px-6 pt-14 pb-8">
       {data && (
@@ -56,27 +68,51 @@ export default function PayPage() {
           <div className="text-center">
             {data.restaurantName && <p className="text-xl font-semibold">{data.restaurantName}</p>}
             <p className="mt-2 font-mono text-4xl font-bold tabular-nums text-gradient">{formatCurrency(total)}</p>
-            <p className="mt-2 text-base text-muted-foreground">Paying @{data.venmoUsername}</p>
+            {hasVenmo && <p className="mt-2 text-base text-muted-foreground">Paying @{data.venmoUsername}</p>}
           </div>
 
-          <p className="mb-4 mt-10 text-base font-semibold text-muted-foreground">Tap your name to pay</p>
+          <p className="mb-4 mt-10 text-base font-semibold text-muted-foreground">
+            {hasVenmo ? "Tap your name to pay" : "Your share of the bill"}
+          </p>
 
           <div className="flex flex-col gap-4">
             {data.people.map((person, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card
-                  className="flex cursor-pointer items-center gap-4 p-5 transition-all duration-150 active:scale-[0.98]"
-                  onClick={() => openVenmo(person.amount)}
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">
-                    {initials(person.name)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-base font-medium">{person.name}</p>
-                    <p className="font-mono text-2xl font-semibold tabular-nums text-primary">{formatCurrency(person.amount)}</p>
-                  </div>
-                  <Button size="sm">Pay</Button>
-                </Card>
+                {hasVenmo ? (
+                  <Card
+                    className="flex cursor-pointer items-center gap-4 p-5 transition-all duration-150 active:scale-[0.98]"
+                    onClick={() => openVenmo(person.amount)}
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">
+                      {initials(person.name)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-medium">{person.name}</p>
+                      <p className="font-mono text-2xl font-semibold tabular-nums text-primary">{formatCurrency(person.amount)}</p>
+                    </div>
+                    <Button size="sm">Pay</Button>
+                  </Card>
+                ) : (
+                  <Card className="flex items-center gap-4 p-5">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">
+                      {initials(person.name)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-medium">{person.name}</p>
+                      <p className="font-mono text-2xl font-semibold tabular-nums text-primary">{formatCurrency(person.amount)}</p>
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copyAmount(person.amount, i)}>
+                      {copiedIdx === i ? (
+                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}>
+                          <Check className="h-3.5 w-3.5 text-primary" />
+                        </motion.span>
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                      {copiedIdx === i ? "Copied" : "Copy"}
+                    </Button>
+                  </Card>
+                )}
               </motion.div>
             ))}
           </div>

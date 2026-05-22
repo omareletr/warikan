@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Loader2, Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -22,6 +22,7 @@ import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplitById, deleteSplit } from "@/lib/splits";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
+import { encodePayData } from "@/lib/venmo";
 import type { Split } from "@/lib/types";
 
 export default function SplitDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,6 +33,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
   const [split, setSplit] = useState<Split | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     setSplit(getSplitById(id));
@@ -81,6 +83,30 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
     router.push("/");
   }
 
+  function getShareUrl(): string {
+    const shareTotals = calculateSplit(split!.people, split!.lineItems, split!.taxAmount, split!.tipAmount, split!.fees);
+    const encoded = encodePayData(
+      null,
+      shareTotals.filter((pt) => !pt.person.covered).map((pt) => ({ name: pt.person.name, amount: pt.total })),
+      split!.restaurantName
+    );
+    return `${window.location.origin}/pay#${encoded}`;
+  }
+
+  async function handleShare() {
+    const url = getShareUrl();
+    const title = split?.restaurantName ? `${split.restaurantName} split` : "Warikan split";
+    if (navigator.share) {
+      try { await navigator.share({ url, title }); } catch { /* cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch { /* ignore */ }
+    }
+  }
+
   return (
     <>
       <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
@@ -90,6 +116,9 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
               <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <h1 className="flex-1 text-xl font-bold">Split details</h1>
+            <Button variant="ghost" size="icon" aria-label="Share split" onClick={handleShare}>
+              {shareCopied ? <Check className="h-5 w-5 text-primary" /> : <Share2 className="h-5 w-5" />}
+            </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon">

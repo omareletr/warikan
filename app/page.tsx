@@ -44,7 +44,9 @@ export default function HomePage() {
   const { setImage, setReceiptData, reset } = useSplitFlow();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const TAGLINE = "Pay your share. Keep your friends.";
+  const LINE1 = "Pay your share.";
+  const LINE2 = "Keep your friends.";
+  const TAGLINE_LENGTH = LINE1.length + LINE2.length;
 
   const [fromPop] = useState(() => consumePopFlag());
   const [phase, setPhase] = useState<Phase>("torn");
@@ -102,7 +104,7 @@ export default function HomePage() {
     const interval = setInterval(() => {
       i++;
       setTaglineChars(i);
-      if (i >= TAGLINE.length) clearInterval(interval);
+      if (i >= TAGLINE_LENGTH) clearInterval(interval);
     }, 38);
     return () => clearInterval(interval);
   }, [mounted, showButtons]);
@@ -141,18 +143,26 @@ export default function HomePage() {
           <ReceiptIllustration phase={phase} />
 
           {/* Tagline typewriter */}
-          <div className="mt-3 mb-1 h-5 w-[220px] text-center">
-            <span className="text-base font-mono text-foreground">
-              {TAGLINE.slice(0, taglineChars)}
-              {taglineChars < TAGLINE.length && taglineChars > 0 && (
+          <div className="mt-3 h-12 w-[220px] text-center font-mono text-base text-foreground leading-6">
+            <div>
+              {LINE1.slice(0, Math.min(taglineChars, LINE1.length))}
+              {taglineChars > 0 && taglineChars < LINE1.length && (
                 <span className="opacity-70 animate-pulse">|</span>
               )}
-            </span>
+            </div>
+            {taglineChars >= LINE1.length && (
+              <div>
+                {LINE2.slice(0, taglineChars - LINE1.length)}
+                {taglineChars < TAGLINE_LENGTH && (
+                  <span className="opacity-70 animate-pulse">|</span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Action buttons — fade in between torn halves */}
           <motion.div
-            className="mt-6 flex w-full max-w-[220px] flex-col gap-3"
+            className="mt-3 flex w-full max-w-[220px] flex-col gap-3"
             animate={{
               opacity: showButtons ? 1 : 0,
               y: showButtons ? 0 : 10,

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Gift, X, QrCode } from "lucide-react";
@@ -68,34 +68,51 @@ function PaymentAppSelector({
   selected: PaymentAppId;
   onSelect: (id: PaymentAppId) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Partial<Record<PaymentAppId, HTMLButtonElement>>>({});
+  const [pill, setPill] = useState({ left: 0, width: 0, height: 0 });
+
+  // useLayoutEffect fires synchronously after DOM mutations, before paint —
+  // so the pill is correctly positioned on first render and every selection change.
+  useLayoutEffect(() => {
+    const btn = buttonRefs.current[selected];
+    const container = containerRef.current;
+    if (!btn || !container) return;
+    const btnRect = btn.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    setPill({
+      left: btnRect.left - containerRect.left,
+      width: btnRect.width,
+      height: btnRect.height,
+    });
+  }, [selected]);
+
   return (
-    <LayoutGroup>
-      <div className="flex gap-2">
-        {PAYMENT_APPS.map((app) => {
-          const Logo = APP_LOGOS[app.id];
-          const active = selected === app.id;
-          return (
-            <button
-              key={app.id}
-              onClick={() => onSelect(app.id)}
-              className="relative flex flex-1 flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-card px-3 py-3"
-            >
-              {active && (
-                <motion.div
-                  layoutId="payment-pill"
-                  className="absolute inset-0 rounded-2xl border border-primary bg-primary/10"
-                  transition={{ type: "spring", stiffness: 450, damping: 32, mass: 0.8 }}
-                />
-              )}
-              <Logo className={`relative h-5 w-5 transition-colors duration-150 ${active ? "text-primary" : "text-muted-foreground"}`} />
-              <span className={`relative text-xs font-semibold transition-colors duration-150 ${active ? "text-primary" : "text-muted-foreground"}`}>
-                {app.name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </LayoutGroup>
+    <div ref={containerRef} className="relative flex gap-2">
+      {/* Single always-mounted pill — animates left/width via spring */}
+      <motion.div
+        className="absolute top-0 rounded-2xl border border-primary bg-primary/10 pointer-events-none"
+        animate={{ left: pill.left, width: pill.width, height: pill.height }}
+        transition={{ type: "spring", stiffness: 450, damping: 32, mass: 0.8 }}
+      />
+      {PAYMENT_APPS.map((app) => {
+        const Logo = APP_LOGOS[app.id];
+        const active = selected === app.id;
+        return (
+          <button
+            key={app.id}
+            ref={(el) => { if (el) buttonRefs.current[app.id] = el; }}
+            onClick={() => onSelect(app.id)}
+            className="relative flex flex-1 flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-card px-3 py-3"
+          >
+            <Logo className={`h-5 w-5 transition-colors duration-150 ${active ? "text-primary" : "text-muted-foreground"}`} />
+            <span className={`text-xs font-semibold transition-colors duration-150 ${active ? "text-primary" : "text-muted-foreground"}`}>
+              {app.name}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

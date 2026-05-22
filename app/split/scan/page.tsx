@@ -241,17 +241,22 @@ export default function ScanPage() {
             ))}
 
             {/* Gradient scan beam — clipped to frame bounds */}
-            <div className="absolute inset-0 overflow-hidden rounded-sm pointer-events-none">
+            {/* Use will-change + translateZ to force a compositing layer so iOS Safari respects overflow-hidden */}
+            <div
+              className="absolute inset-0 overflow-hidden rounded-sm pointer-events-none"
+              style={{ willChange: "transform", transform: "translateZ(0)" }}
+            >
               <AnimatePresence>
                 {status === "capturing" && (
                   <motion.div
                     className="absolute left-0 right-0"
                     style={{
                       height: 44,
+                      top: 0,
                       background: "linear-gradient(to bottom, transparent, rgba(52,211,153,0.55) 40%, rgba(52,211,153,0.55) 60%, transparent)",
                     }}
-                    initial={{ top: -44 }}
-                    animate={{ top: "100%" }}
+                    initial={{ y: -44 }}
+                    animate={{ y: 400 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.85, ease: "easeInOut", repeat: 1, repeatType: "reverse" }}
                   />

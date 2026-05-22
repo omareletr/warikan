@@ -158,7 +158,10 @@ export async function POST(request: NextRequest) {
             ],
           },
         ],
-
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0,
+        },
       }),
     });
   } catch (e) {
@@ -174,35 +177,40 @@ export async function POST(request: NextRequest) {
 
   if (!geminiResponse.ok) {
     const errText = await geminiResponse.text();
-    console.error("Upstream API error:", geminiResponse.status, errText);
+    console.error("[parse-receipt] Upstream API error:", geminiResponse.status, errText.slice(0, 500));
     return NextResponse.json(
-      { error: "upstream_error" },
+      { error: "upstream_error", detail: geminiResponse.status },
       { status: 502 }
     );
   }
 
   const geminiData = await geminiResponse.json();
+  const candidate = geminiData?.candidates?.[0];
+  const finishReason = candidate?.finishReason;
+
   // Gemini 2.5 Flash may return thinking content (thought: true) before the actual response part.
   // Filter those out and join the remaining text parts.
   const parts: { text?: string; thought?: boolean }[] =
-    geminiData?.candidates?.[0]?.content?.parts ?? [];
+    candidate?.content?.parts ?? [];
   const rawText = parts
     .filter((p) => !p.thought)
     .map((p) => p.text ?? "")
     .join("")
     .trim();
 
+  console.log("[parse-receipt] finishReason:", finishReason, "rawText length:", rawText.length, "preview:", rawText.slice(0, 120));
+
   try {
     const cleaned = rawText.replace(/```json\n?|```\n?/g, "").trim();
     const parsed = JSON.parse(cleaned);
     const validated = ReceiptSchema.safeParse(parsed);
     if (!validated.success) {
-      console.error("Response validation failed:", validated.error.issues);
+      console.error("[parse-receipt] Zod validation failed:", JSON.stringify(validated.error.issues).slice(0, 500));
       return NextResponse.json({ error: "parse_error" }, { status: 502 });
     }
     return NextResponse.json(validated.data);
-  } catch {
-    console.error("Response parse failure:", rawText.slice(0, 500));
+  } catch (e) {
+    console.error("[parse-receipt] JSON.parse failure. finishReason:", finishReason, "rawText:", rawText.slice(0, 500));
     return NextResponse.json(
       { error: "parse_error" },
       { status: 502 }

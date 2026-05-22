@@ -87,7 +87,7 @@ export default function ScanPage() {
     canvas.width = video.videoWidth || 1280;
     canvas.height = video.videoHeight || 720;
     canvas.getContext("2d")!.drawImage(video, 0, 0);
-    const base64 = canvas.toDataURL("image/jpeg", 0.92).split(",")[1];
+    const base64 = canvas.toDataURL("image/jpeg", 0.80).split(",")[1];
     setImage(base64, "image/jpeg");
     setTimeout(() => router.push("/split/review"), 900);
   }, [setImage, router]);

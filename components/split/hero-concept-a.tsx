@@ -92,8 +92,13 @@ interface TearParticle {
 
 /* ─── Component ─────────────────────────────────────────── */
 
+const HERO_SEEN_KEY = "warikan_hero_seen";
+
 export function HeroConceptA({ onReady }: HeroConceptAProps) {
-  const [phase, setPhase] = useState<Phase>("hidden");
+  const [skipIntro] = useState<boolean>(() =>
+    typeof sessionStorage !== "undefined" && !!sessionStorage.getItem(HERO_SEEN_KEY)
+  );
+  const [phase, setPhase] = useState<Phase>(() => skipIntro ? "done" : "hidden");
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
@@ -122,8 +127,14 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
     }));
   }, []);
 
-  /* Phase sequencing */
+  /* Phase sequencing — plays only once per browser session */
   useEffect(() => {
+    if (sessionStorage.getItem(HERO_SEEN_KEY)) {
+      // Already animated this session — was initialized as "done", just fire onReady
+      onReadyRef.current?.();
+      return;
+    }
+
     const timers: ReturnType<typeof setTimeout>[] = [];
     const t = (fn: () => void, ms: number) => {
       timers.push(setTimeout(fn, ms));
@@ -136,6 +147,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
     t(() => setPhase("text"), 2000);
     t(() => {
       setPhase("done");
+      sessionStorage.setItem(HERO_SEEN_KEY, "1");
       onReadyRef.current?.();
     }, 3200);
 
@@ -221,7 +233,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
 
       {/* ── Receipt SVG area ─────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, filter: "blur(8px)" }}
+        initial={skipIntro ? false : { opacity: 0, scale: 0.9, filter: "blur(8px)" }}
         animate={
           phaseGte("receipt")
             ? { opacity: 1, scale: 1, filter: "blur(0px)" }
@@ -380,11 +392,13 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
           text="Pay your share."
           show={phaseGte("text")}
           delayOffset={0}
+          skipIntro={skipIntro}
         />
         <TaglineLine
           text="Keep your friends."
           show={phaseGte("text")}
           delayOffset={0.3}
+          skipIntro={skipIntro}
         />
       </div>
     </div>
@@ -620,10 +634,12 @@ function TaglineLine({
   text,
   show,
   delayOffset,
+  skipIntro = false,
 }: {
   text: string;
   show: boolean;
   delayOffset: number;
+  skipIntro?: boolean;
 }) {
   const words = text.split(" ");
 
@@ -658,7 +674,7 @@ function TaglineLine({
     <motion.p
       className="flex justify-center gap-[0.3em] text-lg font-medium tracking-tight text-white/90"
       variants={containerVariants}
-      initial="hidden"
+      initial={skipIntro ? "visible" : "hidden"}
       animate={show ? "visible" : "hidden"}
     >
       {words.map((word, i) => (

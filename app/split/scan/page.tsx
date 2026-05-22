@@ -10,8 +10,8 @@ import { useSplitFlow } from "@/lib/split-flow-context";
 const SAMPLE_W = 160;
 const SAMPLE_H = 90;
 const BRIGHT_THRESHOLD = 180;
-const BRIGHT_PCT_MIN = 0.45;   // receipt paper is very bright; tightened from 0.28
-const INSTABILITY_MAX = 8;     // receipts are flat/still; tightened from 18
+const BRIGHT_PCT_MIN = 0.30;   // ~30% bright pixels catches real receipts at normal distance
+const INSTABILITY_MAX = 12;    // allows minor hand tremor but rejects textured surfaces
 const CHECKS_REQUIRED = 2;
 
 type DetectionStatus = "searching" | "steady" | "capturing";
@@ -31,7 +31,7 @@ const BRACKET_COLOR_ACTIVE = EMERALD;
 
 // Frame dimensions
 const FRAME_W = 340;
-const FRAME_H = 460;
+const FRAME_H = 520;
 
 // Corner path definitions (28px arms, origin at 0,0)
 const CORNER_PATHS = {
@@ -41,8 +41,8 @@ const CORNER_PATHS = {
   br: "M 28,0 L 28,28 L 0,28",
 } as const;
 
-// Perimeter: (340 + 460) * 2 = 1600px
-const PERIMETER = 1600;
+// Perimeter: (340 + 520) * 2 = 1720px
+const PERIMETER = 1720;
 
 // Overlay darkness
 const OVERLAY_BG = "rgba(0,0,0,0.60)";

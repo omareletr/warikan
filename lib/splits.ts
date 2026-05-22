@@ -40,3 +40,7 @@ export function deleteSplit(id: string): void {
   const splits = getSplits().filter((s) => s.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(splits));
 }
+
+export function clearAllSplits(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}

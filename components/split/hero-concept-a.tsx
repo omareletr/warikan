@@ -92,21 +92,22 @@ interface TearParticle {
 
 /* ─── Component ─────────────────────────────────────────── */
 
-const HERO_SEEN_KEY = "warikan_hero_seen";
+// Module-level flag: survives client-side navigation (component unmount/remount)
+// but resets on hard refresh or new tab (JS bundle reloads).
+// This gives us "play once per page load session" without sessionStorage.
+let heroHasPlayed = false;
 
 export function HeroConceptA({ onReady }: HeroConceptAProps) {
-  // useLayoutEffect fires synchronously after DOM mutation but before paint,
-  // so skipIntro is set before the browser renders — no flash, no mismatch.
-  // SSR: useLayoutEffect is nooped server-side, so skipIntro stays false there.
+  // skipIntro is set via useLayoutEffect (before first paint, client-only).
   const [skipIntro, setSkipIntro] = useState(false);
   const [phase, setPhase] = useState<Phase>("hidden");
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
-  // Runs before first paint (client-only) — sets skipIntro so the JSX below
-  // can render the static final state without framer-motion animating in.
+  // Runs before first paint — if the animation already played this page load,
+  // snap to final state immediately without framer-motion animating in.
   useLayoutEffect(() => {
-    if (sessionStorage.getItem(HERO_SEEN_KEY)) {
+    if (heroHasPlayed) {
       setSkipIntro(true);
     }
   }, []);
@@ -136,9 +137,9 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
     }));
   }, []);
 
-  /* Phase sequencing — plays only once per browser session */
+  /* Phase sequencing — plays once per page load */
   useEffect(() => {
-    if (sessionStorage.getItem(HERO_SEEN_KEY)) {
+    if (heroHasPlayed) {
       // skipIntro already set by useLayoutEffect before paint.
       // Just fire onReady and bail — no animation.
       setPhase("done");
@@ -146,8 +147,9 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
       return;
     }
 
-    // Mark seen immediately so navigating away mid-animation still counts.
-    sessionStorage.setItem(HERO_SEEN_KEY, "1");
+    // Mark played immediately so navigating away mid-animation still skips
+    // on the way back.
+    heroHasPlayed = true;
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     const t = (fn: () => void, ms: number) => {

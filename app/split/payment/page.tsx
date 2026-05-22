@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, Gift, X, QrCode, Share2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, Gift, X, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import { saveSplit } from "@/lib/splits";
 import { getVenmoUsername, saveVenmoUsername, buildVenmoDeepLink, encodePayData } from "@/lib/venmo";
+import { ShareSheet } from "@/components/split/share-sheet";
 import type { Split } from "@/lib/types";
 
 export default function PaymentPage() {
@@ -25,10 +26,10 @@ export default function PaymentPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [venmoUsername, setVenmoUsername] = useState("");
   const [showQR, setShowQR] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [venmoFailed, setVenmoFailed] = useState(false);
-  const [shareLinkCopied, setShareLinkCopied] = useState(false);
 
   useEffect(() => {
     setVenmoUsername(getVenmoUsername());
@@ -73,20 +74,6 @@ export default function PaymentPage() {
       state.restaurantName || undefined
     );
     return `${window.location.origin}/pay#${encoded}`;
-  }
-
-  async function handleShare() {
-    const url = getShareUrl();
-    const title = state.restaurantName ? `${state.restaurantName} split` : "Warikan split";
-    if (navigator.share) {
-      try { await navigator.share({ url, title }); } catch { /* cancelled */ }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        setShareLinkCopied(true);
-        setTimeout(() => setShareLinkCopied(false), 2000);
-      } catch { /* ignore */ }
-    }
   }
 
   async function handleDone() {
@@ -193,20 +180,21 @@ export default function PaymentPage() {
             <p className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{saveError}</p>
           )}
           <div className="flex gap-3">
-            <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={handleShare}>
-              {shareLinkCopied ? (
-                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}>
-                  <Check className="h-5 w-5 text-primary" />
-                </motion.span>
-              ) : (
-                <Share2 className="h-5 w-5" />
-              )}
-              {shareLinkCopied ? "Copied!" : "Share"}
+            <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold" onClick={() => setShowShareSheet(true)}>
+              Share
             </Button>
             <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" disabled={!loaded || saving} onClick={handleDone}>{!loaded ? "Loading..." : saving ? "Saving..." : "All Done"}</Button>
           </div>
         </div>
       </div>
+
+      <ShareSheet
+        open={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        url={loaded ? getShareUrl() : ""}
+        title={state.restaurantName ? `${state.restaurantName} split` : "Warikan split"}
+        onShowQR={venmoUsername ? () => setShowQR(true) : undefined}
+      />
 
       {showQR && (
         <motion.div

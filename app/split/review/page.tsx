@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -16,16 +16,102 @@ import { ReceiptSkeleton } from "@/components/split/receipt-skeleton";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
-import type { LineItem } from "@/lib/types";
+import type { Fee, LineItem } from "@/lib/types";
 
+// Inline-editable fee row
+
+interface FeeRowProps {
+  fee: Fee;
+  onUpdate: (fee: Fee) => void;
+  onRemove: () => void;
+}
+
+function FeeRow({ fee, onUpdate, onRemove }: FeeRowProps) {
+  const [editing, setEditing] = useState(!fee.name);
+  const [name, setName] = useState(fee.name);
+  const [amount, setAmount] = useState(fee.amount ? fee.amount.toString() : "");
+
+  function save() {
+    onUpdate({ ...fee, name: name.trim() || fee.name, amount: Math.max(0, parseFloat(amount) || 0) });
+    setEditing(false);
+  }
+
+  function cancel() {
+    setName(fee.name);
+    setAmount(fee.amount ? fee.amount.toString() : "");
+    if (!fee.name) onRemove();
+    else setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div
+        className="flex items-center gap-3 py-2"
+        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) save(); }}
+      >
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="flex-1 min-w-0"
+          placeholder="Fee name"
+          autoFocus
+          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+        />
+        <div className="relative flex-shrink-0">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+          <Input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-24 pl-6 text-right tabular-nums"
+            inputMode="decimal"
+            pattern="[0-9.]*"
+            placeholder="0.00"
+            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          />
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-destructive"
+          onMouseDown={(e) => { e.preventDefault(); onRemove(); }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex cursor-pointer items-center justify-between py-3.5"
+      onClick={() => setEditing(true)}
+    >
+      <span className="text-base">{fee.name}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-base font-medium tabular-nums">
+          ${fee.amount.toFixed(2)}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-muted-foreground hover:text-destructive"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 export default function ReviewPage() {
   const router = useRouter();
-  const { state, loaded, setReceiptData, updateLineItems, updateRestaurantName, updateTax, updateTip } = useSplitFlow();
+  const { state, loaded, setReceiptData, updateLineItems, updateFees, updateRestaurantName, updateTax, updateTip } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [itemsRef] = useAutoAnimate<HTMLDivElement>();
+  const [feesRef] = useAutoAnimate<HTMLDivElement>();
 
   useEffect(() => {
     if (loaded && !state.image && state.lineItems.length === 0) router.replace("/");
@@ -86,6 +172,18 @@ export default function ReviewPage() {
     updateLineItems(state.lineItems.filter((i) => i.id !== id));
   }
 
+  function addFee() {
+    const newFee: Fee = { id: crypto.randomUUID(), name: "", amount: 0 };
+    updateFees([...state.fees, newFee]);
+  }
+
+  function updateFee(updated: Fee) {
+    updateFees(state.fees.map((f) => (f.id === updated.id ? updated : f)));
+  }
+
+  function removeFee(id: string) {
+    updateFees(state.fees.filter((f) => f.id !== id));
+  }
   function handleContinue() {
     if (state.editingSplitId) {
       const totalAmount =
@@ -170,19 +268,20 @@ export default function ReviewPage() {
             </Button>
           </section>
 
-          {state.fees.length > 0 && (
-            <section>
-              <p className="mb-3 text-base font-semibold text-muted-foreground">Fees</p>
-              <div className="divide-y divide-border/40">
-                {state.fees.map((fee) => (
-                  <div key={fee.id} className="flex items-center justify-between py-3.5 text-base">
-                    <span>{fee.name}</span>
-                    <span className="font-mono font-medium tabular-nums">${fee.amount.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          <section>
+            <p className="mb-3 text-base font-semibold text-muted-foreground">Fees</p>
+            {state.fees.length === 0 && (
+              <p className="py-3 text-sm text-muted-foreground">No fees — tap Add Fee if needed.</p>
+            )}
+            <div ref={feesRef} className="divide-y divide-border/40">
+              {state.fees.map((fee) => (
+                <FeeRow key={fee.id} fee={fee} onUpdate={updateFee} onRemove={() => removeFee(fee.id)} />
+              ))}
+            </div>
+            <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={addFee}>
+              <Plus className="mr-1.5 h-4 w-4" />Add Fee
+            </Button>
+          </section>
 
           <section>
             <div className="mb-4 flex items-center gap-2">

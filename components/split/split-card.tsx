@@ -13,14 +13,14 @@ export function SplitCard({ split }: { split: Split }) {
   return (
     <Link href={`/split/${split.id}`}>
       <Card className="transition-all duration-150 active:scale-[0.98]">
-        <CardContent className="flex items-center justify-between p-5">
-          <div>
+        <CardContent className="flex items-center justify-between gap-4 p-5">
+          <div className="min-w-0">
             <p className="text-base font-semibold">
               {split.restaurantName || `${date} Split`}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{date}</p>
           </div>
-          <div className="text-right">
+          <div className="shrink-0 text-right">
             <p className="font-mono text-lg font-semibold tabular-nums text-primary">
               {formatCurrency(split.totalAmount)}
             </p>

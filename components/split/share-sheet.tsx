@@ -77,7 +77,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
       id: "qr",
       icon: QrCode,
       label: "Show QR code",
-      sublabel: "For Venmo payments",
+      sublabel: "For in-person payments",
       action: handleQR,
       highlight: false,
     }] : []),

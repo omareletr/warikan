@@ -22,7 +22,7 @@ import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplitById, deleteSplit } from "@/lib/splits";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
-import { encodePayData } from "@/lib/venmo";
+import { encodePayData } from "@/lib/payment-apps";
 import { ShareSheet } from "@/components/split/share-sheet";
 import type { Split } from "@/lib/types";
 
@@ -87,6 +87,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
   function getShareUrl(): string {
     const shareTotals = calculateSplit(split!.people, split!.lineItems, split!.taxAmount, split!.tipAmount, split!.fees);
     const encoded = encodePayData(
+      null,
       null,
       shareTotals.filter((pt) => !pt.person.covered).map((pt) => ({ name: pt.person.name, amount: pt.total })),
       split!.restaurantName

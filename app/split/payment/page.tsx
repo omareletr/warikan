@@ -211,7 +211,7 @@ export default function PaymentPage() {
         {/* Payment app selector */}
         <div className="mt-6">
           <label className="mb-2 block text-base text-muted-foreground">Payment app</label>
-          <div className="flex gap-2">
+          <div className="relative flex gap-2">
             {PAYMENT_APPS.map((app) => {
               const Logo = APP_LOGOS[app.id];
               const active = selectedAppId === app.id;
@@ -219,14 +219,20 @@ export default function PaymentPage() {
                 <button
                   key={app.id}
                   onClick={() => handleAppSelect(app.id)}
-                  className={`flex flex-1 flex-col items-center gap-1.5 rounded-2xl border px-3 py-3 transition-colors ${
-                    active
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border/50 bg-card text-muted-foreground"
-                  }`}
+                  className="relative flex flex-1 flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-card px-3 py-3 transition-colors duration-200"
                 >
-                  <Logo className="h-5 w-5" />
-                  <span className="text-xs font-semibold">{app.name}</span>
+                  {/* Sliding active indicator */}
+                  {active && (
+                    <motion.div
+                      layoutId="payment-app-active"
+                      className="absolute inset-0 rounded-2xl border border-primary bg-primary/10"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <Logo className={`relative h-5 w-5 transition-colors duration-200 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`relative text-xs font-semibold transition-colors duration-200 ${active ? "text-primary" : "text-muted-foreground"}`}>
+                    {app.name}
+                  </span>
                 </button>
               );
             })}

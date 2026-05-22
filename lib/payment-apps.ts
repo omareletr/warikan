@@ -67,17 +67,17 @@ const PREF_KEY = "warikan_payment_pref";
 const LEGACY_VENMO_KEY = "warikan_venmo_username";
 
 export interface SavedPaymentPreference {
+  /** The last-selected app */
   appId: PaymentAppId;
-  handle: string;
+  /** Handles keyed by app id — each app's handle is stored independently */
+  handles: Partial<Record<PaymentAppId, string>>;
 }
 
-/** Read saved payment preference, auto-migrating legacy Venmo-only key. */
-export function getPaymentPreference(): SavedPaymentPreference | null {
-  if (typeof window === "undefined") return null;
-  // Migrate old key
+function migrateAndLoad(): SavedPaymentPreference | null {
+  // Migrate old single-value key
   const legacy = localStorage.getItem(LEGACY_VENMO_KEY);
   if (legacy) {
-    const pref: SavedPaymentPreference = { appId: "venmo", handle: legacy };
+    const pref: SavedPaymentPreference = { appId: "venmo", handles: { venmo: legacy } };
     localStorage.setItem(PREF_KEY, JSON.stringify(pref));
     localStorage.removeItem(LEGACY_VENMO_KEY);
     return pref;
@@ -85,20 +85,39 @@ export function getPaymentPreference(): SavedPaymentPreference | null {
   const raw = localStorage.getItem(PREF_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as SavedPaymentPreference;
+    const parsed = JSON.parse(raw);
+    // Handle old format where the object had a flat `handle` string instead of `handles` map
+    if (parsed && typeof parsed.handle === "string" && !parsed.handles) {
+      const migrated: SavedPaymentPreference = {
+        appId: parsed.appId ?? "venmo",
+        handles: { [parsed.appId ?? "venmo"]: parsed.handle },
+      };
+      localStorage.setItem(PREF_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+    return parsed as SavedPaymentPreference;
   } catch {
     return null;
   }
 }
 
-/** Persist payment preference. Pass null to clear. */
-export function savePaymentPreference(pref: SavedPaymentPreference | null): void {
+/** Read all saved payment preferences. */
+export function getPaymentPreference(): SavedPaymentPreference | null {
+  if (typeof window === "undefined") return null;
+  return migrateAndLoad();
+}
+
+/** Persist the selected app and its handle. Clears the handle for that app if handle is empty. */
+export function savePaymentPreference(appId: PaymentAppId, handle: string): void {
   if (typeof window === "undefined") return;
-  if (pref) {
-    localStorage.setItem(PREF_KEY, JSON.stringify(pref));
+  const existing = migrateAndLoad() ?? { appId, handles: {} };
+  const handles = { ...existing.handles };
+  if (handle) {
+    handles[appId] = handle;
   } else {
-    localStorage.removeItem(PREF_KEY);
+    delete handles[appId];
   }
+  localStorage.setItem(PREF_KEY, JSON.stringify({ appId, handles }));
 }
 
 // ---------------------------------------------------------------------------
@@ -211,13 +230,13 @@ export function decodePayData(hash: string): DecodedPayData | null {
 
 /** @deprecated Use getPaymentPreference() */
 export function getVenmoUsername(): string {
-  return getPaymentPreference()?.handle ?? "";
+  return getPaymentPreference()?.handles?.venmo ?? "";
 }
 
 /** @deprecated Use savePaymentPreference() */
 export function saveVenmoUsername(username: string): void {
   if (username) {
-    savePaymentPreference({ appId: "venmo", handle: username });
+    savePaymentPreference("venmo", username);
   }
 }
 

@@ -32,7 +32,7 @@ export default function PaymentPage() {
   const [fromPop] = useState(() => consumePopFlag());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<PaymentAppId>("venmo");
-  const [handle, setHandle] = useState("");
+  const [handles, setHandles] = useState<Partial<Record<PaymentAppId, string>>>({});
   const [showQR, setShowQR] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -43,7 +43,7 @@ export default function PaymentPage() {
     const pref = getPaymentPreference();
     if (pref) {
       setSelectedAppId(pref.appId);
-      setHandle(pref.handle);
+      setHandles(pref.handles);
     }
   }, []);
 
@@ -56,23 +56,18 @@ export default function PaymentPage() {
     : [];
 
   const currentApp = getPaymentApp(selectedAppId);
+  const handle = handles[selectedAppId] ?? "";
 
   function handleAppSelect(appId: PaymentAppId) {
     setSelectedAppId(appId);
     setVenmoFailed(false);
-    // Save with current handle under the new app, or clear if handle invalid
-    if (handle) {
-      savePaymentPreference({ appId, handle });
-    }
   }
 
   function handleHandleChange(value: string) {
     // Strip any leading prefix characters the user may type
     const stripped = value.replace(/^[@$]+/, "");
-    setHandle(stripped);
-    if (stripped) {
-      savePaymentPreference({ appId: selectedAppId, handle: stripped });
-    }
+    setHandles((prev) => ({ ...prev, [selectedAppId]: stripped }));
+    savePaymentPreference(selectedAppId, stripped);
   }
 
   async function copyAmount(personId: string, amount: number) {

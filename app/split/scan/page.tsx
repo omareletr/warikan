@@ -25,8 +25,20 @@ function readFileAsBase64(file: File): Promise<string> {
   });
 }
 
+const EMERALD = "rgba(52, 211, 153, 1)";
 const BRACKET_COLOR_IDLE = "rgba(255, 255, 255, 0.4)";
-const BRACKET_COLOR_ACTIVE = "rgba(52, 211, 153, 1)";
+const BRACKET_COLOR_ACTIVE = EMERALD;
+
+// Corner path definitions (28px arms, origin at 0,0)
+const CORNER_PATHS = {
+  tl: "M 0,28 L 0,0 L 28,0",
+  tr: "M 0,0 L 28,0 L 28,28",
+  bl: "M 0,0 L 0,28 L 28,28",
+  br: "M 28,0 L 28,28 L 0,28",
+} as const;
+
+// Perimeter: (310 + 400) * 2 = 1420px
+const PERIMETER = 1420;
 
 export default function ScanPage() {
   const router = useRouter();
@@ -161,6 +173,31 @@ export default function ScanPage() {
       <canvas ref={sampleCanvasRef} width={SAMPLE_W} height={SAMPLE_H} className="hidden" />
       <canvas ref={captureCanvasRef} className="hidden" />
 
+      {/* Dark vignette overlay with punched-out scan zone */}
+      {!permissionDenied && (
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <mask id="scan-mask">
+              <rect width="100%" height="100%" fill="white" />
+              {/* Punch out the scan zone — transforms from center */}
+              <rect
+                x="50%"
+                y="50%"
+                width={310}
+                height={400}
+                rx={16}
+                fill="black"
+                transform="translate(-155, -200)"
+              />
+            </mask>
+          </defs>
+          <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)" mask="url(#scan-mask)" />
+        </svg>
+      )}
+
       {/* Shutter flash on capture */}
       <AnimatePresence>
         {status === "capturing" && (
@@ -209,80 +246,151 @@ export default function ScanPage() {
       {!permissionDenied && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 pointer-events-none">
 
-          {/* Corner bracket frame — 310×400 */}
-          <div className="relative" style={{ width: 310, height: 400 }}>
-
-            {/* Glow pulse wrapper for all 4 corners */}
-            {(["tl", "tr", "bl", "br"] as const).map((corner) => (
-              <motion.div
-                key={corner}
-                className="absolute"
-                style={{
-                  top: corner.startsWith("t") ? 0 : "auto",
-                  bottom: corner.startsWith("b") ? 0 : "auto",
-                  left: corner.endsWith("l") ? 0 : "auto",
-                  right: corner.endsWith("r") ? 0 : "auto",
-                }}
-                animate={isActive ? {
-                  filter: [
-                    "drop-shadow(0 0 4px rgba(52,211,153,0.4))",
-                    "drop-shadow(0 0 12px rgba(52,211,153,1))",
-                    "drop-shadow(0 0 4px rgba(52,211,153,0.4))",
-                  ],
-                } : { filter: "drop-shadow(0 0 0px transparent)" }}
-                transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
-              >
-                <svg width="56" height="56">
-                  {corner === "tl" && <path d="M 3 53 L 3 3 L 53 3" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />}
-                  {corner === "tr" && <path d="M 3 3 L 53 3 L 53 53" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />}
-                  {corner === "bl" && <path d="M 53 53 L 3 53 L 3 3" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />}
-                  {corner === "br" && (
-                    <>
-                      <path d="M 3 53 L 53 53" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
-                      <path d="M 53 3 L 53 53" fill="none" stroke={bracketColor} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke 0.3s" }} />
-                    </>
-                  )}
-                </svg>
-              </motion.div>
-            ))}
-
-            {/* Gradient scan beam — clipped to frame bounds */}
-            {/* Use will-change + translateZ to force a compositing layer so iOS Safari respects overflow-hidden */}
-            <div
-              className="absolute inset-0 overflow-hidden rounded-sm pointer-events-none"
-              style={{ willChange: "transform", transform: "translateZ(0)" }}
-            >
-              <AnimatePresence>
-                {status === "capturing" && (
-                  <motion.div
-                    className="absolute left-0 right-0"
-                    style={{
-                      height: 44,
-                      top: 0,
-                      background: "linear-gradient(to bottom, transparent, rgba(52,211,153,0.55) 40%, rgba(52,211,153,0.55) 60%, transparent)",
-                    }}
-                    initial={{ y: -44 }}
-                    animate={{ y: 400 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.85, ease: "easeInOut", repeat: 1, repeatType: "reverse" }}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Status text */}
-          <motion.p
-            key={status}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-sm font-medium"
-            style={{
-              color: isActive ? "rgba(52, 211, 153, 0.95)" : "rgba(255,255,255,0.65)",
-            }}
+          {/* Frame entrance animation wrapper */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            {statusText}
-          </motion.p>
+            {/* Breathing scale wrapper — only pulses when receipt detected */}
+            <motion.div
+              animate={{ scale: isActive ? [1, 1.015, 1] : 1 }}
+              transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
+            >
+              {/* Frame: 310×400 — contains SVG overlay (corners + perimeter) and beam */}
+              <div className="relative" style={{ width: 310, height: 400 }}>
+
+                {/* Combined SVG: corner brackets + perimeter rings */}
+                {/* overflow: visible so glow doesn't clip at SVG boundary */}
+                <svg
+                  width={310}
+                  height={400}
+                  className="absolute inset-0"
+                  style={{ overflow: "visible" }}
+                >
+                  {/* Dim base perimeter ring — visible when active */}
+                  <motion.rect
+                    x={0.5} y={0.5} width={309} height={399} rx={15.5}
+                    stroke={EMERALD}
+                    strokeWidth="1.5"
+                    fill="none"
+                    animate={{ strokeOpacity: status === "capturing" ? 0.35 : isActive ? 0.25 : 0 }}
+                    transition={{ duration: 0.4 }}
+                  />
+
+                  {/* Traveling bright segment around perimeter */}
+                  <motion.rect
+                    x={0.5} y={0.5} width={309} height={399} rx={15.5}
+                    stroke={EMERALD}
+                    strokeWidth="2"
+                    fill="none"
+                    strokeDasharray={`60 ${PERIMETER}`}
+                    animate={isActive
+                      ? { strokeDashoffset: [0, -PERIMETER], strokeOpacity: 1 }
+                      : { strokeDashoffset: 0, strokeOpacity: 0 }
+                    }
+                    transition={isActive
+                      ? { strokeDashoffset: { duration: 2.5, ease: "linear", repeat: Infinity }, strokeOpacity: { duration: 0.3 } }
+                      : { duration: 0.3 }
+                    }
+                  />
+
+                  {/* Corner brackets — stagger draw-in on mount */}
+                  {(["tl", "tr", "bl", "br"] as const).map((corner, i) => {
+                    const pos = {
+                      tl: { x: 0, y: 0 },
+                      tr: { x: 282, y: 0 },
+                      bl: { x: 0, y: 372 },
+                      br: { x: 282, y: 372 },
+                    }[corner];
+                    return (
+                      <motion.path
+                        key={corner}
+                        d={CORNER_PATHS[corner]}
+                        transform={`translate(${pos.x}, ${pos.y})`}
+                        stroke={bracketColor}
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        fill="none"
+                        initial={{ pathLength: 0, opacity: 0 }}
+                        animate={{ pathLength: 1, opacity: 1, stroke: bracketColor }}
+                        transition={{
+                          pathLength: { duration: 0.4, ease: "easeOut", delay: i * 0.06 },
+                          opacity: { duration: 0.2, delay: i * 0.06 },
+                          stroke: { duration: 0.3 },
+                        }}
+                      />
+                    );
+                  })}
+                </svg>
+
+                {/* Gradient scan beam — clipped to frame bounds */}
+                {/* Use will-change + translateZ to force a compositing layer so iOS Safari respects overflow-hidden */}
+                <div
+                  className="absolute inset-0 overflow-hidden rounded-sm pointer-events-none"
+                  style={{ willChange: "transform", transform: "translateZ(0)" }}
+                >
+                  <AnimatePresence>
+                    {status === "capturing" && (
+                      <motion.div
+                        className="absolute left-0 right-0"
+                        style={{ top: 0 }}
+                        initial={{ y: -60 }}
+                        animate={{ y: 400 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.85, ease: "easeInOut", repeat: 1, repeatType: "reverse" }}
+                      >
+                        {/* Soft glow halo */}
+                        <div
+                          style={{
+                            height: 40,
+                            background: "linear-gradient(to bottom, transparent 0%, rgba(52,211,153,0.35) 30%, rgba(52,211,153,0.35) 70%, transparent 100%)",
+                          }}
+                        />
+                        {/* Sharp core line */}
+                        <div
+                          style={{
+                            height: 2,
+                            marginTop: -21,
+                            background: EMERALD,
+                            filter: "blur(0.5px)",
+                            boxShadow: "0 0 8px rgba(52,211,153,0.8), 0 0 16px rgba(52,211,153,0.4)",
+                          }}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Status pill — frosted glass with pulsing dot */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={status}
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium backdrop-blur-md"
+              style={{
+                background: "rgba(0,0,0,0.35)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Pulsing dot indicator */}
+              <motion.div
+                className="h-1.5 w-1.5 rounded-full flex-shrink-0"
+                style={{ background: isActive ? EMERALD : "rgba(255,255,255,0.4)" }}
+                animate={isActive ? { opacity: [1, 0.3, 1] } : { opacity: 1 }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+              <span style={{ color: isActive ? "rgba(52, 211, 153, 0.95)" : "rgba(255,255,255,0.65)" }}>
+                {statusText}
+              </span>
+            </motion.div>
+          </AnimatePresence>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Camera, ImagePlus, FlaskConical, History } from "lucide-react";
@@ -45,7 +45,11 @@ export default function HomePage() {
   const [fromPop] = useState(() => consumePopFlag());
   const [heroReady, setHeroReady] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [splitCount] = useState(() => getSplits().length);
+  const [splitCount, setSplitCount] = useState(0);
+
+  useEffect(() => {
+    setSplitCount(getSplits().length);
+  }, []);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) return;

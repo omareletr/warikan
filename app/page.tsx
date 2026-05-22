@@ -44,11 +44,14 @@ export default function HomePage() {
   const { setImage, setReceiptData, reset } = useSplitFlow();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  const TAGLINE = "Pay your share. Keep your friends.";
+
   const [fromPop] = useState(() => consumePopFlag());
   const [phase, setPhase] = useState<Phase>("torn");
   const [mounted, setMounted] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [splitCount, setSplitCount] = useState(0);
+  const [taglineChars, setTaglineChars] = useState(0);
 
   useEffect(() => {
     const alreadyPlayed = sessionStorage.getItem("warikan_intro_played") === "1";
@@ -92,6 +95,18 @@ export default function HomePage() {
   const isTorn = phase === "tearing" || phase === "torn";
   const showButtons = phase === "torn";
 
+  useEffect(() => {
+    if (!mounted || !showButtons) return;
+    setTaglineChars(0);
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setTaglineChars(i);
+      if (i >= TAGLINE.length) clearInterval(interval);
+    }, 38);
+    return () => clearInterval(interval);
+  }, [mounted, showButtons]);
+
   return (
     <motion.main initial={fromPop ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }} className="flex min-h-dvh flex-col px-6 pb-10">
       {/* Top bar */}
@@ -124,6 +139,16 @@ export default function HomePage() {
         <div className="relative flex flex-col items-center">
           {/* Receipt illustration */}
           <ReceiptIllustration phase={phase} />
+
+          {/* Tagline typewriter */}
+          <div className="mt-3 mb-1 h-5 text-center">
+            <span className="text-sm text-muted-foreground">
+              {TAGLINE.slice(0, taglineChars)}
+              {taglineChars < TAGLINE.length && taglineChars > 0 && (
+                <span className="opacity-70 animate-pulse">|</span>
+              )}
+            </span>
+          </div>
 
           {/* Action buttons — fade in between torn halves */}
           <motion.div

@@ -1,5 +1,15 @@
 # Warikan — Receipt Splitting Web App
 
+## README Maintenance Rule
+After completing any meaningful change to the app, always assess whether `README.md` needs updating. A change is "meaningful enough" if it affects any of:
+- Features (new, removed, or significantly changed)
+- Tech stack (new dependencies, swapped libraries)
+- Project structure (new pages, routes, or lib files)
+- Deployment setup
+- Roadmap items that have shipped
+
+If an update is needed, draft the proposed README changes and ask the user for approval **before** committing them. Never silently update or commit the README.
+
 ## What This App Does
 Warikan helps groups split restaurant receipts fairly. A user photographs a receipt, the app extracts line items using AI, users assign each dish to people, and the app calculates each person's share including tax and tip. The name means "going dutch" in Japanese.
 

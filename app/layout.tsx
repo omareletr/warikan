@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, IBM_Plex_Mono } from "next/font/google";
+import { Manrope, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -9,7 +9,7 @@ const manrope = Manrope({
   variable: "--font-syne",
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-space-mono",
@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${manrope.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" className={`dark ${manrope.variable} ${jetbrainsMono.variable}`}>
       <body className={`${manrope.className} min-h-dvh`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

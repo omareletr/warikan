@@ -7,10 +7,14 @@ import { Camera, ImagePlus, FlaskConical, History } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ReceiptIllustration } from "@/components/split/receipt-illustration";
+import { HeroConceptA } from "@/components/split/hero-concept-a";
+import { HeroConceptB } from "@/components/split/hero-concept-b";
+import { HeroConceptC } from "@/components/split/hero-concept-c";
 import { HistorySheet } from "@/components/split/history-sheet";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplits } from "@/lib/splits";
+import { cn } from "@/lib/utils";
 
 const DEMO_RECEIPT = {
   restaurantName: "Helmand Palace",
@@ -29,6 +33,7 @@ const DEMO_RECEIPT = {
 };
 
 type Phase = "intact" | "tearing" | "torn";
+type HeroVariant = "original" | "a" | "b" | "c";
 
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -54,28 +59,58 @@ export default function HomePage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [splitCount, setSplitCount] = useState(0);
   const [taglineChars, setTaglineChars] = useState(0);
+  const [variant, setVariant] = useState<HeroVariant>("a");
+  const [heroReady, setHeroReady] = useState(false);
+
+  // Read variant from sessionStorage on mount
+  useEffect(() => {
+    const stored = sessionStorage.getItem("warikan_hero_variant");
+    if (stored && ["original", "a", "b", "c"].includes(stored)) {
+      setVariant(stored as HeroVariant);
+    }
+  }, []);
+
+  // Reset heroReady when variant changes
+  useEffect(() => {
+    setHeroReady(false);
+  }, [variant]);
+
+  // Sync heroReady with original variant's showButtons
+  useEffect(() => {
+    if (variant === "original" && phase === "torn") {
+      setHeroReady(true);
+    }
+  }, [variant, phase]);
 
   useEffect(() => {
+    if (variant !== "original") {
+      // Skip intro animation for non-original variants
+      setSplitCount(getSplits().length);
+      setMounted(true);
+      return;
+    }
     const alreadyPlayed = sessionStorage.getItem("warikan_intro_played") === "1";
     if (!alreadyPlayed) setPhase("intact");
     setSplitCount(getSplits().length);
     setMounted(true);
-  }, []);
+  }, [variant]);
 
   useEffect(() => {
+    if (variant !== "original") return;
     if (!mounted || phase !== "intact") return;
     const t1 = setTimeout(() => setPhase("tearing"), 900);
     return () => clearTimeout(t1);
-  }, [mounted, phase]);
+  }, [mounted, phase, variant]);
 
   useEffect(() => {
+    if (variant !== "original") return;
     if (phase !== "tearing") return;
     const t2 = setTimeout(() => {
       setPhase("torn");
       sessionStorage.setItem("warikan_intro_played", "1");
     }, 700);
     return () => clearTimeout(t2);
-  }, [phase]);
+  }, [phase, variant]);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) return;
@@ -94,10 +129,10 @@ export default function HomePage() {
     if (file) handleFile(file);
   }
 
-  const isTorn = phase === "tearing" || phase === "torn";
   const showButtons = phase === "torn";
 
   useEffect(() => {
+    if (variant !== "original") return;
     if (!mounted || !showButtons) return;
     setTaglineChars(0);
     let i = 0;
@@ -107,10 +142,53 @@ export default function HomePage() {
       if (i >= TAGLINE_LENGTH) clearInterval(interval);
     }, 38);
     return () => clearInterval(interval);
-  }, [mounted, showButtons]);
+  }, [mounted, showButtons, variant]);
+
+  const actionButtons = (
+    <>
+      <Button
+        className="h-14 gap-3 rounded-2xl text-base font-semibold glow-sm"
+        asChild
+      >
+        <Link href="/split/scan">
+          <Camera className="h-5 w-5" />
+          Scan Receipt
+        </Link>
+      </Button>
+      <Button
+        variant="outline"
+        className="h-14 gap-3 rounded-2xl text-base font-semibold"
+        onClick={() => uploadInputRef.current?.click()}
+      >
+        <ImagePlus className="h-5 w-5" />
+        Upload Photo
+      </Button>
+    </>
+  );
 
   return (
     <motion.main initial={fromPop ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }} className="flex min-h-dvh flex-col px-6 pb-10">
+      {/* Variant switcher */}
+      <div className="fixed top-12 right-3 z-50 flex gap-1 rounded-full bg-card/90 backdrop-blur-md border border-border/50 p-1 shadow-lg">
+        {(["original", "a", "b", "c"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => {
+              setVariant(v);
+              sessionStorage.setItem("warikan_hero_variant", v);
+            }}
+            className={cn(
+              "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+              variant === v
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {v === "original" ? "OG" : v.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
       <div className="flex items-center justify-between">
@@ -139,61 +217,71 @@ export default function HomePage() {
       {/* Center content */}
       <div className="flex flex-1 flex-col items-center justify-center">
         <div className="relative flex flex-col items-center">
-          {/* Receipt illustration */}
-          <ReceiptIllustration phase={phase} />
+          {variant === "original" ? (
+            <>
+              {/* Receipt illustration */}
+              <ReceiptIllustration phase={phase} />
 
-          {/* Tagline typewriter */}
-          <div className="mt-3 h-12 w-[220px] text-center font-mono text-base text-foreground leading-6">
-            <div>
-              {LINE1.slice(0, Math.min(taglineChars, LINE1.length))}
-              {taglineChars > 0 && taglineChars < LINE1.length && (
-                <span className="opacity-70 animate-pulse">|</span>
-              )}
-            </div>
-            {taglineChars >= LINE1.length && (
-              <div>
-                {LINE2.slice(0, taglineChars - LINE1.length)}
-                {taglineChars < TAGLINE_LENGTH && (
-                  <span className="opacity-70 animate-pulse">|</span>
+              {/* Tagline typewriter */}
+              <div className="mt-3 h-12 w-[220px] text-center font-mono text-base text-foreground leading-6">
+                <div>
+                  {LINE1.slice(0, Math.min(taglineChars, LINE1.length))}
+                  {taglineChars > 0 && taglineChars < LINE1.length && (
+                    <span className="opacity-70 animate-pulse">|</span>
+                  )}
+                </div>
+                {taglineChars >= LINE1.length && (
+                  <div>
+                    {LINE2.slice(0, taglineChars - LINE1.length)}
+                    {taglineChars < TAGLINE_LENGTH && (
+                      <span className="opacity-70 animate-pulse">|</span>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Action buttons — fade in between torn halves */}
-          <motion.div
-            className="mt-3 flex w-full max-w-[220px] flex-col gap-3"
-            animate={{
-              opacity: showButtons ? 1 : 0,
-              y: showButtons ? 0 : 10,
-            }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
-          >
-            <Button
-              className="h-14 gap-3 rounded-2xl text-base font-semibold glow-sm"
-              asChild
-            >
-              <Link href="/split/scan">
-                <Camera className="h-5 w-5" />
-                Scan Receipt
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-14 gap-3 rounded-2xl text-base font-semibold"
-              onClick={() => uploadInputRef.current?.click()}
-            >
-              <ImagePlus className="h-5 w-5" />
-              Upload Photo
-            </Button>
-          </motion.div>
+              {/* Action buttons — fade in between torn halves */}
+              <motion.div
+                className="mt-3 flex w-full max-w-[220px] flex-col gap-3"
+                animate={{
+                  opacity: showButtons ? 1 : 0,
+                  y: showButtons ? 0 : 10,
+                }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+              >
+                {actionButtons}
+              </motion.div>
+            </>
+          ) : (
+            <>
+              {/* Concept hero variant */}
+              {variant === "a" && (
+                <HeroConceptA onReady={() => setHeroReady(true)} />
+              )}
+              {variant === "b" && (
+                <HeroConceptB onReady={() => setHeroReady(true)} />
+              )}
+              {variant === "c" && (
+                <HeroConceptC onReady={() => setHeroReady(true)} />
+              )}
+
+              {/* Action buttons — fade in when hero is ready */}
+              <motion.div
+                className="mt-6 flex w-full max-w-[220px] flex-col gap-3"
+                animate={{ opacity: heroReady ? 1 : 0, y: heroReady ? 0 : 10 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+              >
+                {actionButtons}
+              </motion.div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Demo link */}
       <motion.div
         className="flex justify-center"
-        animate={{ opacity: showButtons ? 1 : 0 }}
+        animate={{ opacity: variant === "original" ? (showButtons ? 1 : 0) : (heroReady ? 1 : 0) }}
         transition={{ duration: 0.5, delay: 0.15 }}
       >
         <Button

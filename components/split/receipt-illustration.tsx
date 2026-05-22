@@ -58,7 +58,7 @@ export function ReceiptIllustration({ phase }: ReceiptIllustrationProps) {
 
       {/* Tear line — fades out when torn */}
       <motion.line
-        x1="80" y1="12" x2="80" y2="212"
+        x1="80" y1="8" x2="80" y2="200"
         stroke="hsl(160 64% 52%)"
         strokeWidth="1"
         strokeDasharray="4 6"
@@ -70,53 +70,107 @@ export function ReceiptIllustration({ phase }: ReceiptIllustrationProps) {
 }
 
 function ReceiptBody() {
+  // Perforation dots — avoid x=80 (tear line), use same positions as concept-a
+  const perfDots = [7, 20, 33, 46, 59, 72, 88, 101, 114, 127, 140, 153];
+
   return (
     <>
-      {/* Scalloped top edge */}
-      <path
-        d="M0,16 Q10,4 20,16 Q30,4 40,16 Q50,4 60,16 Q70,4 80,16 Q90,4 100,16 Q110,4 120,16 Q130,4 140,16 Q150,4 160,16 L160,208 Q150,220 140,208 Q130,220 120,208 Q110,220 100,208 Q90,220 80,208 Q70,220 60,208 Q50,220 40,208 Q30,220 20,208 Q10,220 0,208 Z"
-        fill="hsl(155 18% 9%)"
-        stroke="hsl(160 64% 52%)"
-        strokeWidth="0.75"
-        strokeOpacity="0.25"
+      {/* ── Main receipt body — glassmorphism fill ── */}
+      <rect
+        x="0" y="8" width="160" height="192"
+        rx="8"
+        fill="hsl(155 18% 11% / 0.6)"
       />
 
-      {/* Restaurant name bar — wide */}
+      {/* ── Outer border glow — emerald at low opacity ── */}
+      <rect
+        x="0.5" y="8.5" width="159" height="191"
+        rx="7.5"
+        fill="none"
+        stroke="hsl(160 64% 52%)"
+        strokeWidth="1"
+        strokeOpacity="0.15"
+      />
+
+      {/* ── Inner white border — glass edge highlight ── */}
+      <rect
+        x="1" y="9" width="158" height="190"
+        rx="7"
+        fill="none"
+        stroke="white"
+        strokeWidth="0.5"
+        strokeOpacity="0.05"
+      />
+
+      {/* ── Top inner highlight ── */}
+      <rect
+        x="8" y="10" width="144" height="1"
+        rx="0.5"
+        fill="white"
+        fillOpacity="0.06"
+      />
+
+      {/* ── Perforation line ── */}
+      <line
+        x1="0" y1="176" x2="160" y2="176"
+        stroke="white"
+        strokeOpacity="0.06"
+        strokeWidth="0.5"
+        strokeDasharray="3 3"
+      />
+
+      {/* ── Perforation dots ── */}
+      {perfDots.map((cx) => (
+        <circle
+          key={cx}
+          cx={cx} cy="192" r="2.5"
+          fill="hsl(155 18% 4%)"
+          stroke="hsl(160 64% 52%)"
+          strokeWidth="0.5"
+          strokeOpacity="0.18"
+        />
+      ))}
+
+      {/* ── Restaurant name bar ── */}
       <rect x="16" y="30" width="90" height="7" rx="3.5" fill="hsl(160 64% 52%)" fillOpacity="0.25" />
 
-      {/* Line items */}
-      <rect x="16" y="52" width="76" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
-      <rect x="110" y="52" width="34" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
+      {/* ── Line items — emerald tint ── */}
+      <rect x="16" y="52" width="76" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
+      <rect x="110" y="52" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
 
-      <rect x="16" y="65" width="60" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
-      <rect x="110" y="65" width="34" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
+      <rect x="16" y="65" width="60" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
+      <rect x="110" y="65" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
 
-      <rect x="16" y="78" width="68" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
-      <rect x="110" y="78" width="34" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
+      <rect x="16" y="78" width="68" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
+      <rect x="110" y="78" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
 
-      <rect x="16" y="91" width="52" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
-      <rect x="110" y="91" width="34" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
+      <rect x="16" y="91" width="52" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
+      <rect x="110" y="91" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
 
-      <rect x="16" y="104" width="72" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
-      <rect x="110" y="104" width="34" height="5" rx="2.5" fill="white" fillOpacity="0.08" />
+      <rect x="16" y="104" width="72" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.10" />
+      <rect x="110" y="104" width="34" height="5" rx="2.5" fill="hsl(160 64% 52%)" fillOpacity="0.08" />
 
-      {/* Divider */}
-      <line x1="16" y1="120" x2="144" y2="120" stroke="white" strokeOpacity="0.08" strokeWidth="1" />
+      {/* ── Divider — dashed ── */}
+      <line
+        x1="16" y1="120" x2="144" y2="120"
+        stroke="white" strokeOpacity="0.12" strokeWidth="1"
+        strokeDasharray="4 3"
+      />
 
-      {/* Tax / tip rows */}
+      {/* ── Tax / tip rows ── */}
       <rect x="16" y="128" width="44" height="4" rx="2" fill="white" fillOpacity="0.06" />
       <rect x="110" y="128" width="34" height="4" rx="2" fill="white" fillOpacity="0.06" />
-
       <rect x="16" y="138" width="28" height="4" rx="2" fill="white" fillOpacity="0.06" />
       <rect x="110" y="138" width="34" height="4" rx="2" fill="white" fillOpacity="0.06" />
 
-      {/* Total bar — prominent */}
+      {/* ── Total bar — emerald + pulsing overlay ── */}
       <rect x="16" y="155" width="128" height="8" rx="4" fill="hsl(160 64% 52%)" fillOpacity="0.15" />
-
-      {/* Bottom decorative dots */}
-      <circle cx="48" cy="190" r="2" fill="white" fillOpacity="0.06" />
-      <circle cx="80" cy="190" r="2" fill="white" fillOpacity="0.06" />
-      <circle cx="112" cy="190" r="2" fill="white" fillOpacity="0.06" />
+      <rect
+        x="14" y="153" width="132" height="12" rx="6"
+        fill="hsl(160 64% 52%)"
+        fillOpacity="0.07"
+        className="receipt-total-pulse"
+      />
     </>
   );
 }

@@ -278,11 +278,12 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
 
     if (isMultiQty) {
       const unclaimed = item.quantity - assigned.length;
-      if (myClaims > 0) {
-        // Remove one of my claims
-        actionType = "unclaim_item";
-      } else if (unclaimed > 0) {
+      if (unclaimed > 0) {
+        // There are open slots — always claim one more
         actionType = "claim_item";
+      } else if (myClaims > 0) {
+        // Fully claimed and I hold some — remove one of my claims
+        actionType = "unclaim_item";
       } else {
         // Fully claimed by others — shake
         triggerShake(item.id, true);

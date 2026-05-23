@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { LineItem, Fee, Person, Split } from "./types";
 
-const SESSION_KEY = "warikan_flow";
+const FLOW_KEY = "warikan_flow";
 
 interface SplitFlowState {
   image: string | null;
@@ -29,10 +29,10 @@ const initialState: SplitFlowState = {
   editingSplitId: null,
 };
 
-function loadFromSession(): SplitFlowState {
+function loadFromStorage(): SplitFlowState {
   if (typeof window === "undefined") return initialState;
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(FLOW_KEY);
     return raw ? { ...initialState, ...JSON.parse(raw) } : initialState;
   } catch {
     return initialState;
@@ -67,7 +67,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const saved = loadFromSession();
+    const saved = loadFromStorage();
     if (saved !== initialState) setState(saved);
     setLoaded(true);
   }, []);
@@ -76,7 +76,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
     if (!loaded) return;
     // Exclude raw image data — it can be up to 10 MB and contains PII.
     const { image: _img, imageMimeType: _mime, ...persistable } = state;
-    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(persistable)); } catch (e) { console.error("Failed to save session state:", e); }
+    try { localStorage.setItem(FLOW_KEY, JSON.stringify(persistable)); } catch (e) { console.error("Failed to save session state:", e); }
   }, [state, loaded]);
 
   const setImage = useCallback((image: string, mimeType: string) => {
@@ -143,7 +143,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
 
   const reset = useCallback(() => {
     setState(initialState);
-    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+    try { localStorage.removeItem(FLOW_KEY); } catch {}
   }, []);
 
   return (

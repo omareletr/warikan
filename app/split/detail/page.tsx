@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 as SuspenseLoader } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Loader2, Send, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -24,12 +25,22 @@ import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import { encodePayData, getPaymentPreference, getPaymentApp } from "@/lib/payment-apps";
 import type { PaymentAppId } from "@/lib/payment-apps";
+import { APP_URL } from "@/lib/platform";
 import { ShareSheet } from "@/components/split/share-sheet";
 import { QRDrawer } from "@/components/split/qr-drawer";
 import type { Split } from "@/lib/types";
 
-export default function SplitDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function SplitDetailPage() {
+  return (
+    <Suspense fallback={<main className="flex min-h-dvh items-center justify-center"><SuspenseLoader className="h-8 w-8 animate-spin text-primary" /></main>}>
+      <SplitDetailContent />
+    </Suspense>
+  );
+}
+
+function SplitDetailContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") ?? "";
   const router = useRouter();
   const { loadSplit } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
@@ -56,7 +67,7 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
 
   if (!loaded) return (
     <main className="flex min-h-dvh items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <SuspenseLoader className="h-8 w-8 animate-spin text-primary" />
     </main>
   );
 
@@ -106,9 +117,8 @@ export default function SplitDetailPage({ params }: { params: Promise<{ id: stri
       totals.filter((pt) => !pt.person.covered).map((pt) => ({ name: pt.person.name, amount: pt.total })),
       split!.restaurantName
     );
-    return `${window.location.origin}/pay#${encoded}`;
+    return `${APP_URL}/pay#${encoded}`;
   }
-
 
   return (
     <>

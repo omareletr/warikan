@@ -213,7 +213,7 @@ export default function ReviewPage() {
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
-            <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
+            <Link href={state.editingSplitId ? `/split/detail?id=${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <h1 className="text-xl font-bold">Review items</h1>
         </div>

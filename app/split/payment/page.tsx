@@ -22,6 +22,7 @@ import {
   encodePayData,
 } from "@/lib/payment-apps";
 import type { PaymentAppId } from "@/lib/payment-apps";
+import { APP_URL } from "@/lib/platform";
 
 /* ── Payment app logo SVGs ────────────────────────────────────────────────── */
 
@@ -138,7 +139,7 @@ export default function PaymentPage() {
       totals.map((pt) => ({ name: pt.person.name, amount: pt.total })),
       state.restaurantName || undefined
     );
-    return `${window.location.origin}/pay#${encoded}`;
+    return `${APP_URL}/pay#${encoded}`;
   }
 
   async function handleDone() {
@@ -185,7 +186,7 @@ export default function PaymentPage() {
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild aria-label="Go back">
-              <Link href={state.editingSplitId ? `/split/${state.editingSplitId}` : "/split/summary"}>
+              <Link href={state.editingSplitId ? `/split/detail?id=${state.editingSplitId}` : "/split/summary"}>
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>

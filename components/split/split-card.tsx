@@ -11,7 +11,7 @@ export function SplitCard({ split }: { split: Split }) {
   });
 
   return (
-    <Link href={`/split/${split.id}`}>
+    <Link href={`/split/detail?id=${split.id}`}>
       <Card className="transition-all duration-150 active:scale-[0.98]">
         <CardContent className="flex items-center justify-between gap-4 p-5">
           <div className="min-w-0">

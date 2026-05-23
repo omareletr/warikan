@@ -11,6 +11,7 @@ import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { formatCurrency, initials, inlineInitials } from "@/lib/calculate";
 import { cn } from "@/lib/utils";
+import { hapticTap } from "@/lib/platform";
 
 export default function AssignPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function AssignPage() {
   }
 
   function toggleAssignment(itemId: string) {
-    navigator.vibrate?.(10);
+    void hapticTap();
     updateLineItems(state.lineItems.map((item) => {
       if (item.id !== itemId) return item;
 
@@ -60,7 +61,7 @@ export default function AssignPage() {
   }
 
   function removeClaim(itemId: string, personId: string) {
-    navigator.vibrate?.(10);
+    void hapticTap();
     updateLineItems(state.lineItems.map((item) => {
       if (item.id !== itemId) return item;
       const idx = item.assignedToIds.indexOf(personId);

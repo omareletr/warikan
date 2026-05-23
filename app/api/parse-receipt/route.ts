@@ -32,6 +32,9 @@ const ALLOWED_ORIGINS = [
   "https://warikan0.netlify.app",
   "http://localhost:3000",
   "http://localhost:3001",
+  // Capacitor native shell origins
+  "capacitor://localhost",
+  "http://localhost", // Android WebView
 ];
 
 function isAllowedOrigin(value: string): boolean {

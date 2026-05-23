@@ -3,9 +3,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ImagePlus } from "lucide-react";
+import { ArrowLeft, ImagePlus, Camera, Receipt, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSplitFlow } from "@/lib/split-flow-context";
+import {
+  isNative,
+  takeNativePhoto,
+  pickNativePhoto,
+  readFileAsBase64,
+} from "@/lib/platform";
 
 const SAMPLE_W = 160;
 const SAMPLE_H = 90;
@@ -15,15 +21,6 @@ const INSTABILITY_MAX = 12;    // allows minor hand tremor but rejects textured 
 const CHECKS_REQUIRED = 2;
 
 type DetectionStatus = "searching" | "steady" | "capturing";
-
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 const EMERALD = "rgba(52, 211, 153, 1)";
 const BRACKET_COLOR_IDLE = "rgba(255, 255, 255, 0.4)";
@@ -47,11 +44,103 @@ const PERIMETER = 1720;
 // Overlay darkness
 const OVERLAY_BG = "rgba(0,0,0,0.60)";
 
-export default function ScanPage() {
-  const router = useRouter();
-  const { setImage, reset } = useSplitFlow();
+// ── Native scan page ──────────────────────────────────────────────────────────
 
-  useEffect(() => { reset(); }, []);
+function NativeScanPage({
+  setImage,
+}: {
+  setImage: (base64: string, mimeType: string) => void;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleNativeAction(action: "camera" | "library") {
+    setError(null);
+    setLoading(true);
+    try {
+      const photo =
+        action === "camera" ? await takeNativePhoto() : await pickNativePhoto();
+      setImage(photo.base64, photo.mimeType);
+      router.push("/split/review");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Silently ignore user cancellation
+      if (/cancelled|user cancelled/i.test(msg)) {
+        setLoading(false);
+        return;
+      }
+      setError(msg);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-dvh bg-background flex flex-col">
+      {/* Top bar */}
+      <div className="flex items-center px-4 pt-12 pb-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-11 w-11 rounded-full"
+          onClick={() => router.push("/")}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Centered content */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <Receipt className="h-10 w-10 text-primary" />
+        </div>
+        <h1 className="text-2xl font-semibold">Scan Receipt</h1>
+        <p className="text-base text-muted-foreground">
+          Use your camera or photo library
+        </p>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="fixed bottom-0 left-0 right-0 p-4">
+        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20 flex flex-col gap-3">
+          {error && (
+            <p className="text-destructive text-sm text-center">{error}</p>
+          )}
+          <Button
+            className="h-14 w-full gap-3 rounded-2xl text-base font-semibold"
+            disabled={loading}
+            onClick={() => handleNativeAction("camera")}
+          >
+            {loading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Camera className="h-5 w-5" />
+            )}
+            Take Photo
+          </Button>
+          <Button
+            variant="outline"
+            className="h-14 w-full gap-3 rounded-2xl text-base font-semibold"
+            disabled={loading}
+            onClick={() => handleNativeAction("library")}
+          >
+            <ImagePlus className="h-5 w-5" />
+            Choose from Library
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Web scan page ─────────────────────────────────────────────────────────────
+
+function WebScanPage({
+  setImage,
+}: {
+  setImage: (base64: string, mimeType: string) => void;
+}) {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const sampleCanvasRef = useRef<HTMLCanvasElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -144,8 +233,8 @@ export default function ScanPage() {
       return;
     }
     try {
-      const base64 = await readFileAsBase64(file);
-      setImage(base64, file.type);
+      const { base64, mimeType } = await readFileAsBase64(file);
+      setImage(base64, mimeType);
       router.push("/split/review");
     } catch { /* ignore */ }
   }
@@ -459,4 +548,18 @@ export default function ScanPage() {
       />
     </div>
   );
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+
+export default function ScanPage() {
+  const { setImage, reset } = useSplitFlow();
+
+  useEffect(() => { reset(); }, []);
+
+  if (isNative()) {
+    return <NativeScanPage setImage={setImage} />;
+  }
+
+  return <WebScanPage setImage={setImage} />;
 }

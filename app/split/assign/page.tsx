@@ -506,9 +506,24 @@ export default function AssignPage() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || !allAssigned} onClick={handleContinue}>
-            {!loaded ? "Loading..." : allAssigned ? "Continue" : "Assign all dishes to continue"}
-          </Button>
+          {!loaded ? (
+            <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled>
+              Loading...
+            </Button>
+          ) : allAssigned ? (
+            <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={handleContinue}>
+              Continue
+            </Button>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              {state.lineItems.filter((item) => {
+                const assigned = roomState
+                  ? (roomState.assignments[item.id] ?? [])
+                  : item.assignedToIds;
+                return assigned.length === 0;
+              }).length} of {state.lineItems.length} dishes remaining
+            </p>
+          )}
         </div>
       </div>
 

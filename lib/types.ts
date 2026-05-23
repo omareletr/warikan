@@ -62,7 +62,8 @@ export type RoomActionType =
   | "leave"
   | "claim_item"
   | "unclaim_item"
-  | "host_assign"       // host directly assigns (override)
+  | "host_assign"       // host assigns a single item (override)
+  | "host_bulk_assign"  // host replaces the entire assignments map atomically
   | "close";
 
 export interface RoomAction {
@@ -73,6 +74,8 @@ export interface RoomAction {
   lineItems?: LineItem[];
   people?: Person[];
   restaurantName?: string;
-  // For "host_assign" — host sends the full resulting assignment array
+  // For "host_assign" — host sends the full resulting assignment array for one item
   assignedToIds?: string[];
+  // For "host_bulk_assign" — host sends the complete assignments map
+  assignments?: Record<string, string[]>;
 }

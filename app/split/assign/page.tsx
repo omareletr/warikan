@@ -44,8 +44,10 @@ export default function AssignPage() {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
-  // Track the last assignedToIds the host sent to the server per item, so the
-  // SSE echo of our own host_assign doesn't revert an in-flight local tap.
+  // The full assignments snapshot the host most recently sent to the server.
+  // The SSE callback uses this to detect whether an incoming update is just
+  // the echo of our own write (in which case we keep local state) or a real
+  // guest change (in which case we accept the server value).
   const pendingAssignmentsRef = useRef<Record<string, string[]>>({});
 
   // SSE subscription — sync room assignments back into the split flow context
@@ -57,22 +59,35 @@ export default function AssignPage() {
       since,
       (updatedRoom) => {
         setRoomState(updatedRoom);
-        // Merge server assignments into local lineItems, but only take the
-        // server value for items where the server's version differs from what
-        // the host last sent. This lets guest claims flow in without reverting
-        // in-flight host taps.
+        // Merge server assignments into local lineItems.
+        // pendingAssignmentsRef holds the full assignments map the host last
+        // sent. If every item in the server update matches that snapshot, this
+        // is just the echo of our own write — keep local state and clear the
+        // pending marker. If any item diverges, a guest changed it — accept
+        // the server value for that item.
+        const pending = pendingAssignmentsRef.current;
+        const hasPending = Object.keys(pending).length > 0;
+
         const updatedLineItems = lineItemsRef.current.map((item) => {
           const serverIds = updatedRoom.assignments[item.id] ?? [];
-          const pending = pendingAssignmentsRef.current[item.id];
-          // If the host has a pending write for this item and the server's
-          // assignment matches it, the echo is ours — keep local state as-is.
-          if (pending && JSON.stringify([...pending].sort()) === JSON.stringify([...serverIds].sort())) {
-            delete pendingAssignmentsRef.current[item.id];
-            return item;
+          if (hasPending) {
+            const sentIds = pending[item.id];
+            // sentIds may be undefined for items not in the snapshot (shouldn't
+            // happen after a bulk write, but guard anyway).
+            if (sentIds !== undefined &&
+                JSON.stringify([...sentIds].sort()) === JSON.stringify([...serverIds].sort())) {
+              return item; // echo of our write — keep local
+            }
           }
           // No pending write, or server diverged (guest changed it) — accept server.
           return { ...item, assignedToIds: serverIds };
         });
+
+        // Clear pending only once we've confirmed the echo arrived
+        if (hasPending) {
+          pendingAssignmentsRef.current = {};
+        }
+
         updateLineItems(updatedLineItems);
       },
       () => {
@@ -115,6 +130,26 @@ export default function AssignPage() {
     return AVATAR_COLORS[idx % AVATAR_COLORS.length];
   }
 
+  // Send the host's full assignments map in a single atomic write.
+  // One HTTP request regardless of how many items changed — no concurrent
+  // read-modify-write races on the server.
+  function sendBulkAssign(updatedItems: typeof state.lineItems) {
+    if (!roomId) return;
+    const assignments: Record<string, string[]> = {};
+    for (const item of updatedItems) {
+      assignments[item.id] = item.assignedToIds;
+    }
+    // Record what we're sending so the SSE echo doesn't revert our local state.
+    pendingAssignmentsRef.current = assignments;
+    sendRoomAction(roomId, {
+      type: "host_bulk_assign",
+      assignments,
+    }).catch(() => {
+      // On failure, clear pending so the next SSE push restores truth.
+      pendingAssignmentsRef.current = {};
+    });
+  }
+
   function toggleAssignment(itemId: string) {
     void hapticTap();
     const updatedItems = state.lineItems.map((item) => {
@@ -131,8 +166,7 @@ export default function AssignPage() {
       }
 
       // Multi-qty: claim-based
-      const totalClaims = item.assignedToIds.length;
-      const unclaimed = item.quantity - totalClaims;
+      const unclaimed = item.quantity - item.assignedToIds.length;
       const personClaims = item.assignedToIds.filter((id) => id === selectedPersonId).length;
 
       if (unclaimed > 0) {
@@ -145,23 +179,7 @@ export default function AssignPage() {
     });
 
     updateLineItems(updatedItems);
-
-    // Collaborative: send the full resulting assignment so the server never
-    // has to guess — it just stores exactly what the host computed locally.
-    if (roomId) {
-      const resultItem = updatedItems.find((i) => i.id === itemId);
-      const resultIds = resultItem?.assignedToIds ?? [];
-      // Record what we're sending so the SSE echo doesn't revert this tap.
-      pendingAssignmentsRef.current[itemId] = resultIds;
-      sendRoomAction(roomId, {
-        type: "host_assign",
-        itemId,
-        assignedToIds: resultIds,
-      }).catch(() => {
-        // On failure, clear the pending marker so the next SSE push restores truth.
-        delete pendingAssignmentsRef.current[itemId];
-      });
-    }
+    sendBulkAssign(updatedItems);
   }
 
   function removeClaim(itemId: string, personId: string) {
@@ -176,22 +194,7 @@ export default function AssignPage() {
     });
 
     updateLineItems(updatedItems);
-
-    // Collaborative: send the full resulting assignment so the server stores
-    // exactly what the host computed, preserving all other claims.
-    if (roomId) {
-      const resultItem = updatedItems.find((i) => i.id === itemId);
-      const resultIds = resultItem?.assignedToIds ?? [];
-      // Record what we're sending so the SSE echo doesn't revert this removal.
-      pendingAssignmentsRef.current[itemId] = resultIds;
-      sendRoomAction(roomId, {
-        type: "host_assign",
-        itemId,
-        assignedToIds: resultIds,
-      }).catch(() => {
-        delete pendingAssignmentsRef.current[itemId];
-      });
-    }
+    sendBulkAssign(updatedItems);
   }
 
   function runningTotal(personId: string): number {
@@ -203,9 +206,8 @@ export default function AssignPage() {
   }
 
   function assignRestToSelected() {
-    // When in collab mode, the canonical assignment truth is roomState.assignments,
-    // not item.assignedToIds (which may lag behind server state). Use the server's
-    // assignments as the base so we don't clobber guest claims.
+    // Use roomState.assignments as the base so we don't clobber guest claims
+    // that arrived since the last SSE update.
     const updatedItems = state.lineItems.map((item) => {
       const baseIds: string[] = roomState
         ? (roomState.assignments[item.id] ?? [])
@@ -221,26 +223,8 @@ export default function AssignPage() {
     });
 
     updateLineItems(updatedItems);
-
-    // Collaborative: send host_assign for every item that changed.
-    if (roomId) {
-      for (const item of updatedItems) {
-        const originalIds: string[] = roomState
-          ? (roomState.assignments[item.id] ?? [])
-          : (state.lineItems.find((i) => i.id === item.id)?.assignedToIds ?? []);
-        // Only send if the assignment actually changed
-        if (JSON.stringify(item.assignedToIds) !== JSON.stringify(originalIds)) {
-          pendingAssignmentsRef.current[item.id] = item.assignedToIds;
-          sendRoomAction(roomId, {
-            type: "host_assign",
-            itemId: item.id,
-            assignedToIds: item.assignedToIds,
-          }).catch(() => {
-            delete pendingAssignmentsRef.current[item.id];
-          });
-        }
-      }
-    }
+    // One atomic bulk write — no N-concurrent-request race.
+    sendBulkAssign(updatedItems);
   }
 
   async function handleContinue() {

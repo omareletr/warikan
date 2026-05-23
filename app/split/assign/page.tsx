@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useSpring, useTransform } from "framer-motion";
@@ -55,10 +55,19 @@ export default function AssignPage() {
   const [showInvite, setShowInvite] = useState(false);
 
   // Keep a ref to the latest lineItems so the SSE callback never reads a stale closure.
+  // Update the ref synchronously alongside every updateLineItems() call so the
+  // ref is never one render behind (a useEffect-based sync runs after paint,
+  // which means a rapid second SSE event could read stale data and revert the
+  // first update).
   const lineItemsRef = useRef(state.lineItems);
-  useEffect(() => {
-    lineItemsRef.current = state.lineItems;
-  }, [state.lineItems]);
+
+  // Wrapper that keeps ref and context in sync atomically.
+  // useCallback with a stable dep (updateLineItems is already a useCallback)
+  // makes the stability explicit so the SSE closure never captures a stale version.
+  const setLineItems = useCallback((items: typeof state.lineItems) => {
+    lineItemsRef.current = items;
+    updateLineItems(items);
+  }, [updateLineItems]);
 
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
@@ -127,7 +136,7 @@ export default function AssignPage() {
           pendingAssignmentsRef.current = {};
         }
 
-        updateLineItems(updatedLineItems);
+        setLineItems(updatedLineItems);
       },
       () => {
         // Room expired — fall back to solo mode
@@ -223,7 +232,7 @@ export default function AssignPage() {
       return item;
     });
 
-    updateLineItems(updatedItems);
+    setLineItems(updatedItems);
     sendBulkAssign(updatedItems);
   }
 
@@ -238,7 +247,7 @@ export default function AssignPage() {
       return { ...item, assignedToIds: ids };
     });
 
-    updateLineItems(updatedItems);
+    setLineItems(updatedItems);
     sendBulkAssign(updatedItems);
   }
 
@@ -259,7 +268,7 @@ export default function AssignPage() {
 
   function clearAllAssignments() {
     const updatedItems = state.lineItems.map((item) => ({ ...item, assignedToIds: [] }));
-    updateLineItems(updatedItems);
+    setLineItems(updatedItems);
     sendBulkAssign(updatedItems);
   }
 
@@ -280,7 +289,7 @@ export default function AssignPage() {
       return { ...item, assignedToIds: [...baseIds, ...Array(unclaimed).fill(selectedPersonId)] };
     });
 
-    updateLineItems(updatedItems);
+    setLineItems(updatedItems);
     // One atomic bulk write — no N-concurrent-request race.
     sendBulkAssign(updatedItems);
   }

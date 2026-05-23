@@ -413,6 +413,7 @@ export default function AssignPage() {
                   onClick={() => setSelectedPersonId(person.id)}
                   colorIndex={i}
                   online={roomState?.connectedPeople.includes(person.id)}
+                  done={roomState?.donePeople?.includes(person.id)}
                 />
               ))}
             </div>

@@ -20,9 +20,10 @@ interface PersonAvatarProps {
   onClick?: () => void;
   colorIndex?: number;
   online?: boolean;
+  done?: boolean;
 }
 
-export function PersonAvatar({ person, selected, runningTotal, onClick, colorIndex = 0, online }: PersonAvatarProps) {
+export function PersonAvatar({ person, selected, runningTotal, onClick, colorIndex = 0, online, done }: PersonAvatarProps) {
   const color = person.covered
     ? { bg: "bg-amber-500/15", text: "text-amber-400", ring: "ring-amber-400", activeBg: "bg-amber-500", selectedText: "text-amber-900", outline: "outline-amber-400" }
     : AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
@@ -36,9 +37,15 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
         selected && `ring-2 ${color.ring} ring-offset-2 ring-offset-background`,
       )}>
         {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
-        {online && (
-          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background" />
-        )}
+        {done ? (
+          <span className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-400 ring-2 ring-background">
+            <svg className="h-2 w-2 text-background" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="2,6 5,9 10,3" />
+            </svg>
+          </span>
+        ) : online ? (
+          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse" />
+        ) : null}
       </div>
       <span className={cn("max-w-[72px] text-center text-sm leading-tight line-clamp-2", person.covered && "text-muted-foreground")}>{person.name}</span>
       {runningTotal !== undefined && (

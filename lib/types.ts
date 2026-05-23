@@ -50,6 +50,7 @@ export interface RoomState {
   people: Person[];              // full people list from host
   assignments: Record<string, string[]>; // itemId → assignedToIds
   connectedPeople: string[];     // array of personIds currently "present"
+  donePeople: string[];          // personIds who tapped "I'm done" (offline but slot stays claimed)
   claimedBy: Record<string, string>;   // personId → name (who has claimed that identity slot)
   status: "waiting" | "assigning" | "done";
   createdAt: number;             // Date.now() — for TTL awareness
@@ -64,6 +65,7 @@ export type RoomActionType =
   | "unclaim_item"
   | "host_assign"       // host assigns a single item (override)
   | "host_bulk_assign"  // host replaces the entire assignments map atomically
+  | "guest_done"
   | "close";
 
 export interface RoomAction {

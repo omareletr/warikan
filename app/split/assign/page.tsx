@@ -338,7 +338,7 @@ export default function AssignPage() {
             {hasAnyAssigned && (
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                  <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive animate-in fade-in slide-in-from-right-2 duration-200">
                     Clear all
                   </Button>
                 </DialogTrigger>

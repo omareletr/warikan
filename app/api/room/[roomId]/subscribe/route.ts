@@ -17,9 +17,9 @@ const redis =
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-const POLL_INTERVAL_MS = 1500;  // how often to check for state changes
-const MAX_DURATION_MS = 30_000; // max SSE connection lifetime
-const PING_INTERVAL_MS = 10_000; // heartbeat frequency
+const FALLBACK_POLL_INTERVAL_MS = 10_000; // safety net in case pub/sub drops a message
+const MAX_DURATION_MS = 30_000;           // max SSE connection lifetime
+const PING_INTERVAL_MS = 10_000;          // heartbeat frequency
 
 // Matches the generator charset (ABCDEFGHJKLMNPQRSTUVWXYZ23456789) — no 0/O/1/I.
 const ROOM_ID_RE = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
@@ -105,13 +105,20 @@ export async function GET(
   const roomKey = `room:${roomId}`;
   const startedAt = Date.now();
 
+  // AbortController scoped outside ReadableStream so cancel() can call abort()
+  const abortCtrl = new AbortController();
+  let closed = false;
+  let pingTimer: ReturnType<typeof setInterval> | undefined;
+  let fallbackTimer: ReturnType<typeof setInterval> | undefined;
+  let maxDurationTimer: ReturnType<typeof setTimeout> | undefined;
+
   const stream = new ReadableStream({
-    async start(controller) {
+    async start(streamCtrl) {
       const enc = new TextEncoder();
 
       function send(chunk: string): boolean {
         try {
-          controller.enqueue(enc.encode(chunk));
+          streamCtrl.enqueue(enc.encode(chunk));
           return true;
         } catch {
           // Controller already closed (client disconnected)
@@ -121,88 +128,176 @@ export async function GET(
 
       function close(): void {
         try {
-          controller.close();
+          streamCtrl.close();
         } catch {
           // Already closed — ignore
         }
       }
 
-      // Check if room exists at all before entering the loop
+      function closeAll(): void {
+        if (closed) return;
+        closed = true;
+        abortCtrl.abort();
+        clearTimeout(maxDurationTimer);
+        clearInterval(pingTimer);
+        clearInterval(fallbackTimer);
+        close();
+      }
+
+      // Check if room exists at all before starting listeners
       let initialState: RoomState | null = null;
       try {
         initialState = await redis!.get<RoomState>(roomKey);
       } catch (err) {
         console.error("[subscribe] Redis error on initial fetch:", err);
         send(sseEvent("not_found", {}));
-        close();
+        closeAll();
         return;
       }
 
       if (!initialState) {
         send(sseEvent("not_found", {}));
-        close();
+        closeAll();
         return;
       }
 
       // If the client has never seen this room (since === -1), send the
-      // current state immediately so they don't have to wait for first poll.
+      // current state immediately so they don't have to wait for the first event.
       if (since === -1) {
         if (!send(sseEvent("state", initialState))) {
-          close();
+          closeAll();
           return;
         }
         since = initialState.version;
       }
 
-      let lastPingAt = Date.now();
+      // ── Max duration timeout ─────────────────────────────────────────────
+      maxDurationTimer = setTimeout(() => {
+        send(sseEvent("timeout", {}));
+        closeAll();
+      }, MAX_DURATION_MS - (Date.now() - startedAt));
 
-      // Poll loop
-      while (true) {
-        const elapsed = Date.now() - startedAt;
+      // ── Heartbeat ping ───────────────────────────────────────────────────
+      pingTimer = setInterval(() => {
+        if (!send(sseEvent("ping", {}))) closeAll();
+      }, PING_INTERVAL_MS);
 
-        if (elapsed >= MAX_DURATION_MS) {
-          send(sseEvent("timeout", {}));
-          close();
-          return;
-        }
-
-        // Wait for next poll interval
-        await new Promise<void>((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-
-        // Send a heartbeat ping every PING_INTERVAL_MS
-        if (Date.now() - lastPingAt >= PING_INTERVAL_MS) {
-          if (!send(sseEvent("ping", {}))) {
-            close();
-            return;
-          }
-          lastPingAt = Date.now();
-        }
-
-        // Fetch latest room state
+      // ── Helper: fetch room and push to client if newer ───────────────────
+      async function pushIfNewer(): Promise<void> {
+        if (closed) return;
         let state: RoomState | null = null;
         try {
           state = await redis!.get<RoomState>(roomKey);
         } catch (err) {
-          console.error("[subscribe] Redis error during poll:", err);
-          // Don't close on transient errors — try again next tick
-          continue;
+          console.error("[subscribe] Redis error during fetch:", err);
+          return; // transient — try again next time
         }
-
         if (!state) {
-          // Room expired or was deleted
           send(sseEvent("not_found", {}));
-          close();
+          closeAll();
           return;
         }
-
         if (state.version > since) {
           if (!send(sseEvent("state", state))) {
-            close();
+            closeAll();
             return;
           }
           since = state.version;
         }
       }
+
+      // ── Fallback poll (safety net for dropped pub/sub messages) ──────────
+      let pollInFlight = false;
+      fallbackTimer = setInterval(async () => {
+        if (pollInFlight || closed) return;
+        pollInFlight = true;
+        try { await pushIfNewer(); } finally { pollInFlight = false; }
+      }, FALLBACK_POLL_INTERVAL_MS);
+
+      // ── Upstash pub/sub listener ─────────────────────────────────────────
+      const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+      const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+      if (redisUrl && redisToken) {
+        const channel = `room:${roomId}`;
+        const pubsubUrl = `${redisUrl}/subscribe/${encodeURIComponent(channel)}`;
+
+        (async () => {
+          try {
+            const pubsubRes = await fetch(pubsubUrl, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${redisToken}`,
+                Accept: "text/event-stream",
+              },
+              signal: abortCtrl.signal,
+            });
+
+            if (!pubsubRes.ok || !pubsubRes.body) {
+              console.error(
+                `[subscribe] Upstash pub/sub response not ok: ${pubsubRes.status}`
+              );
+              // Fall through — fallback poll will handle it
+              return;
+            }
+
+            const reader = pubsubRes.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (!closed) {
+              let result: ReadableStreamReadResult<Uint8Array>;
+              try {
+                result = await reader.read();
+              } catch {
+                // AbortError or network error — exit cleanly
+                break;
+              }
+
+              if (result.done) break;
+
+              buffer += decoder.decode(result.value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() ?? ""; // keep incomplete last line
+
+              for (const line of lines) {
+                if (!line.startsWith("data: ")) continue;
+                const raw = line.slice(6).trim(); // strip "data: "
+                // Upstash SSE format: "type,channel,payload"
+                const commaIdx = raw.indexOf(",");
+                const commaIdx2 = raw.indexOf(",", commaIdx + 1);
+                if (commaIdx === -1 || commaIdx2 === -1) continue;
+                const msgType = raw.slice(0, commaIdx);
+                const payload = raw.slice(commaIdx2 + 1);
+
+                if (msgType === "message") {
+                  const publishedVersion = parseInt(payload, 10);
+                  if (!isNaN(publishedVersion) && publishedVersion > since) {
+                    await pushIfNewer();
+                  }
+                }
+                // "subscribe" lines are confirmations — ignore
+              }
+            }
+          } catch (err) {
+            // Only log if it's not an intentional abort
+            if ((err as Error)?.name !== "AbortError") {
+              console.error("[subscribe] Upstash pub/sub error:", err);
+            }
+            // Fall through — fallback poll still running
+          }
+        })();
+      } else {
+        console.warn("[subscribe] Upstash env vars missing — using fallback poll only");
+      }
+    },
+    cancel() {
+      // Client disconnected — abort the Upstash pub/sub fetch and clear timers
+      abortCtrl.abort();
+      clearTimeout(maxDurationTimer);
+      clearInterval(pingTimer);
+      clearInterval(fallbackTimer);
+      closed = true;
     },
   });
 

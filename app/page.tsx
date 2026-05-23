@@ -11,6 +11,7 @@ import { HistorySheet } from "@/components/split/history-sheet";
 import { UserMenu } from "@/components/auth/user-menu";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
+import { closeRoomIfActive } from "@/lib/room-client";
 import { getSplits } from "@/lib/splits";
 import { subscribeToSplits } from "@/lib/firestore-splits";
 import { useAuth } from "@/lib/auth-context";
@@ -63,6 +64,7 @@ export default function HomePage() {
     if (!file.type.startsWith("image/")) return;
     try {
       const base64 = await readFileAsBase64(file);
+      closeRoomIfActive();
       reset();
       setImage(base64, file.type);
       router.push("/split/review");
@@ -153,6 +155,7 @@ export default function HomePage() {
           variant="ghost"
           className="h-10 gap-2 text-sm text-muted-foreground"
           onClick={() => {
+            closeRoomIfActive();
             reset();
             setReceiptData(DEMO_RECEIPT);
             router.push("/split/review");

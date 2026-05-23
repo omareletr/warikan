@@ -192,6 +192,31 @@ export function subscribeToRoom(
   return cleanup;
 }
 
+// ─── Host session key ─────────────────────────────────────────────────────────
+
+/**
+ * sessionStorage key that holds the active collab room ID for the host.
+ * Exported so call-sites outside assign/page.tsx can read/clear it without
+ * coupling to that module.
+ */
+export const ROOM_SESSION_KEY = "warikan_assign_room_id";
+
+/**
+ * Reads the active room ID from sessionStorage. If one exists, fires a
+ * fire-and-forget `close` action to the server and removes the key.
+ *
+ * Safe to call unconditionally — returns immediately when no room is active.
+ * Never throws; errors are silently swallowed.
+ */
+export function closeRoomIfActive(): void {
+  if (typeof sessionStorage === "undefined") return;
+  const roomId = sessionStorage.getItem(ROOM_SESSION_KEY);
+  if (!roomId) return;
+  // Key removed optimistically — on failure the room TTL handles eventual cleanup.
+  sessionStorage.removeItem(ROOM_SESSION_KEY);
+  postRoomAction(roomId, { type: "close" }).catch(() => {});
+}
+
 // ─── Per-device identity persistence ─────────────────────────────────────────
 
 const storageKey = (roomId: string) => `warikan_room_person_${roomId}`;

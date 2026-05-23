@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useSpring, useTransform } from "framer-motion";
 import { ArrowLeft, Gift, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -314,6 +314,18 @@ export default function AssignPage() {
       : assigned.length < item.quantity;
   });
 
+  const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
+  const assignedSlots = state.lineItems.reduce((sum, item) => {
+    const assigned = roomState
+      ? (roomState.assignments[item.id] ?? [])
+      : item.assignedToIds;
+    return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
+  }, 0);
+
+  const springValue = useSpring(assignedSlots, { stiffness: 120, damping: 20, mass: 0.8 });
+  useEffect(() => { springValue.set(assignedSlots); }, [assignedSlots, springValue]);
+  const displaySlots = useTransform(springValue, (v) => Math.round(v));
+
   return (
     <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
       <div className="sticky-header px-6 pt-10 pb-4">
@@ -558,16 +570,8 @@ export default function AssignPage() {
         ) : (
           <div className="flex justify-center pb-1">
             <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
-              {(() => {
-                const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
-                const assignedSlots = state.lineItems.reduce((sum, item) => {
-                  const assigned = roomState
-                    ? (roomState.assignments[item.id] ?? [])
-                    : item.assignedToIds;
-                  return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
-                }, 0);
-                return `${assignedSlots} of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`;
-              })()}
+              <motion.span>{displaySlots}</motion.span>
+              {` of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`}
             </span>
           </div>
         )}

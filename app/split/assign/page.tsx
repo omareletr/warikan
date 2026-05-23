@@ -324,15 +324,15 @@ export default function AssignPage() {
           <p className="text-base font-semibold text-muted-foreground">
             {loaded ? `Tap to assign to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
           </p>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {hasAnyAssigned && (
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={clearAllAssignments}>
-                Clear All
+              <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-border/60 text-muted-foreground hover:text-foreground" onClick={clearAllAssignments}>
+                Clear all
               </Button>
             )}
             {hasUnclaimed && (
-              <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignRestToSelected}>
-                Assign Rest
+              <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-primary/40 text-primary hover:bg-primary/10 hover:text-primary" onClick={assignRestToSelected}>
+                Assign rest
               </Button>
             )}
           </div>

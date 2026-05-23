@@ -132,12 +132,14 @@ export default function AssignPage() {
 
     updateLineItems(updatedItems);
 
-    // Collaborative: fire-and-forget sync to server
+    // Collaborative: send the full resulting assignment so the server never
+    // has to guess — it just stores exactly what the host computed locally.
     if (roomId) {
+      const resultItem = updatedItems.find((i) => i.id === itemId);
       sendRoomAction(roomId, {
         type: "host_assign",
         itemId,
-        personId: selectedPersonId,
+        assignedToIds: resultItem?.assignedToIds ?? [],
       }).catch(() => {});
     }
   }
@@ -155,12 +157,14 @@ export default function AssignPage() {
 
     updateLineItems(updatedItems);
 
-    // Collaborative: fire-and-forget sync to server
+    // Collaborative: send the full resulting assignment so the server stores
+    // exactly what the host computed, preserving all other claims.
     if (roomId) {
+      const resultItem = updatedItems.find((i) => i.id === itemId);
       sendRoomAction(roomId, {
-        type: "unclaim_item",
+        type: "host_assign",
         itemId,
-        personId,
+        assignedToIds: resultItem?.assignedToIds ?? [],
       }).catch(() => {});
     }
   }

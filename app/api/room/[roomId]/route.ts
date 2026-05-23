@@ -360,7 +360,7 @@ export async function POST(
 
   // ── host_assign ───────────────────────────────────────────────────────────
   if (action.type === "host_assign") {
-    const { itemId, personId } = action;
+    const { itemId, assignedToIds } = action;
     if (!itemId) {
       return jsonError(
         "itemId is required for host_assign",
@@ -370,11 +370,12 @@ export async function POST(
       );
     }
 
-    // personId being undefined/null means "clear assignment"
-    // personId being a string means "assign to exactly [personId]"
+    // Host sends the full resulting assignedToIds array — use it verbatim.
+    // This preserves guest claims alongside host changes without any server-side
+    // toggle logic that could race with the client's optimistic update.
     const hostAssignState: RoomState = {
       ...state,
-      assignments: { ...state.assignments, [itemId]: personId ? [personId] : [] },
+      assignments: { ...state.assignments, [itemId]: assignedToIds ?? [] },
     };
     const savedHostState = await saveRoom(hostAssignState);
     return NextResponse.json(savedHostState, { headers: cors });

@@ -346,7 +346,7 @@ export default function AssignPage() {
                   <DialogHeader>
                     <DialogTitle>Clear all assignments</DialogTitle>
                     <DialogDescription>
-                      This will remove all dish assignments. You'll need to start over.
+                      This will remove all dish assignments. You&apos;ll need to start over.
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>

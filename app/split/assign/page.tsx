@@ -110,6 +110,7 @@ export default function AssignPage() {
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleInvite() {
+    console.log("[handleInvite] called, roomId=", roomId);
     if (roomId) {
       setShowInvite(true);
       return;
@@ -117,16 +118,19 @@ export default function AssignPage() {
     setIsCreatingRoom(true);
     try {
       const newRoomId = generateRoomId();
+      console.log("[handleInvite] creating room", newRoomId);
       const room = await createRoom(newRoomId, {
         type: "create",
         lineItems: state.lineItems,
         people: state.people,
         restaurantName: state.restaurantName || undefined,
       });
+      console.log("[handleInvite] room created", room);
       setRoomId(newRoomId);
       setRoomState(room);
       setShowInvite(true);
-    } catch {
+    } catch (err) {
+      console.error("[handleInvite] createRoom failed:", err);
       // silently fail — solo mode continues
     } finally {
       setIsCreatingRoom(false);

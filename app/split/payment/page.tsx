@@ -14,6 +14,8 @@ import { consumePopFlag } from "@/lib/nav-flag";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import { saveSplit } from "@/lib/splits";
+import { saveFirestoreSplit } from "@/lib/firestore-splits";
+import { useAuth } from "@/lib/auth-context";
 import {
   PAYMENT_APPS,
   getPaymentApp,
@@ -63,6 +65,7 @@ import type { Split } from "@/lib/types";
 export default function PaymentPage() {
   const router = useRouter();
   const { state, loaded, reset } = useSplitFlow();
+  const { user } = useAuth();
   const [fromPop] = useState(() => consumePopFlag());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<PaymentAppId>("venmo");
@@ -162,6 +165,9 @@ export default function PaymentPage() {
     };
     try {
       saveSplit(split);
+      if (user) {
+        saveFirestoreSplit(user.uid, split).catch(console.error);
+      }
       confetti({
         particleCount: 80,
         spread: 70,

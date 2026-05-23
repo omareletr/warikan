@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { SplitCard } from "@/components/split/split-card";
 import { getSplits, clearAllSplits } from "@/lib/splits";
+import { subscribeToSplits, deleteFirestoreSplit } from "@/lib/firestore-splits";
+import { useAuth } from "@/lib/auth-context";
+import type { Split } from "@/lib/types";
 
 const INITIAL_SHOW = 10;
 
@@ -22,13 +25,26 @@ interface HistorySheetProps {
 }
 
 export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
+  const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
-  const [splits, setSplits] = useState(() => getSplits());
+  const [splits, setSplits] = useState<Split[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const visible = showAll ? splits : splits.slice(0, INITIAL_SHOW);
 
-  function handleClearAll() {
+  useEffect(() => {
+    if (!user) {
+      setSplits(getSplits());
+      return;
+    }
+    const unsub = subscribeToSplits(user.uid, setSplits);
+    return unsub;
+  }, [user]);
+
+  async function handleClearAll() {
     clearAllSplits();
+    if (user) {
+      await Promise.all(splits.map((s) => deleteFirestoreSplit(user.uid, s.id)));
+    }
     setSplits([]);
     setShowAll(false);
     setShowConfirm(false);

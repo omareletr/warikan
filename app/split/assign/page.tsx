@@ -335,6 +335,7 @@ export default function AssignPage() {
                         return (
                           <button
                             key={pid}
+                            onPointerDown={(e) => e.stopPropagation()}
                             onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
                             className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold active:opacity-70", color.bg, color.text)}
                           >

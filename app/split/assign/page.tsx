@@ -535,8 +535,8 @@ export default function AssignPage() {
                           <button
                             key={pid}
                             onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => { e.stopPropagation(); if (!selectedPersonIsOnline) removeClaim(item.id, pid); }}
-                            className={cn("relative flex h-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text, count > 1 ? "px-1.5 gap-0.5" : "w-6", selectedPersonIsOnline ? "pointer-events-none" : "active:opacity-70")}
+                            onClick={(e) => { e.stopPropagation(); if (!roomState?.connectedPeople.includes(pid)) removeClaim(item.id, pid); }}
+                            className={cn("relative flex h-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text, count > 1 ? "px-1.5 gap-0.5" : "w-6", roomState?.connectedPeople.includes(pid) ? "pointer-events-none" : "active:opacity-70")}
                           >
                             {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
                             {count > 1 && <span className="tabular-nums">×{count}</span>}

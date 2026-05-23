@@ -491,8 +491,8 @@ export default function AssignPage() {
                   key={item.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => toggleAssignment(item.id)}
-                  onKeyDown={(e) => e.key === "Enter" && toggleAssignment(item.id)}
+                  onClick={() => !effectivelyBlockedMulti && toggleAssignment(item.id)}
+                  onKeyDown={(e) => e.key === "Enter" && !effectivelyBlockedMulti && toggleAssignment(item.id)}
                   className={cn(
                     "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
                     effectivelyBlockedMulti
@@ -561,10 +561,12 @@ export default function AssignPage() {
             return (
               <button
                 key={item.id}
-                onClick={() => !effectivelyClaimedByOthers && toggleAssignment(item.id)}
+                onClick={() => !selectedPersonIsOnline && !effectivelyClaimedByOthers && toggleAssignment(item.id)}
                 className={cn(
                   "flex items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
-                  isAssignedToMe
+                  selectedPersonIsOnline
+                    ? "cursor-default border-transparent opacity-60"
+                    : isAssignedToMe
                     ? "border-primary/40 bg-primary/5 active:opacity-75"
                     : effectivelyClaimedByOthers
                     ? "cursor-default border-transparent"

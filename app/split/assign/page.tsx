@@ -560,13 +560,16 @@ export default function AssignPage() {
             <span className="rounded-full border border-white/10 bg-white/5 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-muted-foreground">
               {(() => {
                 const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
-                const assignedSlots = state.lineItems.reduce((sum, item) => {
-                  const assigned = roomState
-                    ? (roomState.assignments[item.id] ?? [])
-                    : item.assignedToIds;
-                  return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
-                }, 0);
-                return `${totalSlots - assignedSlots} of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} remaining`;
+                const assignedSlots = Math.min(
+                  state.lineItems.reduce((sum, item) => {
+                    const assigned = roomState
+                      ? (roomState.assignments[item.id] ?? [])
+                      : item.assignedToIds;
+                    return sum + (assigned.length > 0 ? Math.max(item.quantity, 1) : 0);
+                  }, 0),
+                  totalSlots,
+                );
+                return `${assignedSlots} of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`;
               })()}
             </span>
           </div>

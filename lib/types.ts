@@ -73,4 +73,6 @@ export interface RoomAction {
   lineItems?: LineItem[];
   people?: Person[];
   restaurantName?: string;
+  // For "host_assign" — host sends the full resulting assignment array
+  assignedToIds?: string[];
 }

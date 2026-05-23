@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase";
 import type { Split } from "@/lib/types";
 
 function splitsRef(userId: string) {
+  if (!db) throw new Error("Firestore is not configured — NEXT_PUBLIC_FIREBASE_* env vars missing");
   return collection(db, "users", userId, "splits");
 }
 

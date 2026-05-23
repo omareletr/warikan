@@ -281,7 +281,7 @@ export default function AssignPage() {
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
-          <h1 className="text-xl font-bold">Assign dishes</h1>
+          <h1 className="text-xl font-bold shrink-0">Assign dishes</h1>
           {roomState && (
             <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />

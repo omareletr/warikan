@@ -205,6 +205,19 @@ export default function AssignPage() {
     }, 0);
   }
 
+  const hasAnyAssigned = state.lineItems.some((item) => {
+    const assigned = roomState
+      ? (roomState.assignments[item.id] ?? [])
+      : item.assignedToIds;
+    return assigned.length > 0;
+  });
+
+  function clearAllAssignments() {
+    const updatedItems = state.lineItems.map((item) => ({ ...item, assignedToIds: [] }));
+    updateLineItems(updatedItems);
+    sendBulkAssign(updatedItems);
+  }
+
   function assignRestToSelected() {
     // Use roomState.assignments as the base so we don't clobber guest claims
     // that arrived since the last SSE update.
@@ -311,11 +324,18 @@ export default function AssignPage() {
           <p className="text-base font-semibold text-muted-foreground">
             {loaded ? `Tap to assign to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
           </p>
-          {hasUnclaimed && (
-            <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignRestToSelected}>
-              Assign Rest
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {hasAnyAssigned && (
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={clearAllAssignments}>
+                Clear All
+              </Button>
+            )}
+            {hasUnclaimed && (
+              <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={assignRestToSelected}>
+                Assign Rest
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">

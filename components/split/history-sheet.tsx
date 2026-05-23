@@ -34,10 +34,9 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
   useEffect(() => {
     if (!user) {
       setSplits(getSplits());
-      return;
+      return () => {};
     }
-    const unsub = subscribeToSplits(user.uid, setSplits);
-    return unsub;
+    return subscribeToSplits(user.uid, setSplits);
   }, [user]);
 
   async function handleClearAll() {

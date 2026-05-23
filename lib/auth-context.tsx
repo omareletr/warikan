@@ -40,8 +40,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    mergeLocalSplitsToFirestore(result.user.uid).catch(console.error);
+    try {
+      const result = await signInWithPopup(auth, provider);
+      mergeLocalSplitsToFirestore(result.user.uid).catch(console.error);
+    } catch (err: unknown) {
+      // Silently ignore user-cancelled / popup-closed — these are not real errors.
+      // Re-throw anything else so the caller can surface it.
+      const code = (err as { code?: string })?.code ?? "";
+      if (
+        code === "auth/popup-closed-by-user" ||
+        code === "auth/cancelled-popup-request" ||
+        code === "auth/user-cancelled"
+      ) {
+        return;
+      }
+      throw err;
+    }
   }, []);
 
   const signOut = useCallback(async () => {

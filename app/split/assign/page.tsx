@@ -428,41 +428,52 @@ export default function AssignPage() {
 
       <div className="px-6">
         <div className="mb-3 mt-6 flex items-center justify-between gap-3">
-          <p className="text-base font-semibold text-muted-foreground truncate min-w-0">
-            {loaded ? `Assigning to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
-          </p>
-          <div className="flex items-center gap-2 shrink-0">
-            {hasAnyAssigned && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive animate-in fade-in slide-in-from-right-2 duration-200">
-                    Clear all
+          {selectedPersonIsOnline ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-base font-semibold text-muted-foreground truncate">
+                {state.people.find((p) => p.id === selectedPersonId)?.name ?? ""} is claiming dishes…
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-base font-semibold text-muted-foreground truncate min-w-0">
+                {loaded ? `Assigning to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
+              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                {hasAnyAssigned && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive animate-in fade-in slide-in-from-right-2 duration-200">
+                        Clear all
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader className="text-left">
+                        <DialogTitle>Clear all assignments?</DialogTitle>
+                        <DialogDescription className="mt-1">
+                          All dish assignments will be removed. You&apos;ll need to start over.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter className="mt-2 flex-row gap-3">
+                        <DialogClose asChild>
+                          <Button variant="outline" className="h-12 flex-1 rounded-2xl text-base">Cancel</Button>
+                        </DialogClose>
+                        <DialogClose asChild>
+                          <Button variant="destructive" className="h-12 flex-1 rounded-2xl text-base" onClick={clearAllAssignments}>Clear all</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                {hasUnclaimed && (
+                  <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-primary/40 text-primary hover:bg-primary/10 hover:text-primary" onClick={assignRestToSelected}>
+                    Assign rest
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader className="text-left">
-                    <DialogTitle>Clear all assignments?</DialogTitle>
-                    <DialogDescription className="mt-1">
-                      All dish assignments will be removed. You&apos;ll need to start over.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter className="mt-2 flex-row gap-3">
-                    <DialogClose asChild>
-                      <Button variant="outline" className="h-12 flex-1 rounded-2xl text-base">Cancel</Button>
-                    </DialogClose>
-                    <DialogClose asChild>
-                      <Button variant="destructive" className="h-12 flex-1 rounded-2xl text-base" onClick={clearAllAssignments}>Clear all</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
-            {hasUnclaimed && (
-              <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-primary/40 text-primary hover:bg-primary/10 hover:text-primary" onClick={assignRestToSelected}>
-                Assign rest
-              </Button>
-            )}
-          </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">

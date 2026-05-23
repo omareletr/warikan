@@ -6,6 +6,12 @@
   command = "npm run build"
   [context.staging.environment]
     NEXT_PUBLIC_IS_STAGING = "true"
+    NEXT_PUBLIC_APP_URL = "https://staging--warikan0.netlify.app"
+
+[context.production]
+  command = "npm run build"
+  [context.production.environment]
+    NEXT_PUBLIC_APP_URL = "https://warikan0.netlify.app"
 
 [functions]
   node_bundler = "esbuild"

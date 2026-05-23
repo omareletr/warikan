@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+
+    <!-- iOS rounded-rect clip -->
+    <clipPath id="icon-rounded-rect">
+      <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230"/>
+    </clipPath>
+
+    <!-- Background radial glow -->
+    <radialGradient id="bg-glow" cx="50%" cy="50%" r="55%" gradientUnits="userSpaceOnUse" fx="512" fy="512">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.22"/>
+      <stop offset="60%" stop-color="#10B981" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Drop shadow filter -->
+    <filter id="receipt-shadow" x="-30%" y="-15%" width="160%" height="140%">
+      <feDropShadow dx="0" dy="11" stdDeviation="20" flood-color="black" flood-opacity="0.50"/>
+    </filter>
+
+    <!-- Inner emerald glow on receipt body -->
+    <radialGradient id="receipt-inner-glow" cx="50%" cy="40%" r="60%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Glass diffuse highlight -->
+    <radialGradient id="receipt-glass" cx="50%" cy="25%" r="55%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="white" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Left half mask: clips to left of center (x < 512 in local space) -->
+    <clipPath id="left-clip">
+      <rect x="-2000" y="-2000" width="2512" height="6000"/>
+    </clipPath>
+
+    <!-- Right half mask: clips to right of center (x > 512 in local space) -->
+    <clipPath id="right-clip">
+      <rect x="512" y="-2000" width="2000" height="6000"/>
+    </clipPath>
+
+  </defs>
+
+  <!-- ROOT GROUP — clipped to iOS rounded rect -->
+  <g clip-path="url(#icon-rounded-rect)">
+
+    <!-- BACKGROUND -->
+    <rect x="0" y="0" width="1024" height="1024" fill="#0a0f0d"/>
+    <rect x="0" y="0" width="1024" height="1024" fill="url(#bg-glow)"/>
+
+    <!-- LEFT RECEIPT HALF — full receipt, rotate -2° left, translate left -->
+    <!-- Pivot at receipt center (512, 520). Clip to left half in local space. -->
+    <g transform="translate(-18, 0) rotate(-2, 512, 520)">
+      <g clip-path="url(#left-clip)">
+
+        <!-- Drop shadow -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23"
+              fill="black" fill-opacity="0" filter="url(#receipt-shadow)"/>
+
+        <!-- Main body -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23"
+              fill="hsl(155,18%,14%)" fill-opacity="0.92"/>
+
+        <!-- Emerald border -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23"
+              fill="none" stroke="#10B981" stroke-opacity="0.35" stroke-width="2.875"/>
+
+        <!-- Inner white border -->
+        <rect x="283.4" y="201.4" width="457.2" height="637.2" rx="22" ry="22"
+              fill="none" stroke="white" stroke-opacity="0.10" stroke-width="1.4"/>
+
+        <!-- Restaurant name bar -->
+        <rect x="328" y="273" width="259" height="23" rx="10" ry="10"
+              fill="#10B981" fill-opacity="0.38"/>
+
+        <!-- Line item rows -->
+        <rect x="328" y="347" width="218" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="347" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="390" width="172" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="390" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="433" width="196" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="433" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="477" width="149" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="477" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="520" width="207" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="520" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <!-- Dashed divider -->
+        <line x1="328" y1="573" x2="696" y2="573"
+              stroke="white" stroke-opacity="0.12" stroke-width="2.5" stroke-dasharray="11 8"/>
+
+        <!-- Tax row -->
+        <rect x="328" y="600" width="126" height="13" rx="6" fill="white" fill-opacity="0.10"/>
+        <rect x="598" y="600" width="98"  height="13" rx="6" fill="white" fill-opacity="0.10"/>
+
+        <!-- Tip row -->
+        <rect x="328" y="633" width="80"  height="13" rx="6" fill="white" fill-opacity="0.10"/>
+        <rect x="598" y="633" width="98"  height="13" rx="6" fill="white" fill-opacity="0.10"/>
+
+        <!-- Total bar -->
+        <rect x="328" y="690" width="368" height="27" rx="13"
+              fill="#10B981" fill-opacity="0.28"/>
+
+        <!-- Perforation line -->
+        <line x1="282" y1="760" x2="742" y2="760"
+              stroke="white" stroke-opacity="0.07" stroke-width="1.4" stroke-dasharray="8 8"/>
+
+        <!-- Perforation dots -->
+        <circle cx="302"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="339"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="377"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="414"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="452"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="489"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="535"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="572"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="610"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="647"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="685"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="722"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+
+        <!-- Inner glow + glass overlays -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23" fill="url(#receipt-inner-glow)"/>
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23" fill="url(#receipt-glass)"/>
+
+      </g>
+    </g>
+
+    <!-- RIGHT RECEIPT HALF — full receipt, rotate +2° right, translate right -->
+    <g transform="translate(18, 0) rotate(2, 512, 520)">
+      <g clip-path="url(#right-clip)">
+
+        <!-- Drop shadow -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23"
+              fill="black" fill-opacity="0" filter="url(#receipt-shadow)"/>
+
+        <!-- Main body -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23"
+              fill="hsl(155,18%,14%)" fill-opacity="0.92"/>
+
+        <!-- Emerald border -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23"
+              fill="none" stroke="#10B981" stroke-opacity="0.35" stroke-width="2.875"/>
+
+        <!-- Inner white border -->
+        <rect x="283.4" y="201.4" width="457.2" height="637.2" rx="22" ry="22"
+              fill="none" stroke="white" stroke-opacity="0.10" stroke-width="1.4"/>
+
+        <!-- Restaurant name bar -->
+        <rect x="328" y="273" width="259" height="23" rx="10" ry="10"
+              fill="#10B981" fill-opacity="0.38"/>
+
+        <!-- Line item rows -->
+        <rect x="328" y="347" width="218" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="347" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="390" width="172" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="390" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="433" width="196" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="433" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="477" width="149" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="477" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <rect x="328" y="520" width="207" height="17" rx="8" fill="#10B981" fill-opacity="0.18"/>
+        <rect x="598" y="520" width="98" height="17" rx="8" fill="#10B981" fill-opacity="0.14"/>
+
+        <!-- Dashed divider -->
+        <line x1="328" y1="573" x2="696" y2="573"
+              stroke="white" stroke-opacity="0.12" stroke-width="2.5" stroke-dasharray="11 8"/>
+
+        <!-- Tax row -->
+        <rect x="328" y="600" width="126" height="13" rx="6" fill="white" fill-opacity="0.10"/>
+        <rect x="598" y="600" width="98"  height="13" rx="6" fill="white" fill-opacity="0.10"/>
+
+        <!-- Tip row -->
+        <rect x="328" y="633" width="80"  height="13" rx="6" fill="white" fill-opacity="0.10"/>
+        <rect x="598" y="633" width="98"  height="13" rx="6" fill="white" fill-opacity="0.10"/>
+
+        <!-- Total bar -->
+        <rect x="328" y="690" width="368" height="27" rx="13"
+              fill="#10B981" fill-opacity="0.28"/>
+
+        <!-- Perforation line -->
+        <line x1="282" y1="760" x2="742" y2="760"
+              stroke="white" stroke-opacity="0.07" stroke-width="1.4" stroke-dasharray="8 8"/>
+
+        <!-- Perforation dots -->
+        <circle cx="302"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="339"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="377"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="414"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="452"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="489"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="535"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="572"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="610"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="647"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="685"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+        <circle cx="722"  cy="813" r="7.2" fill="hsl(155,18%,4%)" stroke="#10B981" stroke-width="1.4" stroke-opacity="0.30"/>
+
+        <!-- Inner glow + glass overlays -->
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23" fill="url(#receipt-inner-glow)"/>
+        <rect x="282" y="200" width="460" height="640" rx="23" ry="23" fill="url(#receipt-glass)"/>
+
+      </g>
+    </g>
+
+  </g>
+</svg>

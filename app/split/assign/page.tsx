@@ -557,7 +557,7 @@ export default function AssignPage() {
           </div>
         ) : (
           <div className="flex justify-center pb-1">
-            <span className="rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm text-muted-foreground">
+            <span className="rounded-full border border-border/40 bg-card/90 backdrop-blur-xl px-4 py-2 text-sm text-muted-foreground">
               {(() => {
                 const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
                 const assignedSlots = state.lineItems.reduce((sum, item) => {

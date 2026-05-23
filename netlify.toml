@@ -7,6 +7,9 @@
   [context.staging.environment]
     NEXT_PUBLIC_IS_STAGING = "true"
 
+[functions]
+  node_bundler = "esbuild"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
@@ -18,3 +21,9 @@
     Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
     Cross-Origin-Opener-Policy = "same-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+[[headers]]
+  for = "/api/room/*/subscribe"
+  [headers.values]
+    X-Accel-Buffering = "no"
+    Cache-Control = "no-cache"

@@ -44,11 +44,15 @@ function personColorByIndex(index: number, covered?: boolean) {
   return AVATAR_COLORS[index % AVATAR_COLORS.length];
 }
 
-function countClaimedDishes(room: RoomState): number {
-  return room.lineItems.filter((item) => {
+function countClaimedSlots(room: RoomState): number {
+  return room.lineItems.reduce((sum, item) => {
     const assigned = room.assignments[item.id] ?? [];
-    return assigned.length > 0;
-  }).length;
+    return sum + Math.min(assigned.length, Math.max(item.quantity ?? 1, 1));
+  }, 0);
+}
+
+function countTotalSlots(room: RoomState): number {
+  return room.lineItems.reduce((sum, item) => sum + Math.max(item.quantity ?? 1, 1), 0);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -281,8 +285,8 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
   const myIndex = room.people.findIndex((p) => p.id === myPersonId);
   const myColor = myPerson ? personColorByIndex(myIndex, myPerson.covered) : AVATAR_COLORS[0];
 
-  const claimedCount = countClaimedDishes(room);
-  const totalCount = room.lineItems.length;
+  const claimedCount = countClaimedSlots(room);
+  const totalCount = countTotalSlots(room);
   const allClaimed = claimedCount === totalCount && totalCount > 0;
 
   function personColorForId(personId: string) {

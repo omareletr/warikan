@@ -325,6 +325,22 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
     }
   }
 
+  // Avatar badge taps always remove one claim — never add.
+  async function handleUnclaim(item: LineItem) {
+    const optimisticRoom = applyOptimisticUpdate(room, item.id, myPersonId, "unclaim_item");
+    onRoomUpdate(optimisticRoom);
+    try {
+      const updated = await sendRoomAction(room.roomId, {
+        type: "unclaim_item",
+        personId: myPersonId,
+        itemId: item.id,
+      });
+      onRoomUpdate(updated);
+    } catch {
+      onRoomUpdate(room);
+    }
+  }
+
   function triggerShake(itemId: string, taken: boolean) {
     setShakingItemId(itemId);
     if (taken) setTakenItemId(itemId);
@@ -472,7 +488,7 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
                               onClick={(e) => {
                                 if (!isMe) return;
                                 e.stopPropagation();
-                                void handleItemTap(item);
+                                void handleUnclaim(item);
                               }}
                               className={cn(
                                 "flex h-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold",

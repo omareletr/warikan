@@ -435,7 +435,7 @@ export async function POST(
 
       // Find personIds that the guest claimed concurrently (in server but not in host snapshot)
       const hostSet = new Set(hostIds);
-      const extraIds = serverIds.filter((id) => !hostSet.has(id));
+      const extraIds = serverIds.filter((id) => !hostSet.has(id) && state.connectedPeople.includes(id));
 
       mergedAssignments[item.id] = extraIds.length > 0 ? [...hostIds, ...extraIds] : hostIds;
     }

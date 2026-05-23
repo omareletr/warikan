@@ -30,12 +30,9 @@ import {
   fetchRoom,
   sendRoomAction,
   subscribeToRoom,
+  ROOM_SESSION_KEY,
 } from "@/lib/room-client";
 import type { RoomState } from "@/lib/types";
-
-// Persists the active collab room ID for the duration of the browser tab.
-// Cleared when the host advances to Summary (close) or the room expires.
-const ROOM_SESSION_KEY = "warikan_assign_room_id";
 
 export default function AssignPage() {
   const router = useRouter();
@@ -169,6 +166,24 @@ export default function AssignPage() {
     );
     return unsubscribe;
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Send a beacon on tab close / refresh / navigate-away so the Redis room is
+  // closed promptly even when the host doesn't use the normal Continue path.
+  // sendBeacon survives page unload; fetch/XHR do not.
+  // Intentionally fires even after handleContinue() — the server's close action
+  // is idempotent, so a double-close on an already-done room is harmless.
+  useEffect(() => {
+    if (!roomId) return;
+    function handleBeforeUnload() {
+      if (typeof navigator === "undefined" || !navigator.sendBeacon) return;
+      navigator.sendBeacon(
+        `/api/room/${roomId}`,
+        new Blob([JSON.stringify({ type: "close" })], { type: "application/json" }),
+      );
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [roomId]);
 
   async function handleInvite() {
     if (roomId) {
@@ -361,7 +376,7 @@ export default function AssignPage() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold shrink-0">Assign dishes</h1>
-          {roomState && (
+          {roomState && roomState.connectedPeople.length > 0 && (
             <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400 whitespace-nowrap">

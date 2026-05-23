@@ -12,6 +12,7 @@ import {
   pickNativePhoto,
   readFileAsBase64,
 } from "@/lib/platform";
+import { closeRoomIfActive } from "@/lib/room-client";
 
 const SAMPLE_W = 160;
 const SAMPLE_H = 90;
@@ -555,7 +556,8 @@ function WebScanPage({
 export default function ScanPage() {
   const { setImage, reset } = useSplitFlow();
 
-  useEffect(() => { reset(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { closeRoomIfActive(); reset(); }, []);
 
   if (isNative()) {
     return <NativeScanPage setImage={setImage} />;

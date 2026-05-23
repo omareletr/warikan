@@ -343,18 +343,18 @@ export default function AssignPage() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Clear all assignments</DialogTitle>
-                    <DialogDescription>
-                      This will remove all dish assignments. You&apos;ll need to start over.
+                  <DialogHeader className="text-left">
+                    <DialogTitle>Clear all assignments?</DialogTitle>
+                    <DialogDescription className="mt-1">
+                      All dish assignments will be removed. You&apos;ll need to start over.
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter>
+                  <DialogFooter className="mt-2 flex-row gap-3">
                     <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
+                      <Button variant="outline" className="h-12 flex-1 rounded-2xl text-base">Cancel</Button>
                     </DialogClose>
                     <DialogClose asChild>
-                      <Button variant="destructive" onClick={clearAllAssignments}>Clear all</Button>
+                      <Button variant="destructive" className="h-12 flex-1 rounded-2xl text-base" onClick={clearAllAssignments}>Clear all</Button>
                     </DialogClose>
                   </DialogFooter>
                 </DialogContent>

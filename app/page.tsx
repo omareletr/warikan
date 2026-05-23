@@ -12,6 +12,8 @@ import { UserMenu } from "@/components/auth/user-menu";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplits } from "@/lib/splits";
+import { subscribeToSplits } from "@/lib/firestore-splits";
+import { useAuth } from "@/lib/auth-context";
 
 const DEMO_RECEIPT = {
   restaurantName: "Helmand Palace",
@@ -41,6 +43,7 @@ function readFileAsBase64(file: File): Promise<string> {
 export default function HomePage() {
   const router = useRouter();
   const { setImage, setReceiptData, reset } = useSplitFlow();
+  const { user } = useAuth();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [fromPop] = useState(() => consumePopFlag());
@@ -49,8 +52,13 @@ export default function HomePage() {
   const [splitCount, setSplitCount] = useState(0);
 
   useEffect(() => {
-    setSplitCount(getSplits().length);
-  }, []);
+    if (!user) {
+      setSplitCount(getSplits().length);
+      return;
+    }
+    const unsub = subscribeToSplits(user.uid, (splits) => setSplitCount(splits.length));
+    return unsub;
+  }, [user]);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) return;

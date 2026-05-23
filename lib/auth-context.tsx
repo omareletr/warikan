@@ -15,6 +15,7 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { mergeLocalSplitsToFirestore } from "@/lib/sync";
 
 interface AuthContextValue {
   user: User | null;
@@ -39,7 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    mergeLocalSplitsToFirestore(result.user.uid).catch(console.error);
   }, []);
 
   const signOut = useCallback(async () => {

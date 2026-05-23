@@ -21,6 +21,8 @@ import {
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplitById, deleteSplit } from "@/lib/splits";
+import { deleteFirestoreSplit } from "@/lib/firestore-splits";
+import { useAuth } from "@/lib/auth-context";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import { encodePayData, getPaymentPreference, getPaymentApp } from "@/lib/payment-apps";
@@ -43,6 +45,7 @@ function SplitDetailContent() {
   const id = searchParams.get("id") ?? "";
   const router = useRouter();
   const { loadSplit } = useSplitFlow();
+  const { user } = useAuth();
   const [fromPop] = useState(() => consumePopFlag());
   const [split, setSplit] = useState<Split | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -107,6 +110,9 @@ function SplitDetailContent() {
   function handleDelete() {
     if (!split) return;
     deleteSplit(split.id);
+    if (user) {
+      deleteFirestoreSplit(user.uid, split.id).catch(console.error);
+    }
     router.push("/");
   }
 

@@ -6,6 +6,7 @@ import type { PanInfo } from "framer-motion";
 import { Copy, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 interface QRDrawerProps {
   open: boolean;
@@ -64,7 +65,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
         role="dialog"
         aria-labelledby="qr-drawer-title"
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-border/30 bg-card px-5 pt-3 pb-12 touch-none"
+        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-border/30 bg-card px-5 pt-3 pb-10 touch-none"
       >
         <div className="mx-auto mb-6 h-1.5 w-10 rounded-full bg-muted" />
 
@@ -75,7 +76,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
         >
           <p id="qr-drawer-title" className="text-xl font-bold">Scan to pay</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Everyone scans, picks their name, and pays via {payAppName}.
+            Everyone picks their name and pays.
           </p>
         </motion.div>
 
@@ -83,18 +84,19 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14, type: "spring", damping: 22, stiffness: 300 }}
-          className="mt-6 flex flex-col items-center gap-4"
+          className="mt-6 flex flex-col items-center gap-3"
         >
-          <div className="rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.5)] ring-2 ring-primary/30">
-            <div className="rounded-2xl bg-white p-4">
-              <QRCodeSVG value={url || "https://warikan0.netlify.app"} size={260} />
+          <div className="rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/8">
+            <div className="rounded-2xl bg-white p-5">
+              <QRCodeSVG value={url || "https://warikan0.netlify.app"} size={220} />
             </div>
           </div>
           {payHandle && (
-            <p className="text-sm text-muted-foreground">
-              Pay via {payAppName}{" "}
-              <span className="font-mono text-primary">{payHandle}</span>
-            </p>
+            <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1">
+              <span className="text-xs text-muted-foreground">{payAppName}</span>
+              <span className="text-xs text-muted-foreground/40">·</span>
+              <span className="font-mono text-xs text-foreground">{payHandle}</span>
+            </div>
           )}
         </motion.div>
 
@@ -104,6 +106,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
           transition={{ delay: 0.20, type: "spring", damping: 22, stiffness: 300 }}
           className="mt-6"
         >
+          <Separator className="mb-5" />
           <Button
             variant="outline"
             className="h-14 w-full gap-2 rounded-2xl text-base font-semibold"

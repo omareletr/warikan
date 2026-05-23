@@ -177,10 +177,12 @@ export function subscribeToRoom(
       e.stopPropagation();
       source.close();
       if (!destroyed) {
+        // Short delay before reconnecting to avoid hammering the server on
+        // rapid connection failures, while keeping perceived latency low.
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null;
           connect(lastVersion);
-        }, 2000);
+        }, 500);
       }
     });
   }

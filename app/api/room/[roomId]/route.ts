@@ -393,12 +393,31 @@ export async function POST(
 
   // ── host_bulk_assign ──────────────────────────────────────────────────────
   if (action.type === "host_bulk_assign") {
-    // Host sends its complete assignments map — replace atomically in one write.
-    // This avoids the N-concurrent-reads race that happens when N host_assign
-    // calls fire in parallel (each reading stale state and overwriting each other).
+    // Host sends its complete assignments map — merge with the server's current
+    // state so that any guest claims (claim_item) that arrived between the host's
+    // last SSE update and this write are preserved rather than overwritten.
+    //
+    // Merge rule: for each item, start from the host's assignment list, then add
+    // any personIds that appear in the server's current assignment list but NOT
+    // in the host's list AND NOT already present in the host's list for that item.
+    // This preserves the host's intent while keeping concurrent guest claims.
+    const hostAssignments = action.assignments ?? state.assignments;
+    const mergedAssignments: Record<string, string[]> = {};
+
+    for (const item of state.lineItems) {
+      const hostIds: string[] = hostAssignments[item.id] ?? [];
+      const serverIds: string[] = state.assignments[item.id] ?? [];
+
+      // Find personIds that the guest claimed concurrently (in server but not in host snapshot)
+      const hostSet = new Set(hostIds);
+      const extraIds = serverIds.filter((id) => !hostSet.has(id));
+
+      mergedAssignments[item.id] = extraIds.length > 0 ? [...hostIds, ...extraIds] : hostIds;
+    }
+
     const bulkAssignState: RoomState = {
       ...state,
-      assignments: action.assignments ?? state.assignments,
+      assignments: mergedAssignments,
     };
     const savedBulkState = await saveRoom(bulkAssignState);
     return NextResponse.json(savedBulkState, { headers: cors });

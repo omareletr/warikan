@@ -6,6 +6,16 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Gift, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { InviteDrawer } from "@/components/split/invite-drawer";
 import { useSplitFlow } from "@/lib/split-flow-context";
@@ -326,9 +336,29 @@ export default function AssignPage() {
           </p>
           <div className="flex items-center gap-2">
             {hasAnyAssigned && (
-              <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-border/60 text-muted-foreground hover:text-foreground" onClick={clearAllAssignments}>
-                Clear all
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                    Clear all
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Clear all assignments</DialogTitle>
+                    <DialogDescription>
+                      This will remove all dish assignments. You'll need to start over.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button variant="destructive" onClick={clearAllAssignments}>Clear all</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             )}
             {hasUnclaimed && (
               <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-primary/40 text-primary hover:bg-primary/10 hover:text-primary" onClick={assignRestToSelected}>

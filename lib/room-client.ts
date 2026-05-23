@@ -85,6 +85,21 @@ export async function sendRoomAction(roomId: string, action: RoomAction): Promis
   return postRoomAction(roomId, action);
 }
 
+/**
+ * Fetches the current state of an existing room via GET.
+ * Returns null if the room does not exist (404) or on any error.
+ */
+export async function fetchRoom(roomId: string): Promise<RoomState | null> {
+  try {
+    const res = await fetch(`/api/room/${roomId}`);
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    return (await res.json()) as RoomState;
+  } catch {
+    return null;
+  }
+}
+
 // ─── SSE subscription ─────────────────────────────────────────────────────────
 
 /**

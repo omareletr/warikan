@@ -27,10 +27,15 @@ import {
   generateRoomId,
   getRoomJoinUrl,
   createRoom,
+  fetchRoom,
   sendRoomAction,
   subscribeToRoom,
 } from "@/lib/room-client";
 import type { RoomState } from "@/lib/types";
+
+// Persists the active collab room ID for the duration of the browser tab.
+// Cleared when the host advances to Summary (close) or the room expires.
+const ROOM_SESSION_KEY = "warikan_assign_room_id";
 
 export default function AssignPage() {
   const router = useRouter();
@@ -39,7 +44,12 @@ export default function AssignPage() {
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
 
   // Collaborative room state
-  const [roomId, setRoomId] = useState<string | null>(null);
+  // Restore roomId from sessionStorage so navigating back and returning keeps
+  // the same QR code / room alive rather than generating a new one.
+  const [roomId, setRoomId] = useState<string | null>(() => {
+    if (typeof sessionStorage === "undefined") return null;
+    return sessionStorage.getItem(ROOM_SESSION_KEY);
+  });
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -53,6 +63,25 @@ export default function AssignPage() {
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
+
+  // If roomId was restored from sessionStorage on mount, fetch the current
+  // room state from Redis so the UI (invite drawer, QR code, guest count) is
+  // populated immediately without waiting for the first SSE push.
+  useEffect(() => {
+    if (!roomId || roomState) return;
+    fetchRoom(roomId).then((existing) => {
+      if (existing) {
+        setRoomState(existing);
+      } else {
+        // Room expired on the server — discard the stale ID.
+        setRoomId(null);
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.removeItem(ROOM_SESSION_KEY);
+        }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
 
   // The full assignments snapshot the host most recently sent to the server.
   // The SSE callback uses this to detect whether an incoming update is just
@@ -104,6 +133,9 @@ export default function AssignPage() {
         // Room expired — fall back to solo mode
         setRoomId(null);
         setRoomState(null);
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.removeItem(ROOM_SESSION_KEY);
+        }
       }
     );
     return unsubscribe;
@@ -125,6 +157,9 @@ export default function AssignPage() {
       });
       setRoomId(newRoomId);
       setRoomState(room);
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem(ROOM_SESSION_KEY, newRoomId);
+      }
       setShowInvite(true);
     } catch {
       // silently fail — solo mode continues
@@ -253,6 +288,9 @@ export default function AssignPage() {
   async function handleContinue() {
     if (roomId) {
       sendRoomAction(roomId, { type: "close" }).catch(() => {});
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.removeItem(ROOM_SESSION_KEY);
+      }
     }
     router.push("/split/summary");
   }

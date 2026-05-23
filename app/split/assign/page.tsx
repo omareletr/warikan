@@ -283,9 +283,9 @@ export default function AssignPage() {
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold shrink-0">Assign dishes</h1>
           {roomState && (
-            <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium text-emerald-400">
+              <span className="text-xs font-medium text-emerald-400 whitespace-nowrap">
                 {roomState.connectedPeople.length} of {state.people.length} joined
               </span>
             </div>

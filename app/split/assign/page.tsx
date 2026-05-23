@@ -454,7 +454,7 @@ export default function AssignPage() {
                     )}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                <div className="flex items-center gap-4 flex-shrink-0 ml-3">
                   {claimedByOthers && (
                     <button
                       onPointerDown={(e) => e.stopPropagation()}

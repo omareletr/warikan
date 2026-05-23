@@ -337,9 +337,10 @@ export default function AssignPage() {
                             key={pid}
                             onPointerDown={(e) => e.stopPropagation()}
                             onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
-                            className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold active:opacity-70", color.bg, color.text)}
+                            className={cn("relative flex h-6 items-center justify-center rounded-full text-xs font-semibold active:opacity-70", color.bg, color.text, count > 1 ? "px-1.5 gap-0.5" : "w-6")}
                           >
                             {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                            {count > 1 && <span className="tabular-nums">×{count}</span>}
                           </button>
                         );
                       })}

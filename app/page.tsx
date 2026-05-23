@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HeroConceptA } from "@/components/split/hero-concept-a";
 import { HistorySheet } from "@/components/split/history-sheet";
+import { UserMenu } from "@/components/auth/user-menu";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { getSplits } from "@/lib/splits";
@@ -99,20 +100,23 @@ export default function HomePage() {
     >
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
-        <div className="flex items-center justify-end">
-          {splitCount > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-11 w-11"
-              onClick={() => setHistoryOpen(true)}
-            >
-              <History className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                {splitCount > 9 ? "9+" : splitCount}
-              </span>
-            </Button>
-          )}
+        <div className="flex items-center justify-between">
+          <UserMenu />
+          <div className="flex items-center">
+            {splitCount > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-11 w-11"
+                onClick={() => setHistoryOpen(true)}
+              >
+                <History className="h-5 w-5 text-muted-foreground" />
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {splitCount > 9 ? "9+" : splitCount}
+                </span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

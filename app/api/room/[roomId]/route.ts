@@ -33,6 +33,7 @@ const VALID_ACTION_TYPES = new Set<RoomAction["type"]>([
   "host_assign",
   "host_bulk_assign",
   "guest_done",
+  "guest_back",
   "close",
 ]);
 
@@ -303,6 +304,32 @@ export async function POST(
 
     const savedGuestDoneState = await saveRoom(updatedGuestDoneState);
     return NextResponse.json(savedGuestDoneState, { headers: cors });
+  }
+
+  // ── guest_back ────────────────────────────────────────────────────────────
+  if (action.type === "guest_back") {
+    const { personId } = action;
+    if (!personId) {
+      return jsonError("personId is required for guest_back", "missing_field", 400, cors);
+    }
+
+    // If the host has already closed the room, guests can no longer go back.
+    if (state.status === "done") {
+      return jsonError("Room is already closed", "room_closed", 409, cors);
+    }
+
+    // Re-add to connectedPeople (mark as online again) and remove from donePeople.
+    const currentDonePeople = state.donePeople ?? [];
+    const updatedGuestBackState: RoomState = {
+      ...state,
+      connectedPeople: state.connectedPeople.includes(personId)
+        ? state.connectedPeople
+        : [...state.connectedPeople, personId],
+      donePeople: currentDonePeople.filter((id) => id !== personId),
+    };
+
+    const savedGuestBackState = await saveRoom(updatedGuestBackState);
+    return NextResponse.json(savedGuestBackState, { headers: cors });
   }
 
   // ── claim_item ────────────────────────────────────────────────────────────

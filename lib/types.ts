@@ -66,6 +66,7 @@ export type RoomActionType =
   | "host_assign"       // host assigns a single item (override)
   | "host_bulk_assign"  // host replaces the entire assignments map atomically
   | "guest_done"
+  | "guest_back"        // guest undoes "I'm done" to return to assigning
   | "close";
 
 export interface RoomAction {

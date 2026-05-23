@@ -28,7 +28,7 @@ type PageState =
   | { phase: "error"; message: string; retryable: boolean }
   | { phase: "pick_name"; room: RoomState }
   | { phase: "assigning"; room: RoomState; myPersonId: string }
-  | { phase: "done" };
+  | { phase: "done"; myPersonId: string | null; roomClosed: boolean };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -116,7 +116,31 @@ function ErrorScreen({ message, retryable, onRetry }: ErrorScreenProps) {
 
 // ─── Done screen ──────────────────────────────────────────────────────────────
 
-function DoneScreen() {
+interface DoneScreenProps {
+  myPersonId: string | null;
+  roomClosed: boolean;
+  onEdit: () => Promise<void>;
+}
+
+function DoneScreen({ myPersonId, roomClosed, onEdit }: DoneScreenProps) {
+  const canEdit = Boolean(myPersonId) && !roomClosed;
+  const [editing, setEditing] = useState(false);
+  const [editError, setEditError] = useState(false);
+
+  async function handleEditClick() {
+    setEditing(true);
+    setEditError(false);
+    try {
+      await onEdit();
+    } catch {
+      // onEdit rejected — show transient error state, then reset so user can retry
+      setEditError(true);
+      setTimeout(() => setEditError(false), 2500);
+    } finally {
+      setEditing(false);
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -147,6 +171,34 @@ function DoneScreen() {
           The host will tally up everyone&apos;s totals.
         </p>
       </div>
+
+      {canEdit && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="flex flex-col items-center gap-2"
+        >
+          <Button
+            variant="outline"
+            onClick={handleEditClick}
+            disabled={editing}
+            className="gap-2 rounded-2xl"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {editing ? "Going back…" : "Edit my choices"}
+          </Button>
+          {editError && (
+            <motion.p
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm text-muted-foreground"
+            >
+              Couldn&apos;t connect — tap to try again
+            </motion.p>
+          )}
+        </motion.div>
+      )}
     </motion.div>
   );
 }
@@ -758,7 +810,7 @@ export default function JoinPage() {
       const existingPersonId = getLocalRoomPersonId(roomId);
       if (existingPersonId && room.claimedBy[existingPersonId]) {
         if (room.status === "done") {
-          setPageState({ phase: "done" });
+          setPageState({ phase: "done", myPersonId: existingPersonId, roomClosed: true });
         } else {
           setPageState({ phase: "assigning", room, myPersonId: existingPersonId });
         }
@@ -766,7 +818,7 @@ export default function JoinPage() {
       }
 
       if (room.status === "done") {
-        setPageState({ phase: "done" });
+        setPageState({ phase: "done", myPersonId: null, roomClosed: true });
         return;
       }
 
@@ -795,7 +847,7 @@ export default function JoinPage() {
       room.version,
       (updatedRoom) => {
         if (updatedRoom.status === "done") {
-          setPageState({ phase: "done" });
+          setPageState({ phase: "done", myPersonId, roomClosed: true });
           return;
         }
         setPageState((prev) => {
@@ -827,7 +879,7 @@ export default function JoinPage() {
       room.version,
       (updatedRoom) => {
         if (updatedRoom.status === "done") {
-          setPageState({ phase: "done" });
+          setPageState({ phase: "done", myPersonId: getLocalRoomPersonId(roomId), roomClosed: true });
           return;
         }
         setPageState((prev) => {
@@ -873,7 +925,7 @@ export default function JoinPage() {
       setJoining(false);
 
       if (updatedRoom.status === "done") {
-        setPageState({ phase: "done" });
+        setPageState({ phase: "done", myPersonId: personId, roomClosed: true });
       } else {
         setPageState({ phase: "assigning", room: updatedRoom, myPersonId: personId });
       }
@@ -900,6 +952,29 @@ export default function JoinPage() {
       if (prev.phase !== "assigning") return prev;
       return { ...prev, room: updatedRoom };
     });
+  }
+
+  async function handleEditFromDone() {
+    if (pageState.phase !== "done" || !pageState.myPersonId) return;
+    const personId = pageState.myPersonId;
+    try {
+      const updatedRoom = await sendRoomAction(roomId, {
+        type: "guest_back",
+        personId,
+      });
+      setPageState({ phase: "assigning", room: updatedRoom, myPersonId: personId });
+    } catch (err: unknown) {
+      const apiErr = err as { code?: string };
+      if (apiErr?.code === "room_closed") {
+        // Host closed the room — update state so the edit button disappears
+        setPageState((prev) =>
+          prev.phase === "done" ? { ...prev, roomClosed: true } : prev
+        );
+        return;
+      }
+      // Network or server error — re-throw so DoneScreen can show a retry hint
+      throw err;
+    }
   }
 
   return (
@@ -939,8 +1014,9 @@ export default function JoinPage() {
             myPersonId={pageState.myPersonId}
             onBack={handleBackToNamePicker}
             onDone={() => {
-              sendRoomAction(roomId, { type: "guest_done", personId: pageState.myPersonId }).catch(() => {});
-              setPageState({ phase: "done" });
+              const donePersonId = pageState.myPersonId;
+              sendRoomAction(roomId, { type: "guest_done", personId: donePersonId }).catch(() => {});
+              setPageState({ phase: "done", myPersonId: donePersonId, roomClosed: false });
             }}
             onRoomUpdate={handleRoomUpdate}
           />
@@ -949,7 +1025,11 @@ export default function JoinPage() {
 
       {pageState.phase === "done" && (
         <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <DoneScreen />
+          <DoneScreen
+            myPersonId={pageState.myPersonId}
+            roomClosed={pageState.roomClosed}
+            onEdit={handleEditFromDone}
+          />
         </motion.div>
       )}
     </AnimatePresence>

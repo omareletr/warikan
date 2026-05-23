@@ -182,8 +182,19 @@ export async function GET(
         if (!send(sseEvent("ping", {}))) closeAll();
       }, PING_INTERVAL_MS);
 
-      // ── Helper: fetch room and push to client if newer ───────────────────
-      async function pushIfNewer(): Promise<void> {
+      // ── Helper: push a state object to the client if it's newer ────────────
+      function pushState(state: RoomState): void {
+        if (closed) return;
+        if (state.version <= since) return;
+        if (!send(sseEvent("state", state))) {
+          closeAll();
+          return;
+        }
+        since = state.version;
+      }
+
+      // ── Helper: fetch from Redis and push (fallback path only) ───────────
+      async function fetchAndPush(): Promise<void> {
         if (closed) return;
         let state: RoomState | null = null;
         try {
@@ -197,13 +208,7 @@ export async function GET(
           closeAll();
           return;
         }
-        if (state.version > since) {
-          if (!send(sseEvent("state", state))) {
-            closeAll();
-            return;
-          }
-          since = state.version;
-        }
+        pushState(state);
       }
 
       // ── Fallback poll (safety net for dropped pub/sub messages) ──────────
@@ -211,7 +216,7 @@ export async function GET(
       fallbackTimer = setInterval(async () => {
         if (pollInFlight || closed) return;
         pollInFlight = true;
-        try { await pushIfNewer(); } finally { pollInFlight = false; }
+        try { await fetchAndPush(); } finally { pollInFlight = false; }
       }, FALLBACK_POLL_INTERVAL_MS);
 
       // ── Upstash pub/sub listener ─────────────────────────────────────────
@@ -262,8 +267,10 @@ export async function GET(
 
               for (const line of lines) {
                 if (!line.startsWith("data: ")) continue;
-                const raw = line.slice(6).trim(); // strip "data: "
+                const raw = line.slice(6).trim();
                 // Upstash SSE format: "type,channel,payload"
+                // payload is our full JSON state — find the two delimiters
+                // before the JSON so we don't split inside the object.
                 const commaIdx = raw.indexOf(",");
                 const commaIdx2 = raw.indexOf(",", commaIdx + 1);
                 if (commaIdx === -1 || commaIdx2 === -1) continue;
@@ -271,10 +278,19 @@ export async function GET(
                 const payload = raw.slice(commaIdx2 + 1);
 
                 if (msgType === "message") {
-                  const publishedVersion = parseInt(payload, 10);
-                  if (!isNaN(publishedVersion) && publishedVersion > since) {
-                    await pushIfNewer();
+                  // Hot path: payload is the full RoomState JSON — push
+                  // directly without a Redis GET.
+                  try {
+                    const state = JSON.parse(payload) as RoomState;
+                    if (typeof state.version === "number") {
+                      pushState(state);
+                      continue;
+                    }
+                  } catch {
+                    // Payload wasn't valid JSON — fall through to Redis fetch
                   }
+                  // Fallback: payload was plain text (old format) — fetch from Redis
+                  await fetchAndPush();
                 }
                 // "subscribe" lines are confirmations — ignore
               }

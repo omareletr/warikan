@@ -47,7 +47,7 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
             <NumberFlow
               value={runningTotal}
               format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }}
-              className={cn("tabular-nums", runningTotal === 0 ? "text-muted-foreground" : "text-primary")}
+              className={cn("tabular-nums", runningTotal === 0 && !selected ? "text-muted-foreground" : "text-primary")}
             />
           )}
         </span>

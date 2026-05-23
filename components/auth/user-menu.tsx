@@ -13,23 +13,41 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth-context";
 import { SignInSheet } from "@/components/auth/sign-in-sheet";
 
-function UserAvatar({ photoURL, displayName }: { photoURL: string | null; displayName: string | null }) {
+function UserAvatar({
+  photoURL,
+  displayName,
+  size = 32,
+}: {
+  photoURL: string | null;
+  displayName: string | null;
+  size?: number;
+}) {
   const initials = displayName
     ? displayName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?";
 
+  const style = { width: size, height: size, minWidth: size, minHeight: size };
+
   if (photoURL) {
     return (
-      <img
-        src={photoURL}
-        alt={displayName ?? "User"}
-        className="h-8 w-8 rounded-full object-cover ring-2 ring-primary/40"
-      />
+      <div
+        style={style}
+        className="rounded-full ring-2 ring-primary/40 overflow-hidden flex-shrink-0"
+      >
+        <img
+          src={photoURL}
+          alt={displayName ?? "User"}
+          className="w-full h-full object-cover"
+        />
+      </div>
     );
   }
 
   return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary ring-2 ring-primary/40">
+    <div
+      style={style}
+      className="flex items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary ring-2 ring-primary/40"
+    >
       {initials}
     </div>
   );
@@ -78,7 +96,7 @@ export function UserMenu() {
         <SheetContent side="bottom" className="rounded-t-3xl pb-10">
           <SheetHeader className="mb-6 mt-2">
             <div className="flex items-center gap-4">
-              <UserAvatar photoURL={user.photoURL} displayName={user.displayName} />
+              <UserAvatar photoURL={user.photoURL} displayName={user.displayName} size={44} />
               <div className="flex flex-col text-left">
                 <SheetTitle className="text-base font-semibold">
                   {user.displayName ?? "Signed in"}

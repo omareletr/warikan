@@ -54,10 +54,9 @@ export default function HomePage() {
   useEffect(() => {
     if (!user) {
       setSplitCount(getSplits().length);
-      return;
+      return () => {};
     }
-    const unsub = subscribeToSplits(user.uid, (splits) => setSplitCount(splits.length));
-    return unsub;
+    return subscribeToSplits(user.uid, (splits) => setSplitCount(splits.length));
   }, [user]);
 
   async function handleFile(file: File) {

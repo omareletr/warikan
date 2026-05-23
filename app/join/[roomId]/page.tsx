@@ -150,11 +150,13 @@ function DoneScreen() {
 
 interface NamePickerProps {
   room: RoomState;
+  myPersonId: string | null;
   onJoin: (personId: string) => void;
+  onResume: (personId: string) => void;
   joining: boolean;
 }
 
-function NamePicker({ room, onJoin, joining }: NamePickerProps) {
+function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerProps) {
   return (
     <motion.main
       initial={{ opacity: 0, y: 12 }}
@@ -179,6 +181,9 @@ function NamePicker({ room, onJoin, joining }: NamePickerProps) {
         {room.people.map((person, i) => {
           const color = personColorByIndex(i, person.covered);
           const isClaimed = Boolean(room.claimedBy[person.id]);
+          // This device already claimed this slot — let them tap back in
+          const isMe = myPersonId === person.id;
+          const isClaimedByOther = isClaimed && !isMe;
 
           return (
             <motion.button
@@ -187,12 +192,16 @@ function NamePicker({ room, onJoin, joining }: NamePickerProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               onClick={() => {
-                if (!isClaimed && !joining) onJoin(person.id);
+                if (joining) return;
+                if (isMe) { onResume(person.id); return; }
+                if (!isClaimedByOther) onJoin(person.id);
               }}
-              disabled={isClaimed || joining}
+              disabled={isClaimedByOther || joining}
               className={cn(
                 "flex min-h-[56px] items-center gap-4 rounded-2xl border px-4 py-3 text-left transition-all duration-150",
-                isClaimed
+                isMe
+                  ? "cursor-pointer border-primary/40 bg-primary/5 active:scale-[0.98] active:opacity-75"
+                  : isClaimedByOther
                   ? "cursor-default border-emerald-500/25 bg-emerald-500/5 opacity-60"
                   : "cursor-pointer border-border/50 bg-card active:scale-[0.98] active:opacity-75"
               )}
@@ -201,7 +210,9 @@ function NamePicker({ room, onJoin, joining }: NamePickerProps) {
               <div
                 className={cn(
                   "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-                  isClaimed
+                  isMe
+                    ? `${color.bg} ${color.text}`
+                    : isClaimed
                     ? "bg-emerald-500/20 text-emerald-400"
                     : `${color.bg} ${color.text}`
                 )}
@@ -216,8 +227,18 @@ function NamePicker({ room, onJoin, joining }: NamePickerProps) {
               {/* Name */}
               <span className="flex-1 text-base font-medium">{person.name}</span>
 
-              {/* Claimed badge */}
-              {isClaimed && (
+              {/* Badge */}
+              {isMe && (
+                <motion.span
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary"
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  You
+                </motion.span>
+              )}
+              {isClaimedByOther && (
                 <motion.span
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -840,6 +861,12 @@ export default function JoinPage() {
     setPageState({ phase: "pick_name", room });
   }
 
+  function handleResume(personId: string) {
+    if (pageState.phase !== "pick_name") return;
+    const { room } = pageState;
+    setPageState({ phase: "assigning", room, myPersonId: personId });
+  }
+
   function handleRoomUpdate(updatedRoom: RoomState) {
     setPageState((prev) => {
       if (prev.phase !== "assigning") return prev;
@@ -869,7 +896,9 @@ export default function JoinPage() {
         <motion.div key="pick_name" exit={{ opacity: 0, y: -8 }}>
           <NamePicker
             room={pageState.room}
+            myPersonId={getLocalRoomPersonId(roomId)}
             onJoin={handleJoin}
+            onResume={handleResume}
             joining={joining}
           />
         </motion.div>

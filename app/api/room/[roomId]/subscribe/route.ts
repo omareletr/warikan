@@ -17,8 +17,8 @@ const redis =
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-const FALLBACK_POLL_INTERVAL_MS = 10_000; // safety net in case pub/sub drops a message
-const MAX_DURATION_MS = 30_000;           // max SSE connection lifetime
+const FALLBACK_POLL_INTERVAL_MS = 3_000;  // safety net in case pub/sub drops a message
+const MAX_DURATION_MS = 28_000;           // max SSE connection lifetime (just under Netlify limit)
 const PING_INTERVAL_MS = 10_000;          // heartbeat frequency
 
 // Matches the generator charset (ABCDEFGHJKLMNPQRSTUVWXYZ23456789) — no 0/O/1/I.
@@ -161,9 +161,13 @@ export async function GET(
         return;
       }
 
-      // If the client has never seen this room (since === -1), send the
-      // current state immediately so they don't have to wait for the first event.
-      if (since === -1) {
+      // Send current state immediately if:
+      //   a) Client has never seen this room (since === -1), OR
+      //   b) Client is behind the server (the server has a newer version than
+      //      what the client last saw, e.g. events were missed during reconnect).
+      // This ensures any missed events are caught up immediately on (re)connect
+      // rather than waiting up to FALLBACK_POLL_INTERVAL_MS.
+      if (since === -1 || initialState.version > since) {
         if (!send(sseEvent("state", initialState))) {
           closeAll();
           return;

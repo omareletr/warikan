@@ -55,13 +55,26 @@ export default function AssignPage() {
   const [showInvite, setShowInvite] = useState(false);
 
   // Keep a ref to the latest lineItems so the SSE callback never reads a stale closure.
-  // Update the ref synchronously alongside every updateLineItems() call so the
-  // ref is never one render behind (a useEffect-based sync runs after paint,
-  // which means a rapid second SSE event could read stale data and revert the
-  // first update).
+  // Two-part strategy:
+  //   1. useEffect keeps the ref in sync whenever the context value changes (covers the
+  //      initial load-from-localStorage case where lineItems goes from [] to the real list).
+  //   2. setLineItems updates the ref synchronously BEFORE calling updateLineItems, so
+  //      a second rapid SSE event never reads the pre-render stale value.
   const lineItemsRef = useRef(state.lineItems);
+  useEffect(() => {
+    lineItemsRef.current = state.lineItems;
+  }, [state.lineItems]);
 
-  // Wrapper that keeps ref and context in sync atomically.
+  // Track whether the context has finished loading from localStorage.
+  // The SSE callback must not apply server assignments before the local list
+  // is available — if lineItemsRef is still [] (pre-load), the map() would
+  // produce an empty array and wipe out all items.
+  const loadedRef = useRef(loaded);
+  useEffect(() => {
+    loadedRef.current = loaded;
+  }, [loaded]);
+
+  // Wrapper that keeps ref and context in sync atomically for write paths.
   // useCallback with a stable dep (updateLineItems is already a useCallback)
   // makes the stability explicit so the SSE closure never captures a stale version.
   const setLineItems = useCallback((items: typeof state.lineItems) => {
@@ -107,6 +120,13 @@ export default function AssignPage() {
       since,
       (updatedRoom) => {
         setRoomState(updatedRoom);
+
+        // Guard: don't apply server assignments until the context has finished
+        // loading line items from localStorage. Until then, lineItemsRef.current
+        // is the empty initial state and mapping over it would produce an empty
+        // array, wiping out all items from the context.
+        if (!loadedRef.current) return;
+
         // Merge server assignments into local lineItems.
         // pendingAssignmentsRef holds the full assignments map the host last
         // sent. If every item in the server update matches that snapshot, this

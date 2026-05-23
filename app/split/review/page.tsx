@@ -270,9 +270,7 @@ export default function ReviewPage() {
 
           <section>
             <p className="mb-3 text-base font-semibold text-muted-foreground">Fees</p>
-            {state.fees.length === 0 && (
-              <p className="py-3 text-sm text-muted-foreground">No fees — tap Add Fee if needed.</p>
-            )}
+
             <div ref={feesRef} className="divide-y divide-border/40">
               {state.fees.map((fee) => (
                 <FeeRow key={fee.id} fee={fee} onUpdate={updateFee} onRemove={() => removeFee(fee.id)} />

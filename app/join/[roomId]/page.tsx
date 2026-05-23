@@ -273,10 +273,11 @@ interface AssigningProps {
   room: RoomState;
   myPersonId: string;
   onBack: () => void;
+  onDone: () => void;
   onRoomUpdate: (room: RoomState) => void;
 }
 
-function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProps) {
+function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: AssigningProps) {
   const [shakingItemId, setShakingItemId] = useState<string | null>(null);
   const [takenItemId, setTakenItemId] = useState<string | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -393,7 +394,7 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
     <motion.main
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex min-h-dvh flex-col pb-40"
+      className="flex min-h-dvh flex-col pb-52"
     >
       {/* Sticky header */}
       <div className="sticky-header px-6 pt-10 pb-4">
@@ -646,38 +647,54 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
 
       {/* Bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              {allClaimed ? (
-                <CheckCircle className="h-4 w-4 text-primary" />
-              ) : (
+        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20 flex flex-col gap-3">
+          {/* Status row — hidden when all claimed (button takes its place) */}
+          {!allClaimed && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
                 <Wifi className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  allClaimed ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                {allClaimed
-                  ? "All dishes claimed! 🎉"
-                  : "Waiting for others…"}
-              </span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Waiting for others…
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {room.connectedPeople.length} online
+                </span>
+              </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-1.5">
-              <div
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  allClaimed ? "bg-primary" : "animate-pulse bg-muted-foreground"
-                )}
-              />
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {room.connectedPeople.length} online
-              </span>
+          {/* All-claimed celebration row */}
+          {allClaimed && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  All dishes claimed! 🎉
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {room.connectedPeople.length} online
+                </span>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* I'm done button */}
+          <Button
+            onClick={onDone}
+            variant={allClaimed ? "default" : "outline"}
+            className={cn(
+              "h-12 w-full rounded-2xl text-base font-semibold",
+              allClaimed ? "" : "border-border/50 text-muted-foreground"
+            )}
+          >
+            I&apos;m done
+          </Button>
         </div>
       </div>
     </motion.main>
@@ -925,6 +942,7 @@ export default function JoinPage() {
             room={pageState.room}
             myPersonId={pageState.myPersonId}
             onBack={handleBackToNamePicker}
+            onDone={() => setPageState({ phase: "done" })}
             onRoomUpdate={handleRoomUpdate}
           />
         </motion.div>

@@ -458,6 +458,9 @@ export default function AssignPage() {
                 claimsByPerson[pid] = (claimsByPerson[pid] || 0) + 1;
               }
 
+              // In collab mode the host can always tap to override — lift the fully-claimed lock.
+              const effectivelyBlockedMulti = (isFullyClaimed && !isAssignedToMe) && !roomId;
+
               return (
                 <div
                   key={item.id}
@@ -467,7 +470,7 @@ export default function AssignPage() {
                   onKeyDown={(e) => e.key === "Enter" && toggleAssignment(item.id)}
                   className={cn(
                     "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
-                    isFullyClaimed && !isAssignedToMe
+                    effectivelyBlockedMulti
                       ? "border-transparent opacity-40 cursor-default"
                       : isAssignedToMe
                       ? "border-primary/40 bg-primary/5 cursor-pointer active:opacity-75"
@@ -526,16 +529,18 @@ export default function AssignPage() {
             // Single-quantity item
             const isAssignedToMe = item.assignedToIds.includes(selectedPersonId);
             const claimedByOthers = item.assignedToIds.length > 0 && !isAssignedToMe;
+            // In collab mode the host can override any guest's claim — lift the UI lock.
+            const effectivelyClaimedByOthers = roomId ? false : claimedByOthers;
 
             return (
               <button
                 key={item.id}
-                onClick={() => !claimedByOthers && toggleAssignment(item.id)}
+                onClick={() => !effectivelyClaimedByOthers && toggleAssignment(item.id)}
                 className={cn(
                   "flex items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
                   isAssignedToMe
                     ? "border-primary/40 bg-primary/5 active:opacity-75"
-                    : claimedByOthers
+                    : effectivelyClaimedByOthers
                     ? "cursor-default border-transparent"
                     : "border-transparent active:scale-[0.98]"
                 )}
@@ -561,7 +566,8 @@ export default function AssignPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-4 flex-shrink-0 ml-3">
-                  {claimedByOthers && (
+                  {/* Share button is for guests only — hidden on the host's assign page */}
+                  {claimedByOthers && !roomId && (
                     <button
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); toggleAssignment(item.id); }}

@@ -292,10 +292,6 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
     } else {
       if (myClaims > 0) {
         actionType = "unclaim_item";
-      } else if (assigned.length > 0) {
-        // Claimed by someone else
-        triggerShake(item.id, true);
-        return;
       } else {
         actionType = "claim_item";
       }
@@ -332,6 +328,22 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
     try {
       const updated = await sendRoomAction(room.roomId, {
         type: "unclaim_item",
+        personId: myPersonId,
+        itemId: item.id,
+      });
+      onRoomUpdate(updated);
+    } catch {
+      onRoomUpdate(room);
+    }
+  }
+
+  // Share button taps: add my claim to an item already held by others.
+  async function handleShare(item: LineItem) {
+    const optimisticRoom = applyOptimisticUpdate(room, item.id, myPersonId, "claim_item");
+    onRoomUpdate(optimisticRoom);
+    try {
+      const updated = await sendRoomAction(room.roomId, {
+        type: "claim_item",
         personId: myPersonId,
         itemId: item.id,
       });
@@ -527,13 +539,13 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
             return (
               <ShakeItem key={item.id} shaking={isShaking}>
                 <button
-                  onClick={() => handleItemTap(item)}
+                  onClick={() => !claimedByOther && handleItemTap(item)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
                     isClaimedByMe
                       ? "border-primary/40 bg-primary/5 active:opacity-75"
                       : claimedByOther
-                      ? "cursor-default border-transparent opacity-40"
+                      ? "cursor-default border-transparent"
                       : "border-transparent active:scale-[0.98]"
                   )}
                 >
@@ -578,26 +590,27 @@ function AssigningView({ room, myPersonId, onBack, onRoomUpdate }: AssigningProp
                     </span>
                   </div>
 
-                  <div className="ml-3 flex-shrink-0 text-right">
-                    <span className="font-mono text-base font-medium tabular-nums">
-                      {formatCurrency(item.price)}
-                    </span>
-                    {assigned.length > 1 && (
-                      <p className="font-mono text-xs tabular-nums text-muted-foreground">
-                        {formatCurrency(item.price / assigned.length)} ea
-                      </p>
+                  <div className="ml-3 flex shrink-0 items-center gap-2">
+                    {claimedByOther && (
+                      <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); void handleShare(item); }}
+                        className="rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
+                      >
+                        Share
+                      </button>
                     )}
+                    <div className="text-right">
+                      <span className="font-mono text-base font-medium tabular-nums">
+                        {formatCurrency(item.price)}
+                      </span>
+                      {assigned.length > 1 && (
+                        <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                          {formatCurrency(item.price / assigned.length)} ea
+                        </p>
+                      )}
+                    </div>
                   </div>
-
-                  {isTaken && (
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="ml-2 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive"
-                    >
-                      Taken!
-                    </motion.span>
-                  )}
                 </button>
               </ShakeItem>
             );

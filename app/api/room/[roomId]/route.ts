@@ -294,16 +294,13 @@ export async function POST(
     let newAssignment: string[];
 
     if (qty <= 1) {
-      // Single-quantity item
-      if (current.length === 0) {
-        // Unclaimed — claim it
-        newAssignment = [personId];
-      } else if (current.includes(personId)) {
-        // Already claimed by this person — toggle off
+      // Single-quantity item — sharing is allowed (multiple people can split it)
+      if (current.includes(personId)) {
+        // Already sharing — toggle off (unclaim)
         newAssignment = current.filter((id) => id !== personId);
       } else {
-        // Claimed by someone else
-        return jsonError("Item already claimed", "already_claimed", 409, cors);
+        // Unclaimed or claimed by others — add this person (share)
+        newAssignment = [...current, personId];
       }
     } else {
       // Multi-quantity item

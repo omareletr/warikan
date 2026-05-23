@@ -192,9 +192,15 @@ export default function AssignPage() {
     router.push("/split/summary");
   }
 
-  const allAssigned = state.lineItems.every((item) =>
-    item.quantity <= 1 ? item.assignedToIds.length > 0 : item.assignedToIds.length >= item.quantity
-  );
+  // In collaborative mode use roomState.assignments (server truth) so the
+  // button unlocks as soon as guests finish claiming, without waiting for
+  // the SSE update to propagate back through updateLineItems.
+  const allAssigned = state.lineItems.every((item) => {
+    const assigned = roomState
+      ? (roomState.assignments[item.id] ?? [])
+      : item.assignedToIds;
+    return item.quantity <= 1 ? assigned.length > 0 : assigned.length >= item.quantity;
+  });
 
   const hasUnclaimed = state.lineItems.some((item) =>
     item.quantity <= 1
@@ -229,23 +235,26 @@ export default function AssignPage() {
               style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
             >
               {state.people.map((person, i) => (
-                <div key={person.id} className="relative">
-                  <PersonAvatar person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
-                  {roomState?.connectedPeople.includes(person.id) && (
-                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2">
-                      <div className="h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse" />
-                    </div>
-                  )}
-                </div>
+                <PersonAvatar
+                  key={person.id}
+                  person={person}
+                  selected={person.id === selectedPersonId}
+                  runningTotal={runningTotal(person.id)}
+                  onClick={() => setSelectedPersonId(person.id)}
+                  colorIndex={i}
+                  online={roomState?.connectedPeople.includes(person.id)}
+                />
               ))}
             </div>
 
             {roomState && (
-              <div className="mt-2 flex items-center gap-1.5 px-2 pb-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs text-muted-foreground">
-                  {roomState.connectedPeople.length} of {state.people.length} joined
-                </span>
+              <div className="flex justify-end px-4 pb-3">
+                <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-medium text-emerald-400">
+                    {roomState.connectedPeople.length} of {state.people.length} joined
+                  </span>
+                </div>
               </div>
             )}
           </div>

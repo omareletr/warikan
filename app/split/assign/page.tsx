@@ -330,11 +330,11 @@ export default function AssignPage() {
       </div>
 
       <div className="px-6">
-        <div className="mb-3 mt-6 flex items-center justify-between">
+        <div className="mb-3 mt-6 flex flex-col gap-1.5">
           <p className="text-base font-semibold text-muted-foreground">
             {loaded ? `Tap to assign to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2">
             {hasAnyAssigned && (
               <Dialog>
                 <DialogTrigger asChild>

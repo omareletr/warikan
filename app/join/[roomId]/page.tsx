@@ -687,11 +687,7 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
           {/* I'm done button */}
           <Button
             onClick={onDone}
-            variant={allClaimed ? "default" : "outline"}
-            className={cn(
-              "h-12 w-full rounded-2xl text-base font-semibold",
-              allClaimed ? "" : "border-border/50 text-muted-foreground"
-            )}
+            className="h-12 w-full rounded-2xl text-base font-semibold"
           >
             I&apos;m done
           </Button>

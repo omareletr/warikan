@@ -264,9 +264,16 @@ export async function POST(
       return jsonError("personId is required for leave", "missing_field", 400, cors);
     }
 
+    // Remove from connectedPeople AND release the identity claim so another
+    // device can pick that name (handles the "went back and picked a different
+    // name" case — the first slot must be freed).
+    const updatedClaimedBy = { ...state.claimedBy };
+    delete updatedClaimedBy[personId];
+
     const updatedLeaveState: RoomState = {
       ...state,
       connectedPeople: state.connectedPeople.filter((id) => id !== personId),
+      claimedBy: updatedClaimedBy,
     };
 
     const savedLeaveState = await saveRoom(updatedLeaveState);

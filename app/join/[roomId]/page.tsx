@@ -17,6 +17,7 @@ import {
   sendRoomAction,
   getLocalRoomPersonId,
   setLocalRoomPersonId,
+  clearLocalRoomPersonId,
 } from "@/lib/room-client";
 import type { RoomState, LineItem } from "@/lib/types";
 
@@ -837,6 +838,16 @@ export default function JoinPage() {
     setJoining(true);
 
     try {
+      // If this device already holds a different identity for this room, release
+      // it first so that slot becomes available for others to claim.
+      const previousPersonId = getLocalRoomPersonId(roomId);
+      if (previousPersonId && previousPersonId !== personId) {
+        clearLocalRoomPersonId(roomId);
+        // Fire-and-forget: we don't block on this — if it fails the slot stays
+        // locked until the 30-min TTL expires, which is acceptable.
+        sendRoomAction(roomId, { type: "leave", personId: previousPersonId }).catch(() => {});
+      }
+
       const updatedRoom = await sendRoomAction(roomId, {
         type: "join",
         personId,

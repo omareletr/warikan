@@ -507,7 +507,7 @@ export default function AssignPage() {
                   className={cn(
                     "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
                     effectivelyBlockedMulti
-                      ? "border-transparent opacity-40 cursor-default"
+                      ? "border-transparent opacity-60 cursor-default"
                       : isAssignedToMe
                       ? "border-primary/40 bg-primary/5 cursor-pointer active:opacity-75"
                       : "border-transparent cursor-pointer active:scale-[0.98]"

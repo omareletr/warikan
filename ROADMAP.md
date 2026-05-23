@@ -64,6 +64,7 @@ Currently everything is local — splits live in `localStorage` on one device.
 - [ ] **Rate limiting tuning** — Current limit is 10 requests/hour per IP via Upstash. Monitor usage and adjust.
 - [ ] **Error tracking** — Add Sentry (or similar) to catch runtime errors in production, both web and native.
 - [ ] **README update** — Update project structure section to reflect the Capacitor migration (`/lib/platform/`, `/app/split/detail/`, `ios/`, `android/`).
+- [ ] **Concurrent claim revert race (known, low risk)** — `handleItemTap`, `handleUnclaim`, and `handleShare` in `app/join/[roomId]/page.tsx` all close over the `room` prop at render time. If an SSE update arrives between the optimistic update and the API response, the `catch` revert calls `onRoomUpdate(room)` with a slightly stale snapshot (missing the SSE delta). In practice this is rare and self-correcting (the next SSE push restores truth), but a clean fix would be to revert via a functional state updater or re-fetch the room on error rather than reverting to the closed-over snapshot.
 
 ---
 

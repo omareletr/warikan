@@ -44,6 +44,10 @@ export default function AssignPage() {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
+  // Track the last assignedToIds the host sent to the server per item, so the
+  // SSE echo of our own host_assign doesn't revert an in-flight local tap.
+  const pendingAssignmentsRef = useRef<Record<string, string[]>>({});
+
   // SSE subscription — sync room assignments back into the split flow context
   useEffect(() => {
     if (!roomId) return;
@@ -53,12 +57,22 @@ export default function AssignPage() {
       since,
       (updatedRoom) => {
         setRoomState(updatedRoom);
-        // Use the ref so we always merge against the freshest lineItems,
-        // regardless of when this callback was registered.
-        const updatedLineItems = lineItemsRef.current.map((item) => ({
-          ...item,
-          assignedToIds: updatedRoom.assignments[item.id] ?? item.assignedToIds,
-        }));
+        // Merge server assignments into local lineItems, but only take the
+        // server value for items where the server's version differs from what
+        // the host last sent. This lets guest claims flow in without reverting
+        // in-flight host taps.
+        const updatedLineItems = lineItemsRef.current.map((item) => {
+          const serverIds = updatedRoom.assignments[item.id] ?? [];
+          const pending = pendingAssignmentsRef.current[item.id];
+          // If the host has a pending write for this item and the server's
+          // assignment matches it, the echo is ours — keep local state as-is.
+          if (pending && JSON.stringify([...pending].sort()) === JSON.stringify([...serverIds].sort())) {
+            delete pendingAssignmentsRef.current[item.id];
+            return item;
+          }
+          // No pending write, or server diverged (guest changed it) — accept server.
+          return { ...item, assignedToIds: serverIds };
+        });
         updateLineItems(updatedLineItems);
       },
       () => {
@@ -136,11 +150,17 @@ export default function AssignPage() {
     // has to guess — it just stores exactly what the host computed locally.
     if (roomId) {
       const resultItem = updatedItems.find((i) => i.id === itemId);
+      const resultIds = resultItem?.assignedToIds ?? [];
+      // Record what we're sending so the SSE echo doesn't revert this tap.
+      pendingAssignmentsRef.current[itemId] = resultIds;
       sendRoomAction(roomId, {
         type: "host_assign",
         itemId,
-        assignedToIds: resultItem?.assignedToIds ?? [],
-      }).catch(() => {});
+        assignedToIds: resultIds,
+      }).catch(() => {
+        // On failure, clear the pending marker so the next SSE push restores truth.
+        delete pendingAssignmentsRef.current[itemId];
+      });
     }
   }
 
@@ -161,11 +181,16 @@ export default function AssignPage() {
     // exactly what the host computed, preserving all other claims.
     if (roomId) {
       const resultItem = updatedItems.find((i) => i.id === itemId);
+      const resultIds = resultItem?.assignedToIds ?? [];
+      // Record what we're sending so the SSE echo doesn't revert this removal.
+      pendingAssignmentsRef.current[itemId] = resultIds;
       sendRoomAction(roomId, {
         type: "host_assign",
         itemId,
-        assignedToIds: resultItem?.assignedToIds ?? [],
-      }).catch(() => {});
+        assignedToIds: resultIds,
+      }).catch(() => {
+        delete pendingAssignmentsRef.current[itemId];
+      });
     }
   }
 
@@ -358,15 +383,18 @@ export default function AssignPage() {
 
             // Single-quantity item
             const isAssignedToMe = item.assignedToIds.includes(selectedPersonId);
+            const claimedByOthers = item.assignedToIds.length > 0 && !isAssignedToMe;
 
             return (
               <button
                 key={item.id}
-                onClick={() => toggleAssignment(item.id)}
+                onClick={() => !claimedByOthers && toggleAssignment(item.id)}
                 className={cn(
                   "flex items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
                   isAssignedToMe
                     ? "border-primary/40 bg-primary/5 active:opacity-75"
+                    : claimedByOthers
+                    ? "cursor-default border-transparent"
                     : "border-transparent active:scale-[0.98]"
                 )}
               >
@@ -390,11 +418,22 @@ export default function AssignPage() {
                     )}
                   </span>
                 </div>
-                <div className="flex-shrink-0 ml-3 text-right">
-                  <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
-                  {item.assignedToIds.length > 1 && (
-                    <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / item.assignedToIds.length)} ea</p>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                  {claimedByOthers && (
+                    <button
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); toggleAssignment(item.id); }}
+                      className="rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
+                    >
+                      Share
+                    </button>
                   )}
+                  <div className="text-right">
+                    <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
+                    {item.assignedToIds.length > 1 && (
+                      <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / item.assignedToIds.length)} ea</p>
+                    )}
+                  </div>
                 </div>
               </button>
             );

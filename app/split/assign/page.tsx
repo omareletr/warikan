@@ -543,32 +543,34 @@ export default function AssignPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          {!loaded ? (
+        {!loaded ? (
+          <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
             <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled>
               Loading...
             </Button>
-          ) : allAssigned ? (
+          </div>
+        ) : allAssigned ? (
+          <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
             <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={handleContinue}>
               Continue
             </Button>
-          ) : (
-            <div className="flex justify-center">
-              <span className="rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm text-muted-foreground">
-                {(() => {
-                  const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
-                  const assignedSlots = state.lineItems.reduce((sum, item) => {
-                    const assigned = roomState
-                      ? (roomState.assignments[item.id] ?? [])
-                      : item.assignedToIds;
-                    return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
-                  }, 0);
-                  return `${totalSlots - assignedSlots} of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} remaining`;
-                })()}
-              </span>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex justify-center pb-1">
+            <span className="rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm text-muted-foreground">
+              {(() => {
+                const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
+                const assignedSlots = state.lineItems.reduce((sum, item) => {
+                  const assigned = roomState
+                    ? (roomState.assignments[item.id] ?? [])
+                    : item.assignedToIds;
+                  return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
+                }, 0);
+                return `${totalSlots - assignedSlots} of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} remaining`;
+              })()}
+            </span>
+          </div>
+        )}
       </div>
 
       {roomId && (

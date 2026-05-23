@@ -6,7 +6,6 @@ import type { PanInfo } from "framer-motion";
 import { Copy, Check, X, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 interface InviteDrawerProps {
   open: boolean;
@@ -147,10 +146,13 @@ function InviteDrawerContent({
             </p>
           </div>
 
-          <div className="mt-2 flex flex-col gap-1.5">
-            <p className="text-sm text-muted-foreground">
-              {connectedCount} of {peopleCount} joined
-            </p>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-medium text-emerald-400">
+                {connectedCount} of {peopleCount} joined
+              </span>
+            </div>
             <ConnectionDots connected={connectedCount} total={peopleCount} />
           </div>
         </motion.div>
@@ -174,12 +176,16 @@ function InviteDrawerContent({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.20, type: "spring", damping: 22, stiffness: 300 }}
-          className="mt-5 flex flex-col items-center gap-1"
+          className="mt-8 flex flex-col items-center gap-1"
         >
-          <p className="text-xs text-muted-foreground uppercase tracking-widest">
-            or enter code manually
+          <p className="text-xs text-muted-foreground">can&apos;t scan?</p>
+          <p className="font-mono text-xs tabular-nums text-muted-foreground">
+            {joinUrl.replace(/^https?:\/\//, "").replace(new RegExp(roomId, "i"), "")}
+            <span className="font-semibold text-foreground">
+              {formatRoomCode(roomId)}
+            </span>
           </p>
-          <p className="font-mono text-3xl font-bold tabular-nums tracking-[0.25em] text-foreground">
+          <p className="mt-2 font-mono text-3xl font-bold tabular-nums tracking-[0.25em] text-foreground">
             {formatRoomCode(roomId)}
           </p>
         </motion.div>
@@ -189,9 +195,8 @@ function InviteDrawerContent({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.26, type: "spring", damping: 22, stiffness: 300 }}
-          className="mt-6"
+          className="mt-3"
         >
-          <Separator className="mb-5" />
           <Button
             variant="outline"
             className="h-14 w-full gap-2 rounded-2xl text-base font-semibold"

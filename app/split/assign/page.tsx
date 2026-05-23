@@ -203,15 +203,44 @@ export default function AssignPage() {
   }
 
   function assignRestToSelected() {
-    updateLineItems(state.lineItems.map((item) => {
+    // When in collab mode, the canonical assignment truth is roomState.assignments,
+    // not item.assignedToIds (which may lag behind server state). Use the server's
+    // assignments as the base so we don't clobber guest claims.
+    const updatedItems = state.lineItems.map((item) => {
+      const baseIds: string[] = roomState
+        ? (roomState.assignments[item.id] ?? [])
+        : item.assignedToIds;
+
       if (item.quantity <= 1) {
-        if (item.assignedToIds.length > 0) return item;
+        if (baseIds.length > 0) return { ...item, assignedToIds: baseIds };
         return { ...item, assignedToIds: [selectedPersonId] };
       }
-      const unclaimed = item.quantity - item.assignedToIds.length;
-      if (unclaimed <= 0) return item;
-      return { ...item, assignedToIds: [...item.assignedToIds, ...Array(unclaimed).fill(selectedPersonId)] };
-    }));
+      const unclaimed = item.quantity - baseIds.length;
+      if (unclaimed <= 0) return { ...item, assignedToIds: baseIds };
+      return { ...item, assignedToIds: [...baseIds, ...Array(unclaimed).fill(selectedPersonId)] };
+    });
+
+    updateLineItems(updatedItems);
+
+    // Collaborative: send host_assign for every item that changed.
+    if (roomId) {
+      for (const item of updatedItems) {
+        const originalIds: string[] = roomState
+          ? (roomState.assignments[item.id] ?? [])
+          : (state.lineItems.find((i) => i.id === item.id)?.assignedToIds ?? []);
+        // Only send if the assignment actually changed
+        if (JSON.stringify(item.assignedToIds) !== JSON.stringify(originalIds)) {
+          pendingAssignmentsRef.current[item.id] = item.assignedToIds;
+          sendRoomAction(roomId, {
+            type: "host_assign",
+            itemId: item.id,
+            assignedToIds: item.assignedToIds,
+          }).catch(() => {
+            delete pendingAssignmentsRef.current[item.id];
+          });
+        }
+      }
+    }
   }
 
   async function handleContinue() {
@@ -231,11 +260,14 @@ export default function AssignPage() {
     return item.quantity <= 1 ? assigned.length > 0 : assigned.length >= item.quantity;
   });
 
-  const hasUnclaimed = state.lineItems.some((item) =>
-    item.quantity <= 1
-      ? item.assignedToIds.length === 0
-      : item.assignedToIds.length < item.quantity
-  );
+  const hasUnclaimed = state.lineItems.some((item) => {
+    const assigned = roomState
+      ? (roomState.assignments[item.id] ?? [])
+      : item.assignedToIds;
+    return item.quantity <= 1
+      ? assigned.length === 0
+      : assigned.length < item.quantity;
+  });
 
   return (
     <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">

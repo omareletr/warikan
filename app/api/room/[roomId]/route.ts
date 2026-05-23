@@ -84,6 +84,8 @@ async function saveRoom(state: RoomState): Promise<RoomState> {
     redis.set(roomKey(newState.roomId), newState, { ex: ROOM_TTL }),
     redis.set(versionKey(newState.roomId), newState.version, { ex: ROOM_TTL }),
   ]);
+  // Notify subscribers — fire and forget, don't await or let errors bubble
+  redis.publish(`room:${newState.roomId}`, String(newState.version)).catch(() => {});
   return newState;
 }
 

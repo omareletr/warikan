@@ -1,17 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Gift } from "lucide-react";
+import { ArrowLeft, Gift, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
+import { InviteDrawer } from "@/components/split/invite-drawer";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { formatCurrency, initials, inlineInitials } from "@/lib/calculate";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/lib/platform";
+import {
+  generateRoomId,
+  getRoomJoinUrl,
+  createRoom,
+  sendRoomAction,
+  subscribeToRoom,
+} from "@/lib/room-client";
+import type { RoomState } from "@/lib/types";
 
 export default function AssignPage() {
   const router = useRouter();
@@ -19,9 +28,71 @@ export default function AssignPage() {
   const [fromPop] = useState(() => consumePopFlag());
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
 
+  // Collaborative room state
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomState, setRoomState] = useState<RoomState | null>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+
+  // Keep a ref to the latest lineItems so the SSE callback never reads a stale closure.
+  const lineItemsRef = useRef(state.lineItems);
+  useEffect(() => {
+    lineItemsRef.current = state.lineItems;
+  }, [state.lineItems]);
+
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
+
+  // SSE subscription — sync room assignments back into the split flow context
+  useEffect(() => {
+    if (!roomId) return;
+    const since = roomState?.version ?? -1;
+    const unsubscribe = subscribeToRoom(
+      roomId,
+      since,
+      (updatedRoom) => {
+        setRoomState(updatedRoom);
+        // Use the ref so we always merge against the freshest lineItems,
+        // regardless of when this callback was registered.
+        const updatedLineItems = lineItemsRef.current.map((item) => ({
+          ...item,
+          assignedToIds: updatedRoom.assignments[item.id] ?? item.assignedToIds,
+        }));
+        updateLineItems(updatedLineItems);
+      },
+      () => {
+        // Room expired — fall back to solo mode
+        setRoomId(null);
+        setRoomState(null);
+      }
+    );
+    return unsubscribe;
+  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleInvite() {
+    if (roomId) {
+      setShowInvite(true);
+      return;
+    }
+    setIsCreatingRoom(true);
+    try {
+      const newRoomId = generateRoomId();
+      const room = await createRoom(newRoomId, {
+        type: "create",
+        lineItems: state.lineItems,
+        people: state.people,
+        restaurantName: state.restaurantName || undefined,
+      });
+      setRoomId(newRoomId);
+      setRoomState(room);
+      setShowInvite(true);
+    } catch {
+      // silently fail — solo mode continues
+    } finally {
+      setIsCreatingRoom(false);
+    }
+  }
 
   function personColor(personId: string) {
     const person = state.people.find((p) => p.id === personId);
@@ -32,7 +103,7 @@ export default function AssignPage() {
 
   function toggleAssignment(itemId: string) {
     void hapticTap();
-    updateLineItems(state.lineItems.map((item) => {
+    const updatedItems = state.lineItems.map((item) => {
       if (item.id !== itemId) return item;
 
       if (item.quantity <= 1) {
@@ -57,19 +128,41 @@ export default function AssignPage() {
         return { ...item, assignedToIds: item.assignedToIds.filter((id) => id !== selectedPersonId) };
       }
       return item;
-    }));
+    });
+
+    updateLineItems(updatedItems);
+
+    // Collaborative: fire-and-forget sync to server
+    if (roomId) {
+      sendRoomAction(roomId, {
+        type: "host_assign",
+        itemId,
+        personId: selectedPersonId,
+      }).catch(() => {});
+    }
   }
 
   function removeClaim(itemId: string, personId: string) {
     void hapticTap();
-    updateLineItems(state.lineItems.map((item) => {
+    const updatedItems = state.lineItems.map((item) => {
       if (item.id !== itemId) return item;
       const idx = item.assignedToIds.indexOf(personId);
       if (idx === -1) return item;
       const ids = [...item.assignedToIds];
       ids.splice(idx, 1);
       return { ...item, assignedToIds: ids };
-    }));
+    });
+
+    updateLineItems(updatedItems);
+
+    // Collaborative: fire-and-forget sync to server
+    if (roomId) {
+      sendRoomAction(roomId, {
+        type: "unclaim_item",
+        itemId,
+        personId,
+      }).catch(() => {});
+    }
   }
 
   function runningTotal(personId: string): number {
@@ -92,6 +185,13 @@ export default function AssignPage() {
     }));
   }
 
+  async function handleContinue() {
+    if (roomId) {
+      sendRoomAction(roomId, { type: "close" }).catch(() => {});
+    }
+    router.push("/split/summary");
+  }
+
   const allAssigned = state.lineItems.every((item) =>
     item.quantity <= 1 ? item.assignedToIds.length > 0 : item.assignedToIds.length >= item.quantity
   );
@@ -108,6 +208,18 @@ export default function AssignPage() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold">Assign dishes</h1>
+          {loaded && state.people.length >= 2 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Invite people"
+              disabled={isCreatingRoom}
+              onClick={handleInvite}
+              className="ml-auto"
+            >
+              <Users className="h-5 w-5" />
+            </Button>
+          )}
         </div>
 
         {loaded && (
@@ -117,9 +229,25 @@ export default function AssignPage() {
               style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
             >
               {state.people.map((person, i) => (
-                <PersonAvatar key={person.id} person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
+                <div key={person.id} className="relative">
+                  <PersonAvatar person={person} selected={person.id === selectedPersonId} runningTotal={runningTotal(person.id)} onClick={() => setSelectedPersonId(person.id)} colorIndex={i} />
+                  {roomState?.connectedPeople.includes(person.id) && (
+                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2">
+                      <div className="h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse" />
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
+
+            {roomState && (
+              <div className="mt-2 flex items-center gap-1.5 px-2 pb-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs text-muted-foreground">
+                  {roomState.connectedPeople.length} of {state.people.length} joined
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -261,11 +389,22 @@ export default function AssignPage() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-          <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || !allAssigned} onClick={() => router.push("/split/summary")}>
+          <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || !allAssigned} onClick={handleContinue}>
             {!loaded ? "Loading..." : allAssigned ? "Continue" : "Assign all dishes to continue"}
           </Button>
         </div>
       </div>
+
+      {roomId && (
+        <InviteDrawer
+          open={showInvite}
+          onClose={() => setShowInvite(false)}
+          roomId={roomId}
+          joinUrl={getRoomJoinUrl(roomId)}
+          peopleCount={state.people.length}
+          connectedCount={roomState?.connectedPeople.length ?? 0}
+        />
+      )}
     </motion.main>
   );
 }

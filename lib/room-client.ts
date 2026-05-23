@@ -26,12 +26,13 @@ export function generateRoomId(): string {
 
 /**
  * Returns the full join URL for the given roomId.
- * Uses the current window origin in development so the QR code is scannable
- * against a local dev server. Falls back to APP_URL in production.
+ * Uses APP_URL (set per-environment via NEXT_PUBLIC_APP_URL) on all Netlify
+ * deployments. Falls back to window.location.origin only in local dev so
+ * the QR code is scannable against a local dev server.
  */
 export function getRoomJoinUrl(roomId: string): string {
   const base =
-    typeof window !== "undefined" && window.location.hostname !== "warikan0.netlify.app"
+    typeof window !== "undefined" && window.location.hostname === "localhost"
       ? window.location.origin
       : APP_URL;
   return `${base}/join/${roomId}`;

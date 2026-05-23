@@ -336,7 +336,8 @@ export default function AssignPage() {
             <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400 whitespace-nowrap">
-                {roomState.connectedPeople.length} of {state.people.length} joined
+                <motion.span>{displaySlots}</motion.span>
+                {` of ${totalSlots} assigned`}
               </span>
             </div>
           )}

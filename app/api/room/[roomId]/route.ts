@@ -31,6 +31,7 @@ const VALID_ACTION_TYPES = new Set<RoomAction["type"]>([
   "claim_item",
   "unclaim_item",
   "host_assign",
+  "host_bulk_assign",
   "close",
 ]);
 
@@ -378,6 +379,19 @@ export async function POST(
     };
     const savedHostState = await saveRoom(hostAssignState);
     return NextResponse.json(savedHostState, { headers: cors });
+  }
+
+  // ── host_bulk_assign ──────────────────────────────────────────────────────
+  if (action.type === "host_bulk_assign") {
+    // Host sends its complete assignments map — replace atomically in one write.
+    // This avoids the N-concurrent-reads race that happens when N host_assign
+    // calls fire in parallel (each reading stale state and overwriting each other).
+    const bulkAssignState: RoomState = {
+      ...state,
+      assignments: action.assignments ?? state.assignments,
+    };
+    const savedBulkState = await saveRoom(bulkAssignState);
+    return NextResponse.json(savedBulkState, { headers: cors });
   }
 
   // ── close ─────────────────────────────────────────────────────────────────

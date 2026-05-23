@@ -553,18 +553,20 @@ export default function AssignPage() {
               Continue
             </Button>
           ) : (
-            <p className="text-center text-sm text-muted-foreground">
-              {(() => {
-                const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
-                const assignedSlots = state.lineItems.reduce((sum, item) => {
-                  const assigned = roomState
-                    ? (roomState.assignments[item.id] ?? [])
-                    : item.assignedToIds;
-                  return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
-                }, 0);
-                return `${totalSlots - assignedSlots} of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} remaining`;
-              })()}
-            </p>
+            <div className="flex justify-center">
+              <span className="rounded-full border border-border/40 bg-muted/30 px-4 py-2 text-sm text-muted-foreground">
+                {(() => {
+                  const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
+                  const assignedSlots = state.lineItems.reduce((sum, item) => {
+                    const assigned = roomState
+                      ? (roomState.assignments[item.id] ?? [])
+                      : item.assignedToIds;
+                    return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
+                  }, 0);
+                  return `${totalSlots - assignedSlots} of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} remaining`;
+                })()}
+              </span>
+            </div>
           )}
         </div>
       </div>

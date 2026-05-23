@@ -44,7 +44,7 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
             </svg>
           </span>
         ) : online ? (
-          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse" />
+          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background" />
         ) : null}
       </div>
       <span className={cn("max-w-[72px] text-center text-sm leading-tight line-clamp-2", person.covered && "text-muted-foreground")}>{person.name}</span>

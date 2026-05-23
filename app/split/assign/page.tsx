@@ -349,6 +349,11 @@ export default function AssignPage() {
     return item.quantity <= 1 ? assigned.length > 0 : assigned.length >= item.quantity;
   });
 
+  // Admin override is only allowed when the selected person is NOT actively
+  // connected (never joined, or has tapped "I'm done"). While they are online
+  // (green dot) the host cannot assign OR unassign on their behalf.
+  const selectedPersonIsOnline = roomState?.connectedPeople.includes(selectedPersonId) ?? false;
+
   const hasUnclaimed = state.lineItems.some((item) => {
     const assigned = roomState
       ? (roomState.assignments[item.id] ?? [])
@@ -474,8 +479,12 @@ export default function AssignPage() {
                 claimsByPerson[pid] = (claimsByPerson[pid] || 0) + 1;
               }
 
-              // In collab mode the host can always tap to override — lift the fully-claimed lock.
-              const effectivelyBlockedMulti = (isFullyClaimed && !isAssignedToMe) && !roomId;
+              // In collab mode the host can override only when the selected person is not
+              // actively online. If they are connected (green dot), block all changes.
+              const hostCanOverride = roomId && !selectedPersonIsOnline;
+              const effectivelyBlockedMulti = selectedPersonIsOnline
+                ? true
+                : (isFullyClaimed && !isAssignedToMe) && !hostCanOverride;
 
               return (
                 <div
@@ -526,8 +535,8 @@ export default function AssignPage() {
                           <button
                             key={pid}
                             onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => { e.stopPropagation(); removeClaim(item.id, pid); }}
-                            className={cn("relative flex h-6 items-center justify-center rounded-full text-xs font-semibold active:opacity-70", color.bg, color.text, count > 1 ? "px-1.5 gap-0.5" : "w-6")}
+                            onClick={(e) => { e.stopPropagation(); if (!selectedPersonIsOnline) removeClaim(item.id, pid); }}
+                            className={cn("relative flex h-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text, count > 1 ? "px-1.5 gap-0.5" : "w-6", selectedPersonIsOnline ? "pointer-events-none" : "active:opacity-70")}
                           >
                             {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
                             {count > 1 && <span className="tabular-nums">×{count}</span>}
@@ -545,8 +554,9 @@ export default function AssignPage() {
             // Single-quantity item
             const isAssignedToMe = item.assignedToIds.includes(selectedPersonId);
             const claimedByOthers = item.assignedToIds.length > 0 && !isAssignedToMe;
-            // In collab mode the host can override any guest's claim — lift the UI lock.
-            const effectivelyClaimedByOthers = roomId ? false : claimedByOthers;
+            // In collab mode the host can override only when the selected person is not
+            // actively online. If they are connected (green dot), block all changes.
+            const effectivelyClaimedByOthers = (roomId && !selectedPersonIsOnline) ? false : claimedByOthers;
 
             return (
               <button

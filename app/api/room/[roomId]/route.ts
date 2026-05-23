@@ -32,6 +32,7 @@ const VALID_ACTION_TYPES = new Set<RoomAction["type"]>([
   "unclaim_item",
   "host_assign",
   "host_bulk_assign",
+  "guest_done",
   "close",
 ]);
 
@@ -207,6 +208,7 @@ export async function POST(
       people: action.people ?? [],
       assignments,
       connectedPeople: [],
+      donePeople: [],
       claimedBy: {},
       status: "waiting",
       createdAt: Date.now(),
@@ -278,6 +280,29 @@ export async function POST(
 
     const savedLeaveState = await saveRoom(updatedLeaveState);
     return NextResponse.json(savedLeaveState, { headers: cors });
+  }
+
+  // ── guest_done ────────────────────────────────────────────────────────────
+  if (action.type === "guest_done") {
+    const { personId } = action;
+    if (!personId) {
+      return jsonError("personId is required for guest_done", "missing_field", 400, cors);
+    }
+
+    // Remove from connectedPeople (go offline) but keep claimedBy intact so
+    // the identity slot stays reserved. Add to donePeople so the host can show
+    // a ✓ badge instead of a green dot.
+    const currentDonePeople = state.donePeople ?? [];
+    const updatedGuestDoneState: RoomState = {
+      ...state,
+      connectedPeople: state.connectedPeople.filter((id) => id !== personId),
+      donePeople: currentDonePeople.includes(personId)
+        ? currentDonePeople
+        : [...currentDonePeople, personId],
+    };
+
+    const savedGuestDoneState = await saveRoom(updatedGuestDoneState);
+    return NextResponse.json(savedGuestDoneState, { headers: cors });
   }
 
   // ── claim_item ────────────────────────────────────────────────────────────

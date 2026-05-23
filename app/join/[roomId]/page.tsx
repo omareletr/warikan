@@ -942,7 +942,10 @@ export default function JoinPage() {
             room={pageState.room}
             myPersonId={pageState.myPersonId}
             onBack={handleBackToNamePicker}
-            onDone={() => setPageState({ phase: "done" })}
+            onDone={() => {
+              sendRoomAction(roomId, { type: "guest_done", personId: pageState.myPersonId }).catch(() => {});
+              setPageState({ phase: "done" });
+            }}
             onRoomUpdate={handleRoomUpdate}
           />
         </motion.div>

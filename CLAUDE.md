@@ -267,3 +267,4 @@ Content padding to clear the bar:
 - Use crypto.randomUUID() for generating IDs
 - Test the camera/photo flow on a real phone browser, not just desktop
 - When in doubt about design, add more whitespace rather than more elements
+- After completing any meaningful code change, ask the user if they want to commit before moving on

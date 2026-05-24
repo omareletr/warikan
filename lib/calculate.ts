@@ -29,10 +29,16 @@ export function calculateSplit(
       .map((item) => {
         const personClaims = item.assignedToIds.filter((id) => id === person.id).length;
         const totalClaims = item.assignedToIds.length;
+        // For multi-quantity items, each claim represents one unit at `item.price`.
+        // For single-quantity items (or shared single items), divide total by claimant count.
+        const price =
+          item.quantity > 1
+            ? item.price * personClaims
+            : (item.price * personClaims) / totalClaims;
         return {
           name: item.name,
           quantity: personClaims,
-          price: (item.price * item.quantity * personClaims) / totalClaims,
+          price,
           splitCount: item.quantity <= 1 ? totalClaims : 1,
         };
       });

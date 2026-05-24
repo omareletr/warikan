@@ -290,7 +290,13 @@ export default function AssignPage() {
     return state.lineItems.reduce((sum, item) => {
       const personClaims = item.assignedToIds.filter((id) => id === personId).length;
       if (personClaims === 0) return sum;
-      return sum + (item.price * item.quantity * personClaims) / item.assignedToIds.length;
+      // Multi-qty: each claim = one unit at item.price
+      // Single-qty: split evenly among all assignees
+      const share =
+        item.quantity > 1
+          ? item.price * personClaims
+          : (item.price * personClaims) / item.assignedToIds.length;
+      return sum + share;
     }, 0);
   }
 

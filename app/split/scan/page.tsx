@@ -28,9 +28,9 @@ const ASPECT_RATIO_MIN = 1.15;
 const ASPECT_RATIO_MAX = 5.5;
 
 // ── Visual constants ──────────────────────────────────────────────────────────
-const EMERALD = "rgba(52, 211, 153, 1)";
-const BRACKET_COLOR_IDLE = "rgba(255, 255, 255, 0.35)";
-const BRACKET_COLOR_ACTIVE = EMERALD;
+const BRACKET_COLOR_IDLE   = "rgba(255, 255, 255, 0.35)";
+const BRACKET_COLOR_ACTIVE = "rgba(255, 255, 255, 0.80)";
+const BRACKET_COLOR_LOCKED = "rgba(255, 255, 255, 1.0)";
 const OVERLAY_BG = "rgba(0,0,0,0.62)";
 
 // Frame dimensions
@@ -67,7 +67,6 @@ const CORNER_SQUEEZE = {
 } as const;
 
 type DetectionStatus = "searching" | "steady" | "capturing" | "processing";
-type ScanStyle = "A" | "B" | "C";
 
 // ── Sobel edge detection helpers ──────────────────────────────────────────────
 
@@ -220,7 +219,6 @@ function WebScanPage({
 
   const [status, setStatus] = useState<DetectionStatus>("searching");
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const [scanStyle, setScanStyle] = useState<ScanStyle>("A");
 
   // Init BarcodeDetector if available
   useEffect(() => {
@@ -356,14 +354,14 @@ function WebScanPage({
     },
     capturing: {
       text: "Scanning…",
-      dotColor: EMERALD,
-      textColor: "rgba(52, 211, 153, 0.95)",
+      dotColor: "rgba(255, 255, 255, 0.90)",
+      textColor: "rgba(255, 255, 255, 0.90)",
       showSpinner: false,
     },
     processing: {
       text: "Processing…",
-      dotColor: EMERALD,
-      textColor: "rgba(52, 211, 153, 0.95)",
+      dotColor: "rgba(255, 255, 255, 0.90)",
+      textColor: "rgba(255, 255, 255, 0.90)",
       showSpinner: true,
     },
   }[status];
@@ -559,159 +557,54 @@ function WebScanPage({
               </AnimatePresence>
             </div>
 
-            {/* ── Style A: Apple VisionKit ────────────────────────────────── */}
-            {scanStyle === "A" && (
-              <>
-                {/* Soft emerald tint overlay — 7% idle, 13% locked */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ borderRadius: FRAME_R, background: EMERALD }}
-                  animate={{ opacity: isLocked ? 0.13 : isActive ? 0.07 : 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-
-                {/* Corner brackets — squeeze 5px inward on lock */}
-                <svg
-                  width={FRAME_W}
-                  height={FRAME_H}
-                  className="absolute inset-0"
-                  style={{ overflow: "visible" }}
-                >
-                  {(["tl", "tr", "bl", "br"] as const).map((corner, i) => {
-                    const pos = CORNER_POS[corner];
-                    const squeeze = CORNER_SQUEEZE[corner];
-                    return (
-                      <motion.path
-                        key={corner}
-                        d={CORNER_PATHS[corner]}
-                        stroke={isActive ? BRACKET_COLOR_ACTIVE : BRACKET_COLOR_IDLE}
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        fill="none"
-                        initial={{ pathLength: 0, opacity: 0, x: pos.x, y: pos.y }}
-                        animate={{
-                          pathLength: 1,
-                          opacity: 1,
-                          x: isLocked ? pos.x + squeeze.x : pos.x,
-                          y: isLocked ? pos.y + squeeze.y : pos.y,
-                        }}
-                        transition={{
-                          pathLength: { duration: 0.4, ease: "easeOut", delay: i * 0.055 },
-                          opacity: { duration: 0.2, delay: i * 0.055 },
-                          x: { duration: 0.18, ease: [0.34, 1.56, 0.64, 1] },
-                          y: { duration: 0.18, ease: [0.34, 1.56, 0.64, 1] },
-                          stroke: { duration: 0.25 },
-                        }}
-                      />
-                    );
-                  })}
-                </svg>
-              </>
-            )}
-
-            {/* ── Style B: Google Lens ────────────────────────────────────── */}
-            {scanStyle === "B" && (
-              <>
-                {/* Animated boxShadow outline: white → emerald on detect */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ borderRadius: FRAME_R }}
-                  animate={{
-                    boxShadow: isLocked
-                      ? `inset 0 0 0 2px ${EMERALD}`
-                      : isActive
-                      ? `inset 0 0 0 1.5px rgba(52,211,153,0.6)`
-                      : `inset 0 0 0 1.5px rgba(255,255,255,0.30)`,
-                    scale: status === "capturing" ? 0.985 : 1,
-                  }}
-                  transition={{
-                    boxShadow: { duration: 0.3 },
-                    scale: { duration: 0.15, ease: [0.34, 1.56, 0.64, 1] },
-                  }}
-                />
-
-                {/* Top-to-bottom gradient wash fades in on detect */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    borderRadius: FRAME_R,
-                    background: `linear-gradient(to bottom, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.03) 60%, transparent 100%)`,
-                  }}
-                  animate={{ opacity: isActive ? 1 : 0 }}
-                  transition={{ duration: 0.4 }}
-                />
-              </>
-            )}
-
-            {/* ── Style C: Expensify / Genius Scan (minimal) ─────────────── */}
-            {scanStyle === "C" && (
-              <>
-                {/* Outline: white → emerald on detect */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ borderRadius: FRAME_R }}
-                  animate={{
-                    boxShadow: isActive
-                      ? `inset 0 0 0 2px ${EMERALD}`
-                      : `inset 0 0 0 1.5px rgba(255,255,255,0.30)`,
-                  }}
-                  transition={{ duration: 0.35 }}
-                />
-
-                {/* Gentle tint: pulses while steady, flat otherwise */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ borderRadius: FRAME_R, background: EMERALD }}
-                  animate={{
-                    opacity:
-                      status === "steady"
-                        ? [0.04, 0.09, 0.04]
-                        : isLocked
-                        ? 0.10
-                        : isActive
-                        ? 0.05
-                        : 0,
-                  }}
-                  transition={
-                    status === "steady"
-                      ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
-                      : { duration: 0.3 }
-                  }
-                />
-              </>
-            )}
+            {/* ── Monochrome corner brackets — no color fills, white only ── */}
+            <svg
+              width={FRAME_W}
+              height={FRAME_H}
+              className="absolute inset-0"
+              style={{ overflow: "visible" }}
+            >
+              {(["tl", "tr", "bl", "br"] as const).map((corner, i) => {
+                const pos = CORNER_POS[corner];
+                const squeeze = CORNER_SQUEEZE[corner];
+                const bracketColor = isLocked
+                  ? BRACKET_COLOR_LOCKED
+                  : isActive
+                  ? BRACKET_COLOR_ACTIVE
+                  : BRACKET_COLOR_IDLE;
+                return (
+                  <motion.path
+                    key={corner}
+                    d={CORNER_PATHS[corner]}
+                    stroke={bracketColor}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    initial={{ pathLength: 0, opacity: 0, x: pos.x, y: pos.y }}
+                    animate={{
+                      pathLength: 1,
+                      opacity: 1,
+                      x: isLocked ? pos.x + squeeze.x : pos.x,
+                      y: isLocked ? pos.y + squeeze.y : pos.y,
+                    }}
+                    transition={{
+                      pathLength: { duration: 0.4, ease: "easeOut", delay: i * 0.055 },
+                      opacity: { duration: 0.2, delay: i * 0.055 },
+                      x: { duration: 0.18, ease: [0.34, 1.56, 0.64, 1] },
+                      y: { duration: 0.18, ease: [0.34, 1.56, 0.64, 1] },
+                      stroke: { duration: 0.25 },
+                    }}
+                  />
+                );
+              })}
+            </svg>
           </motion.div>
         </div>
       )}
 
-      {/* Bottom bar — A/B/C style picker + shutter button */}
+      {/* Bottom bar — shutter button */}
       {!permissionDenied && (
         <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-4 pb-10">
-          {/* Dev style picker */}
-          <div
-            className="flex gap-1 rounded-full px-2 py-1.5"
-            style={{
-              background: "rgba(0,0,0,0.45)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-            }}
-          >
-            {(["A", "B", "C"] as const).map((s) => (
-              <button
-                key={s}
-                className="h-8 w-8 rounded-full text-xs font-semibold transition-colors pointer-events-auto"
-                style={{
-                  background: scanStyle === s ? "rgba(52,211,153,0.9)" : "transparent",
-                  color: scanStyle === s ? "#000" : "rgba(255,255,255,0.55)",
-                }}
-                onClick={() => setScanStyle(s)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
           {/* Shutter button */}
           <motion.button
             className="flex h-16 w-16 items-center justify-center rounded-full pointer-events-auto"

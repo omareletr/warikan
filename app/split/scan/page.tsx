@@ -369,13 +369,18 @@ function WebScanPage({
   }[status];
 
   // ── Vignette strip edge calculations (account for FRAME_TOP_OFFSET) ─────────
-  // Frame center Y = 50% + FRAME_TOP_OFFSET
-  // Frame top edge   = 50% + FRAME_TOP_OFFSET - FRAME_H/2
-  // Frame bottom edge= 50% + FRAME_TOP_OFFSET + FRAME_H/2
-  const frameTopEdge    = `calc(50% + ${FRAME_TOP_OFFSET - FRAME_H / 2}px)`;
-  const frameBottomEdge = `calc(50% + ${FRAME_TOP_OFFSET + FRAME_H / 2}px)`;
-  const frameLeftEdge   = `calc(50% - ${FRAME_W / 2}px)`;
-  const frameRightEdge  = `calc(50% + ${FRAME_W / 2}px)`;
+  // All four strips use top + height (never `bottom` with a % value, which
+  // would be measured from the opposite edge and produce wrong results).
+  //
+  // Frame center Y (from top of viewport) = 50vh + FRAME_TOP_OFFSET px
+  // Frame top edge    = 50vh + FRAME_TOP_OFFSET - FRAME_H/2   px from top
+  // Frame bottom edge = 50vh + FRAME_TOP_OFFSET + FRAME_H/2   px from top
+  //
+  // We express these as calc() strings used only as `top` values.
+  const frameTopEdge    = `calc(50% + ${FRAME_TOP_OFFSET - FRAME_H / 2}px)`;  // top edge Y
+  const frameBottomEdge = `calc(50% + ${FRAME_TOP_OFFSET + FRAME_H / 2}px)`;  // bottom edge Y
+  const frameLeftEdge   = `calc(50% - ${FRAME_W / 2}px)`;   // left edge X
+  const frameRightEdge  = `calc(50% + ${FRAME_W / 2}px)`;   // right edge X
 
   return (
     <div className="absolute inset-0 bg-black overflow-hidden">
@@ -400,20 +405,24 @@ function WebScanPage({
       />
       <canvas ref={captureCanvasRef} className="hidden" />
 
-      {/* Dark vignette overlay — 4 strips around the clear scan zone */}
+      {/* Dark vignette overlay — 4 strips around the clear scan zone.
+          All strips use `top` + `height` (or `top` + `bottom: 0`) so that
+          percentage values are always interpreted from the same edge (top).
+          Never use a top-coordinate calc() as a `bottom` value — they are
+          not equivalent because `bottom` is measured from the opposite edge. */}
       {!permissionDenied && (
         <div className="absolute inset-0 pointer-events-none">
-          {/* Top strip */}
+          {/* Top strip — from top of screen down to the frame's top edge */}
           <div
             className="absolute left-0 right-0 top-0"
-            style={{ background: OVERLAY_BG, bottom: frameTopEdge }}
+            style={{ background: OVERLAY_BG, height: frameTopEdge }}
           />
-          {/* Bottom strip */}
+          {/* Bottom strip — from the frame's bottom edge down to the screen bottom */}
           <div
             className="absolute left-0 right-0 bottom-0"
             style={{ background: OVERLAY_BG, top: frameBottomEdge }}
           />
-          {/* Left strip */}
+          {/* Left strip — spans only the frame's height, left of the frame */}
           <div
             className="absolute left-0"
             style={{
@@ -423,7 +432,7 @@ function WebScanPage({
               right: frameRightEdge,
             }}
           />
-          {/* Right strip */}
+          {/* Right strip — spans only the frame's height, right of the frame */}
           <div
             className="absolute right-0"
             style={{

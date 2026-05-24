@@ -239,11 +239,8 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
           const isClaimedByOther = isClaimed && !isMe;
 
           return (
-            <motion.button
+            <button
               key={person.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
               onClick={() => {
                 if (joining) return;
                 if (isMe) { onResume(person.id); return; }
@@ -301,7 +298,7 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
                   Joined
                 </motion.span>
               )}
-            </motion.button>
+            </button>
           );
         })}
       </div>

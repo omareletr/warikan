@@ -135,14 +135,13 @@ export default function PeoplePage() {
                 <motion.div
                   animate={animatingId === person.id ? "pop" : "idle"}
                   variants={{
-                    idle: { scale: 1, rotate: 0, filter: "brightness(1)" },
+                    idle: { scale: 1, rotate: 0 },
                     pop: {
-                      scale: [1, 1.35, 1],
-                      rotate: [0, -12, 12, 0],
-                      filter: ["brightness(1)", "brightness(1.6)", "brightness(1)"],
+                      scale: [1, 1.3, 1],
+                      rotate: [0, -15, 10, 0],
                     },
                   }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 15 }}
                   whileTap={!cannotCover ? { scale: 0.85 } : undefined}
                   onAnimationComplete={() => {
                     if (animatingId === person.id) setAnimatingId(null);

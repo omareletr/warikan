@@ -137,7 +137,7 @@ export default function PeoplePage() {
                   variants={{
                     idle: { scale: 1, rotate: 0 },
                     pop: {
-                      scale: [1, 1.3, 1],
+                      scale: [1, 1.6, 1],
                       rotate: [0, -15, 10, 0],
                     },
                   }}

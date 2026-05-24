@@ -77,17 +77,12 @@ function ShakeItem({ shaking, children }: ShakeItemProps) {
 
 function LoadingScreen() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.25 }}
-      className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6"
-    >
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6">
       <div className="flex flex-col items-center gap-3">
         <div className="h-12 w-12 animate-spin rounded-full border-2 border-border border-t-primary" />
         <p className="text-muted-foreground">Loading session…</p>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -220,11 +215,7 @@ interface NamePickerProps {
 
 function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerProps) {
   return (
-    <motion.main
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="flex min-h-dvh flex-col pb-8"
-    >
+    <main className="flex min-h-dvh flex-col pb-8">
       {/* Header */}
       <div className="px-6 pt-14 pb-8 text-center">
         <p className="mb-1 text-sm font-medium uppercase tracking-widest text-muted-foreground">
@@ -320,7 +311,7 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
         </div>
       )}
-    </motion.main>
+    </main>
   );
 }
 
@@ -448,11 +439,7 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
   }
 
   return (
-    <motion.main
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="flex min-h-dvh flex-col pb-52"
-    >
+    <main className="flex min-h-dvh flex-col pb-52">
       {/* Sticky header */}
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
@@ -750,7 +737,7 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
           </Button>
         </div>
       </div>
-    </motion.main>
+    </main>
   );
 }
 
@@ -985,7 +972,7 @@ export default function JoinPage() {
   return (
     <AnimatePresence mode="wait">
       {pageState.phase === "loading" && (
-        <motion.div key="loading" exit={{ opacity: 0 }}>
+        <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
           <LoadingScreen />
         </motion.div>
       )}
@@ -1001,7 +988,7 @@ export default function JoinPage() {
       )}
 
       {pageState.phase === "pick_name" && (
-        <motion.div key="pick_name" exit={{ opacity: 0, y: -8 }}>
+        <motion.div key="pick_name" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, y: -8 }}>
           <NamePicker
             room={pageState.room}
             myPersonId={getLocalRoomPersonId(roomId)}
@@ -1013,7 +1000,7 @@ export default function JoinPage() {
       )}
 
       {pageState.phase === "assigning" && (
-        <motion.div key="assigning" exit={{ opacity: 0 }}>
+        <motion.div key="assigning" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
           <AssigningView
             room={pageState.room}
             myPersonId={pageState.myPersonId}

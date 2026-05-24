@@ -29,7 +29,6 @@ const ASPECT_RATIO_MAX = 5.5;
 
 // ── Visual constants ──────────────────────────────────────────────────────────
 const EMERALD = "rgba(52, 211, 153, 1)";
-const EMERALD_DIM = "rgba(52, 211, 153, 0.55)";
 const BRACKET_COLOR_IDLE = "rgba(255, 255, 255, 0.35)";
 const BRACKET_COLOR_ACTIVE = EMERALD;
 const OVERLAY_BG = "rgba(0,0,0,0.62)";
@@ -37,9 +36,8 @@ const OVERLAY_BG = "rgba(0,0,0,0.62)";
 // Frame dimensions
 const FRAME_W = 300;
 const FRAME_H = 480;
-const FRAME_R = 16; // border-radius
-// Perimeter of rounded rect (approximation good enough for dash): 2*(W+H)
-const PERIMETER = 2 * (FRAME_W + FRAME_H);
+const FRAME_R = 16; // border-radius — applied from the very first paint
+const FRAME_TOP_OFFSET = -30; // shift frame above true center (negative = up)
 
 // Corner bracket arm length
 const ARM = 26;
@@ -60,15 +58,16 @@ const CORNER_POS = {
   br: { x: FRAME_W - ARM, y: FRAME_H - ARM },
 } as const;
 
-// How far each corner translates outward when locked
-const CORNER_LOCK_OFFSET = {
-  tl: { x: -4, y: -4 },
-  tr: { x: 4, y: -4 },
-  bl: { x: -4, y: 4 },
-  br: { x: 4, y: 4 },
+// How far inward each corner squeezes on detection lock (toward frame center)
+const CORNER_SQUEEZE = {
+  tl: { x: 5, y: 5 },
+  tr: { x: -5, y: 5 },
+  bl: { x: 5, y: -5 },
+  br: { x: -5, y: -5 },
 } as const;
 
 type DetectionStatus = "searching" | "steady" | "capturing" | "processing";
+type ScanStyle = "A" | "B" | "C";
 
 // ── Sobel edge detection helpers ──────────────────────────────────────────────
 
@@ -221,6 +220,7 @@ function WebScanPage({
 
   const [status, setStatus] = useState<DetectionStatus>("searching");
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [scanStyle, setScanStyle] = useState<ScanStyle>("A");
 
   // Init BarcodeDetector if available
   useEffect(() => {
@@ -340,7 +340,6 @@ function WebScanPage({
 
   const isActive = status === "steady" || status === "capturing" || status === "processing";
   const isLocked = status === "capturing" || status === "processing";
-  const bracketColor = isActive ? BRACKET_COLOR_ACTIVE : BRACKET_COLOR_IDLE;
 
   const statusConfig = {
     searching: {
@@ -369,6 +368,15 @@ function WebScanPage({
     },
   }[status];
 
+  // ── Vignette strip edge calculations (account for FRAME_TOP_OFFSET) ─────────
+  // Frame center Y = 50% + FRAME_TOP_OFFSET
+  // Frame top edge   = 50% + FRAME_TOP_OFFSET - FRAME_H/2
+  // Frame bottom edge= 50% + FRAME_TOP_OFFSET + FRAME_H/2
+  const frameTopEdge    = `calc(50% + ${FRAME_TOP_OFFSET - FRAME_H / 2}px)`;
+  const frameBottomEdge = `calc(50% + ${FRAME_TOP_OFFSET + FRAME_H / 2}px)`;
+  const frameLeftEdge   = `calc(50% - ${FRAME_W / 2}px)`;
+  const frameRightEdge  = `calc(50% + ${FRAME_W / 2}px)`;
+
   return (
     <div className="absolute inset-0 bg-black overflow-hidden">
       {/* Live camera feed */}
@@ -395,30 +403,34 @@ function WebScanPage({
       {/* Dark vignette overlay — 4 strips around the clear scan zone */}
       {!permissionDenied && (
         <div className="absolute inset-0 pointer-events-none">
+          {/* Top strip */}
           <div
             className="absolute left-0 right-0 top-0"
-            style={{ background: OVERLAY_BG, bottom: `calc(50% + ${FRAME_H / 2}px)` }}
+            style={{ background: OVERLAY_BG, bottom: frameTopEdge }}
           />
+          {/* Bottom strip */}
           <div
             className="absolute left-0 right-0 bottom-0"
-            style={{ background: OVERLAY_BG, top: `calc(50% + ${FRAME_H / 2}px)` }}
+            style={{ background: OVERLAY_BG, top: frameBottomEdge }}
           />
+          {/* Left strip */}
           <div
             className="absolute left-0"
             style={{
               background: OVERLAY_BG,
-              top: `calc(50% - ${FRAME_H / 2}px)`,
-              bottom: `calc(50% - ${FRAME_H / 2}px)`,
-              right: `calc(50% + ${FRAME_W / 2}px)`,
+              top: frameTopEdge,
+              height: FRAME_H,
+              right: frameRightEdge,
             }}
           />
+          {/* Right strip */}
           <div
             className="absolute right-0"
             style={{
               background: OVERLAY_BG,
-              top: `calc(50% - ${FRAME_H / 2}px)`,
-              bottom: `calc(50% - ${FRAME_H / 2}px)`,
-              left: `calc(50% + ${FRAME_W / 2}px)`,
+              top: frameTopEdge,
+              height: FRAME_H,
+              left: frameRightEdge,
             }}
           />
         </div>
@@ -476,205 +488,224 @@ function WebScanPage({
         )}
       </div>
 
-      {/* Scanner frame — pinned to screen centre */}
+      {/* Scanner frame — shifted 30px above true center */}
       {!permissionDenied && (
         <div
           className="absolute pointer-events-none"
           style={{
             top: "50%",
             left: "50%",
-            transform: "translate(-50%, -50%)",
+            transform: `translate(-50%, calc(-50% + ${FRAME_TOP_OFFSET}px))`,
             width: FRAME_W,
             height: FRAME_H,
+            borderRadius: FRAME_R, // always-rounded from first paint
           }}
         >
-          {/* Frame entrance */}
+          {/* Frame entrance animation */}
           <motion.div
-            className="w-full h-full"
+            className="relative w-full h-full"
+            style={{ borderRadius: FRAME_R }} // always-rounded on the animated element too
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
-            {/* Processing conic gradient ring — renders behind SVG */}
-            <AnimatePresence>
-              {status === "processing" && (
+            {/* ── Status pill — inside frame, top ────────────────────────── */}
+            <div className="absolute top-4 left-0 right-0 flex justify-center z-10 pointer-events-none">
+              <AnimatePresence mode="wait">
                 <motion.div
-                  className="absolute pointer-events-none"
+                  key={status}
+                  className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium backdrop-blur-md"
                   style={{
-                    inset: -3,
-                    borderRadius: FRAME_R + 3,
+                    background: "rgba(0,0,0,0.45)",
+                    border: "1px solid rgba(255,255,255,0.12)",
                   }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25 }}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.18 }}
                 >
-                  <div
-                    className="scan-processing-ring w-full h-full"
-                    style={{ borderRadius: FRAME_R + 3 }}
-                  />
+                  {statusConfig.showSpinner ? (
+                    <Loader2
+                      className="h-3 w-3 animate-spin flex-shrink-0"
+                      style={{ color: statusConfig.dotColor }}
+                    />
+                  ) : (
+                    <motion.div
+                      className="h-1.5 w-1.5 rounded-full flex-shrink-0"
+                      style={{ background: statusConfig.dotColor }}
+                      animate={
+                        status === "steady"
+                          ? { opacity: [1, 0.4, 1] }
+                          : status === "searching"
+                          ? { opacity: 1 }
+                          : { opacity: [1, 0.5, 1] }
+                      }
+                      transition={{ duration: status === "steady" ? 0.8 : 1.2, repeat: Infinity }}
+                    />
+                  )}
+                  <span style={{ color: statusConfig.textColor }}>
+                    {statusConfig.text}
+                  </span>
                 </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* SVG: perimeter ring + corner brackets */}
-            <svg
-              width={FRAME_W}
-              height={FRAME_H}
-              className="absolute inset-0"
-              style={{ overflow: "visible" }}
-            >
-              {/* Full perimeter trace — draws in on detection */}
-              <motion.rect
-                x={0.5} y={0.5}
-                width={FRAME_W - 1} height={FRAME_H - 1}
-                rx={FRAME_R - 0.5}
-                fill="none"
-                stroke={EMERALD}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeDasharray={PERIMETER}
-                animate={{
-                  strokeDashoffset: isActive ? 0 : PERIMETER,
-                  strokeOpacity: isLocked ? 0.85 : isActive ? 0.65 : 0,
-                }}
-                transition={{
-                  strokeDashoffset: isActive
-                    ? { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-                    : { duration: 0.25 },
-                  strokeOpacity: { duration: 0.3 },
-                }}
-              />
-
-              {/* Corner brackets — draw in on mount, color + translate on lock */}
-              {(["tl", "tr", "bl", "br"] as const).map((corner, i) => {
-                const pos = CORNER_POS[corner];
-                const lockOffset = CORNER_LOCK_OFFSET[corner];
-                return (
-                  <motion.path
-                    key={corner}
-                    d={CORNER_PATHS[corner]}
-                    stroke={bracketColor}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    fill="none"
-                    style={{ transition: "stroke 0.25s" }}
-                    initial={{ pathLength: 0, opacity: 0, x: pos.x, y: pos.y }}
-                    animate={{
-                      pathLength: 1,
-                      opacity: 1,
-                      x: isLocked ? pos.x + lockOffset.x : pos.x,
-                      y: isLocked ? pos.y + lockOffset.y : pos.y,
-                    }}
-                    transition={{
-                      pathLength: { duration: 0.4, ease: "easeOut", delay: i * 0.055 },
-                      opacity: { duration: 0.2, delay: i * 0.055 },
-                      x: { duration: 0.15, ease: [0.34, 1.56, 0.64, 1] },
-                      y: { duration: 0.15, ease: [0.34, 1.56, 0.64, 1] },
-                    }}
-                  />
-                );
-              })}
-            </svg>
-
-            {/* Scan beam — single downward pass on capture, clipped to frame */}
-            <div
-              className="absolute inset-0 overflow-hidden pointer-events-none"
-              style={{
-                borderRadius: FRAME_R,
-                willChange: "transform",
-                transform: "translateZ(0)",
-              }}
-            >
-              <AnimatePresence>
-                {status === "capturing" && (
-                  <motion.div
-                    className="absolute left-0 right-0"
-                    initial={{ y: -50 }}
-                    animate={{ y: FRAME_H + 50 }}
-                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  >
-                    {/* Soft glow halo */}
-                    <div
-                      style={{
-                        height: 44,
-                        background:
-                          "linear-gradient(to bottom, transparent 0%, rgba(52,211,153,0.28) 25%, rgba(52,211,153,0.28) 75%, transparent 100%)",
-                      }}
-                    />
-                    {/* Sharp core line */}
-                    <div
-                      style={{
-                        height: 1.5,
-                        marginTop: -22.75,
-                        background: EMERALD,
-                        boxShadow: `0 0 6px ${EMERALD}, 0 0 18px ${EMERALD_DIM}`,
-                      }}
-                    />
-                  </motion.div>
-                )}
               </AnimatePresence>
             </div>
+
+            {/* ── Style A: Apple VisionKit ────────────────────────────────── */}
+            {scanStyle === "A" && (
+              <>
+                {/* Soft emerald tint overlay — 7% idle, 13% locked */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ borderRadius: FRAME_R, background: EMERALD }}
+                  animate={{ opacity: isLocked ? 0.13 : isActive ? 0.07 : 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+
+                {/* Corner brackets — squeeze 5px inward on lock */}
+                <svg
+                  width={FRAME_W}
+                  height={FRAME_H}
+                  className="absolute inset-0"
+                  style={{ overflow: "visible" }}
+                >
+                  {(["tl", "tr", "bl", "br"] as const).map((corner, i) => {
+                    const pos = CORNER_POS[corner];
+                    const squeeze = CORNER_SQUEEZE[corner];
+                    return (
+                      <motion.path
+                        key={corner}
+                        d={CORNER_PATHS[corner]}
+                        stroke={isActive ? BRACKET_COLOR_ACTIVE : BRACKET_COLOR_IDLE}
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        fill="none"
+                        initial={{ pathLength: 0, opacity: 0, x: pos.x, y: pos.y }}
+                        animate={{
+                          pathLength: 1,
+                          opacity: 1,
+                          x: isLocked ? pos.x + squeeze.x : pos.x,
+                          y: isLocked ? pos.y + squeeze.y : pos.y,
+                        }}
+                        transition={{
+                          pathLength: { duration: 0.4, ease: "easeOut", delay: i * 0.055 },
+                          opacity: { duration: 0.2, delay: i * 0.055 },
+                          x: { duration: 0.18, ease: [0.34, 1.56, 0.64, 1] },
+                          y: { duration: 0.18, ease: [0.34, 1.56, 0.64, 1] },
+                          stroke: { duration: 0.25 },
+                        }}
+                      />
+                    );
+                  })}
+                </svg>
+              </>
+            )}
+
+            {/* ── Style B: Google Lens ────────────────────────────────────── */}
+            {scanStyle === "B" && (
+              <>
+                {/* Animated boxShadow outline: white → emerald on detect */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ borderRadius: FRAME_R }}
+                  animate={{
+                    boxShadow: isLocked
+                      ? `inset 0 0 0 2px ${EMERALD}`
+                      : isActive
+                      ? `inset 0 0 0 1.5px rgba(52,211,153,0.6)`
+                      : `inset 0 0 0 1.5px rgba(255,255,255,0.30)`,
+                    scale: status === "capturing" ? 0.985 : 1,
+                  }}
+                  transition={{
+                    boxShadow: { duration: 0.3 },
+                    scale: { duration: 0.15, ease: [0.34, 1.56, 0.64, 1] },
+                  }}
+                />
+
+                {/* Top-to-bottom gradient wash fades in on detect */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    borderRadius: FRAME_R,
+                    background: `linear-gradient(to bottom, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.03) 60%, transparent 100%)`,
+                  }}
+                  animate={{ opacity: isActive ? 1 : 0 }}
+                  transition={{ duration: 0.4 }}
+                />
+              </>
+            )}
+
+            {/* ── Style C: Expensify / Genius Scan (minimal) ─────────────── */}
+            {scanStyle === "C" && (
+              <>
+                {/* Outline: white → emerald on detect */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ borderRadius: FRAME_R }}
+                  animate={{
+                    boxShadow: isActive
+                      ? `inset 0 0 0 2px ${EMERALD}`
+                      : `inset 0 0 0 1.5px rgba(255,255,255,0.30)`,
+                  }}
+                  transition={{ duration: 0.35 }}
+                />
+
+                {/* Gentle tint: pulses while steady, flat otherwise */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ borderRadius: FRAME_R, background: EMERALD }}
+                  animate={{
+                    opacity:
+                      status === "steady"
+                        ? [0.04, 0.09, 0.04]
+                        : isLocked
+                        ? 0.10
+                        : isActive
+                        ? 0.05
+                        : 0,
+                  }}
+                  transition={
+                    status === "steady"
+                      ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+                      : { duration: 0.3 }
+                  }
+                />
+              </>
+            )}
           </motion.div>
         </div>
       )}
 
-      {/* Status pill — pinned below the frame */}
+      {/* Bottom bar — A/B/C style picker + shutter button */}
       {!permissionDenied && (
-        <div
-          className="absolute pointer-events-none flex justify-center"
-          style={{
-            top: `calc(50% + ${FRAME_H / 2}px + 20px)`,
-            left: 0,
-            right: 0,
-          }}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={status}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium backdrop-blur-md"
-              style={{
-                background: "rgba(0,0,0,0.45)",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.18 }}
-            >
-              {statusConfig.showSpinner ? (
-                <Loader2
-                  className="h-3 w-3 animate-spin flex-shrink-0"
-                  style={{ color: statusConfig.dotColor }}
-                />
-              ) : (
-                <motion.div
-                  className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-                  style={{ background: statusConfig.dotColor }}
-                  animate={
-                    status === "steady"
-                      ? { opacity: [1, 0.4, 1] }
-                      : status === "searching"
-                      ? { opacity: 1 }
-                      : { opacity: [1, 0.5, 1] }
-                  }
-                  transition={{ duration: status === "steady" ? 0.8 : 1.2, repeat: Infinity }}
-                />
-              )}
-              <span style={{ color: statusConfig.textColor }}>
-                {statusConfig.text}
-              </span>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      )}
+        <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-4 pb-10">
+          {/* Dev style picker */}
+          <div
+            className="flex gap-1 rounded-full px-2 py-1.5"
+            style={{
+              background: "rgba(0,0,0,0.45)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+          >
+            {(["A", "B", "C"] as const).map((s) => (
+              <button
+                key={s}
+                className="h-8 w-8 rounded-full text-xs font-semibold transition-colors pointer-events-auto"
+                style={{
+                  background: scanStyle === s ? "rgba(52,211,153,0.9)" : "transparent",
+                  color: scanStyle === s ? "#000" : "rgba(255,255,255,0.55)",
+                }}
+                onClick={() => setScanStyle(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
 
-      {/* Bottom bar — shutter button */}
-      {!permissionDenied && (
-        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center pb-10">
+          {/* Shutter button */}
           <motion.button
-            className="flex h-16 w-16 items-center justify-center rounded-full"
+            className="flex h-16 w-16 items-center justify-center rounded-full pointer-events-auto"
             style={{
               background: "rgba(255,255,255,0.15)",
               border: "3px solid rgba(255,255,255,0.55)",

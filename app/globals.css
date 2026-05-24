@@ -110,4 +110,27 @@
     z-index: -1;
     pointer-events: none;
   }
+
+  /* Scan frame: conic gradient rotation for processing state */
+  @keyframes scan-conic-rotate {
+    to { --scan-angle: 360deg; }
+  }
+  .scan-processing-ring {
+    animation: scan-conic-rotate 1.2s linear infinite;
+    background: conic-gradient(
+      from var(--scan-angle),
+      transparent 55%,
+      rgba(52, 211, 153, 0.15) 70%,
+      rgba(52, 211, 153, 0.7) 85%,
+      rgba(52, 211, 153, 0.15) 95%,
+      transparent 100%
+    );
+  }
+}
+
+/* @property must be top-level, outside @layer */
+@property --scan-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }

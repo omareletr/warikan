@@ -77,12 +77,17 @@ function ShakeItem({ shaking, children }: ShakeItemProps) {
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25 }}
+      className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6"
+    >
       <div className="flex flex-col items-center gap-3">
         <div className="h-12 w-12 animate-spin rounded-full border-2 border-border border-t-primary" />
         <p className="text-muted-foreground">Loading session…</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -216,8 +221,8 @@ interface NamePickerProps {
 function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerProps) {
   return (
     <motion.main
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
       className="flex min-h-dvh flex-col pb-8"
     >
       {/* Header */}

@@ -248,7 +248,7 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
               }}
               disabled={isClaimedByOther || joining}
               className={cn(
-                "flex min-h-[56px] items-center gap-4 rounded-2xl border px-4 py-3 text-left transition-all duration-150",
+                "flex min-h-[56px] items-center gap-4 rounded-2xl border px-4 py-3 text-left text-foreground transition-[border-color,background-color,opacity,transform] duration-150",
                 isMe
                   ? "cursor-pointer border-primary/40 bg-primary/5 active:scale-[0.98] active:opacity-75"
                   : isClaimedByOther
@@ -275,7 +275,7 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
               </div>
 
               {/* Name */}
-              <span className="flex-1 text-base font-medium">{person.name}</span>
+              <span className="flex-1 text-base font-medium text-foreground">{person.name}</span>
 
               {/* Badge */}
               {isMe && (

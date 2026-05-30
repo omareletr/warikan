@@ -124,6 +124,13 @@ interface DoneScreenProps {
   onEdit: () => Promise<void>;
 }
 
+const STATUS_MESSAGES = [
+  "Host is splitting the check…",
+  "Doing the math so you don't have to…",
+  "Your total is almost ready…",
+  "Just a moment…",
+];
+
 function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: DoneScreenProps) {
   const router = useRouter();
   // Once payUrl is set, show a short "Your total is ready" moment then redirect.
@@ -131,6 +138,15 @@ function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: Do
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [msgIndex, setMsgIndex] = useState(0);
+
+  useEffect(() => {
+    if (redirecting) return;
+    const interval = setInterval(() => {
+      setMsgIndex((i) => (i + 1) % STATUS_MESSAGES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [redirecting]);
 
   useEffect(() => {
     if (!payUrl) return;
@@ -175,14 +191,25 @@ function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: Do
         }}
       />
 
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-        className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15"
-      >
-        <PartyPopper className="h-9 w-9 text-primary" />
-      </motion.div>
+      <div className="relative flex items-center justify-center">
+        {/* Pulsing ring — hidden once redirecting */}
+        {!redirecting && (
+          <motion.div
+            className="absolute h-20 w-20 rounded-full bg-primary/20"
+            animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )}
+        {/* Existing icon circle — unchanged */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15"
+        >
+          <PartyPopper className="h-9 w-9 text-primary" />
+        </motion.div>
+      </div>
 
       <AnimatePresence mode="wait">
         {redirecting ? (
@@ -206,9 +233,20 @@ function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: Do
             className="flex flex-col gap-2"
           >
             <h1 className="text-2xl font-bold">You&apos;re all set!</h1>
-            <p className="text-muted-foreground">
-              The host will tally up everyone&apos;s totals.
-            </p>
+            <div className="relative h-6 overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={msgIndex}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-muted-foreground"
+                >
+                  {STATUS_MESSAGES[msgIndex]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

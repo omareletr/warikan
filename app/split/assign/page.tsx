@@ -337,10 +337,13 @@ export default function AssignPage() {
 
   async function handleContinue() {
     if (roomId) {
+      // Close the room so guests immediately receive a "status: done" push and
+      // transition to the "You're all set!" screen — stopping further claiming.
+      // We intentionally do NOT remove ROOM_SESSION_KEY here, because the
+      // Payment page still needs it to send finalize_payment (which stores payUrl
+      // on the already-closed room and triggers the guest redirect).
+      // The payment page's finalizeAndCloseRoom() removes the key when done.
       sendRoomAction(roomId, { type: "close" }).catch(() => {});
-      if (typeof sessionStorage !== "undefined") {
-        sessionStorage.removeItem(ROOM_SESSION_KEY);
-      }
     }
     router.push("/split/summary");
   }

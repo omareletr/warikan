@@ -53,6 +53,7 @@ export interface RoomState {
   donePeople: string[];          // personIds who tapped "I'm done" (offline but slot stays claimed)
   claimedBy: Record<string, string>;   // personId → name (who has claimed that identity slot)
   status: "waiting" | "assigning" | "done";
+  payUrl?: string;               // set by host when they share payment — guests auto-redirect here
   createdAt: number;             // Date.now() — for TTL awareness
   version: number;               // incremented on every mutation — clients use for reconciliation
 }
@@ -63,11 +64,12 @@ export type RoomActionType =
   | "leave"
   | "claim_item"
   | "unclaim_item"
-  | "host_assign"       // host assigns a single item (override)
-  | "host_bulk_assign"  // host replaces the entire assignments map atomically
+  | "host_assign"         // host assigns a single item (override)
+  | "host_bulk_assign"    // host replaces the entire assignments map atomically
   | "guest_done"
-  | "guest_back"        // guest undoes "I'm done" to return to assigning
-  | "close";
+  | "guest_back"          // guest undoes "I'm done" to return to assigning
+  | "close"
+  | "finalize_payment";   // host publishes the pay URL so guests auto-redirect
 
 export interface RoomAction {
   type: RoomActionType;
@@ -81,4 +83,6 @@ export interface RoomAction {
   assignedToIds?: string[];
   // For "host_bulk_assign" — host sends the complete assignments map
   assignments?: Record<string, string[]>;
+  // For "finalize_payment" — host sends the shareable /pay#<encoded> URL
+  payUrl?: string;
 }

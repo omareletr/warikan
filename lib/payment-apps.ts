@@ -175,7 +175,11 @@ export function encodePayData(
 
 export function decodePayData(hash: string): DecodedPayData | null {
   try {
-    const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+    const stripped = hash.startsWith("#") ? hash.slice(1) : hash;
+    // Strip any ?key=value suffix appended inside the hash (e.g. ?person=Alice
+    // added by the guest auto-redirect flow).
+    const qIdx = stripped.indexOf("?");
+    const raw = qIdx !== -1 ? stripped.slice(0, qIdx) : stripped;
     if (!raw) return null;
     const data: PayData = JSON.parse(atob(raw));
 

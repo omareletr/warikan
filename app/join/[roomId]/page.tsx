@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, CheckCircle, PartyPopper, RefreshCw, Wifi, WifiOff, Gift } from "lucide-react";
+import { ArrowLeft, CheckCircle, ExternalLink, PartyPopper, RefreshCw, Wifi, WifiOff, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import {
@@ -28,7 +28,7 @@ type PageState =
   | { phase: "error"; message: string; retryable: boolean }
   | { phase: "pick_name"; room: RoomState }
   | { phase: "assigning"; room: RoomState; myPersonId: string }
-  | { phase: "done"; myPersonId: string | null; roomClosed: boolean };
+  | { phase: "done"; myPersonId: string | null; myPersonName: string | null; roomClosed: boolean; payUrl?: string };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -118,14 +118,33 @@ function ErrorScreen({ message, retryable, onRetry }: ErrorScreenProps) {
 
 interface DoneScreenProps {
   myPersonId: string | null;
+  myPersonName: string | null;
   roomClosed: boolean;
+  payUrl?: string;
   onEdit: () => Promise<void>;
 }
 
-function DoneScreen({ myPersonId, roomClosed, onEdit }: DoneScreenProps) {
-  const canEdit = Boolean(myPersonId) && !roomClosed;
+function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: DoneScreenProps) {
+  const router = useRouter();
+  // Once payUrl is set, show a short "Your total is ready" moment then redirect.
+  const canEdit = Boolean(myPersonId) && !roomClosed && !payUrl;
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (!payUrl) return;
+    setRedirecting(true);
+    // Append the guest's name as a query param so /pay can highlight their card.
+    const separator = payUrl.includes("?") ? "&" : "?";
+    const dest = myPersonName
+      ? `${payUrl}${separator}person=${encodeURIComponent(myPersonName)}`
+      : payUrl;
+    const timer = setTimeout(() => {
+      router.push(dest);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [payUrl, myPersonName, router]);
 
   async function handleEditClick() {
     setEditing(true);
@@ -165,12 +184,34 @@ function DoneScreen({ myPersonId, roomClosed, onEdit }: DoneScreenProps) {
         <PartyPopper className="h-9 w-9 text-primary" />
       </motion.div>
 
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold">You&apos;re all set!</h1>
-        <p className="text-muted-foreground">
-          The host will tally up everyone&apos;s totals.
-        </p>
-      </div>
+      <AnimatePresence mode="wait">
+        {redirecting ? (
+          <motion.div
+            key="redirecting"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center gap-2"
+          >
+            <h1 className="text-2xl font-bold">Your total is ready!</h1>
+            <p className="text-muted-foreground">Taking you to your payment…</p>
+            <div className="mt-2 h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="waiting"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col gap-2"
+          >
+            <h1 className="text-2xl font-bold">You&apos;re all set!</h1>
+            <p className="text-muted-foreground">
+              The host will tally up everyone&apos;s totals.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {canEdit && (
         <motion.div
@@ -197,6 +238,31 @@ function DoneScreen({ myPersonId, roomClosed, onEdit }: DoneScreenProps) {
               Couldn&apos;t connect — tap to try again
             </motion.p>
           )}
+        </motion.div>
+      )}
+
+      {/* Manual tap-through once payUrl is set but before auto-redirect fires */}
+      {redirecting && payUrl && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground"
+            onClick={() => {
+              const separator = payUrl.includes("?") ? "&" : "?";
+              const dest = myPersonName
+                ? `${payUrl}${separator}person=${encodeURIComponent(myPersonName)}`
+                : payUrl;
+              router.push(dest);
+            }}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Go now
+          </Button>
         </motion.div>
       )}
     </motion.div>
@@ -798,8 +864,9 @@ export default function JoinPage() {
       // Check if we already have a claimed identity for this room
       const existingPersonId = getLocalRoomPersonId(roomId);
       if (existingPersonId && room.claimedBy[existingPersonId]) {
+        const existingPersonName = room.people.find((p) => p.id === existingPersonId)?.name ?? null;
         if (room.status === "done") {
-          setPageState({ phase: "done", myPersonId: existingPersonId, roomClosed: true });
+          setPageState({ phase: "done", myPersonId: existingPersonId, myPersonName: existingPersonName, roomClosed: true, payUrl: room.payUrl });
         } else {
           setPageState({ phase: "assigning", room, myPersonId: existingPersonId });
         }
@@ -807,7 +874,7 @@ export default function JoinPage() {
       }
 
       if (room.status === "done") {
-        setPageState({ phase: "done", myPersonId: null, roomClosed: true });
+        setPageState({ phase: "done", myPersonId: null, myPersonName: null, roomClosed: true, payUrl: room.payUrl });
         return;
       }
 
@@ -836,7 +903,8 @@ export default function JoinPage() {
       room.version,
       (updatedRoom) => {
         if (updatedRoom.status === "done") {
-          setPageState({ phase: "done", myPersonId, roomClosed: true });
+          const personName = updatedRoom.people.find((p) => p.id === myPersonId)?.name ?? null;
+          setPageState({ phase: "done", myPersonId, myPersonName: personName, roomClosed: true, payUrl: updatedRoom.payUrl });
           return;
         }
         setPageState((prev) => {
@@ -868,7 +936,9 @@ export default function JoinPage() {
       room.version,
       (updatedRoom) => {
         if (updatedRoom.status === "done") {
-          setPageState({ phase: "done", myPersonId: getLocalRoomPersonId(roomId), roomClosed: true });
+          const pid = getLocalRoomPersonId(roomId);
+          const pName = pid ? (updatedRoom.people.find((p) => p.id === pid)?.name ?? null) : null;
+          setPageState({ phase: "done", myPersonId: pid, myPersonName: pName, roomClosed: true, payUrl: updatedRoom.payUrl });
           return;
         }
         setPageState((prev) => {
@@ -887,6 +957,59 @@ export default function JoinPage() {
 
     return unsubscribe;
   }, [roomId, pageState.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Extract payUrl for use as a stable dep — undefined when not in the done phase.
+  // This avoids a computed expression in the dependency array below.
+  const donePayUrl = pageState.phase === "done" ? pageState.payUrl : undefined;
+
+  // SSE subscription when in done phase — waiting for host to publish payUrl
+  useEffect(() => {
+    if (pageState.phase !== "done") return;
+    // If we already have a payUrl, no need to subscribe
+    if (donePayUrl) return;
+
+    // We need a starting version to subscribe from. Fetch current room state first.
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+
+    fetch(`/api/room/${roomId}`)
+      .then((res) => {
+        if (!res.ok || cancelled) return;
+        return res.json() as Promise<RoomState>;
+      })
+      .then((room) => {
+        if (!room || cancelled) return;
+        // If payUrl already exists in the fetched room, redirect immediately
+        if (room.payUrl) {
+          setPageState((prev) =>
+            prev.phase === "done" ? { ...prev, payUrl: room.payUrl } : prev
+          );
+          return;
+        }
+        unsubscribe = subscribeToRoom(
+          roomId,
+          room.version,
+          (updatedRoom) => {
+            if (updatedRoom.payUrl) {
+              setPageState((prev) =>
+                prev.phase === "done" ? { ...prev, payUrl: updatedRoom.payUrl } : prev
+              );
+            }
+          },
+          () => {
+            // Room expired — nothing to do, guest stays on done screen
+          }
+        );
+      })
+      .catch(() => {
+        // Network error — guest stays on done screen, no redirect
+      });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [roomId, pageState.phase, donePayUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle join
   const [joining, setJoining] = useState(false);
@@ -914,7 +1037,8 @@ export default function JoinPage() {
       setJoining(false);
 
       if (updatedRoom.status === "done") {
-        setPageState({ phase: "done", myPersonId: personId, roomClosed: true });
+        const personName = updatedRoom.people.find((p) => p.id === personId)?.name ?? null;
+        setPageState({ phase: "done", myPersonId: personId, myPersonName: personName, roomClosed: true, payUrl: updatedRoom.payUrl });
       } else {
         setPageState({ phase: "assigning", room: updatedRoom, myPersonId: personId });
       }
@@ -1004,8 +1128,9 @@ export default function JoinPage() {
             onBack={handleBackToNamePicker}
             onDone={() => {
               const donePersonId = pageState.myPersonId;
+              const donePersonName = pageState.room.people.find((p) => p.id === donePersonId)?.name ?? null;
               sendRoomAction(roomId, { type: "guest_done", personId: donePersonId }).catch(() => {});
-              setPageState({ phase: "done", myPersonId: donePersonId, roomClosed: false });
+              setPageState({ phase: "done", myPersonId: donePersonId, myPersonName: donePersonName, roomClosed: false });
             }}
             onRoomUpdate={handleRoomUpdate}
           />
@@ -1016,7 +1141,9 @@ export default function JoinPage() {
         <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <DoneScreen
             myPersonId={pageState.myPersonId}
+            myPersonName={pageState.myPersonName}
             roomClosed={pageState.roomClosed}
+            payUrl={pageState.payUrl}
             onEdit={handleEditFromDone}
           />
         </motion.div>

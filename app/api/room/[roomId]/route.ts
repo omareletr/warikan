@@ -35,6 +35,7 @@ const VALID_ACTION_TYPES = new Set<RoomAction["type"]>([
   "guest_done",
   "guest_back",
   "close",
+  "finalize_payment",
 ]);
 
 // ─── CORS ─────────────────────────────────────────────────────────────────
@@ -480,6 +481,26 @@ export async function POST(
     const closeState: RoomState = { ...state, status: "done" };
     const savedCloseState = await saveRoom(closeState);
     return NextResponse.json(savedCloseState, { headers: cors });
+  }
+
+  // ── finalize_payment ──────────────────────────────────────────────────────
+  if (action.type === "finalize_payment") {
+    if (!action.payUrl) {
+      return jsonError("payUrl is required for finalize_payment", "missing_field", 400, cors);
+    }
+    // Basic sanity check — must be a relative /pay path or the configured APP_URL.
+    // Localhost is restricted to /pay paths only to avoid open-redirect to arbitrary ports.
+    const isRelative = action.payUrl.startsWith("/pay");
+    const isAbsolute =
+      action.payUrl.startsWith("https://warikan0.netlify.app/pay") ||
+      /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app\/pay/.test(action.payUrl) ||
+      /^http:\/\/localhost(?::\d+)?\/pay/.test(action.payUrl);
+    if (!isRelative && !isAbsolute) {
+      return jsonError("Invalid payUrl", "invalid_pay_url", 400, cors);
+    }
+    const payState: RoomState = { ...state, payUrl: action.payUrl };
+    const savedPayState = await saveRoom(payState);
+    return NextResponse.json(savedPayState, { headers: cors });
   }
 
   // Should be unreachable given the VALID_ACTION_TYPES guard above

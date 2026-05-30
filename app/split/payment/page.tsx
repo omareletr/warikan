@@ -25,6 +25,7 @@ import {
 } from "@/lib/payment-apps";
 import type { PaymentAppId } from "@/lib/payment-apps";
 import { APP_URL } from "@/lib/platform";
+import { ROOM_SESSION_KEY, sendRoomAction } from "@/lib/room-client";
 
 /* ── Payment app logo SVGs ────────────────────────────────────────────────── */
 
@@ -145,7 +146,24 @@ export default function PaymentPage() {
     return `${APP_URL}/pay#${encoded}`;
   }
 
+  /**
+   * Publishes the pay URL into the active collab room (if one exists) so that
+   * guests waiting on the Done screen are automatically redirected.
+   * Fire-and-forget — never throws or blocks the host UI.
+   */
+  function broadcastPayUrl() {
+    const roomId =
+      typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem(ROOM_SESSION_KEY)
+        : null;
+    if (!roomId) return;
+    const url = getShareUrl();
+    sendRoomAction(roomId, { type: "finalize_payment", payUrl: url }).catch(() => {});
+  }
+
   async function handleDone() {
+    // Notify any guests still waiting on the Done screen before we navigate away.
+    broadcastPayUrl();
     setSaving(true);
     setSaveError(null);
     const split: Split = {
@@ -202,7 +220,7 @@ export default function PaymentPage() {
                 variant="ghost"
                 size="icon"
                 aria-label="Show QR code"
-                onClick={() => setShowQR(true)}
+                onClick={() => { broadcastPayUrl(); setShowQR(true); }}
               >
                 <QrCode className="h-5 w-5" />
               </Button>
@@ -347,7 +365,7 @@ export default function PaymentPage() {
             <Button
               variant="outline"
               className="h-14 flex-1 gap-2 rounded-2xl text-base font-semibold"
-              onClick={() => setShowShareSheet(true)}
+              onClick={() => { broadcastPayUrl(); setShowShareSheet(true); }}
             >
               <Send className="h-4 w-4" />
               Share

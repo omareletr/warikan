@@ -8,13 +8,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HeroConceptA } from "@/components/split/hero-concept-a";
 import { HistorySheet } from "@/components/split/history-sheet";
-import { UserMenu } from "@/components/auth/user-menu";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { closeRoomIfActive } from "@/lib/room-client";
 import { getSplits } from "@/lib/splits";
-import { subscribeToSplits } from "@/lib/firestore-splits";
-import { useAuth } from "@/lib/auth-context";
 
 const DEMO_RECEIPT = {
   restaurantName: "Helmand Palace",
@@ -44,7 +41,6 @@ function readFileAsBase64(file: File): Promise<string> {
 export default function HomePage() {
   const router = useRouter();
   const { setImage, setReceiptData, reset } = useSplitFlow();
-  const { user } = useAuth();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [fromPop] = useState(() => consumePopFlag());
@@ -53,12 +49,8 @@ export default function HomePage() {
   const [splitCount, setSplitCount] = useState(0);
 
   useEffect(() => {
-    if (!user) {
-      setSplitCount(getSplits().length);
-      return () => {};
-    }
-    return subscribeToSplits(user.uid, (splits) => setSplitCount(splits.length));
-  }, [user]);
+    setSplitCount(getSplits().length);
+  }, []);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) return;
@@ -109,23 +101,20 @@ export default function HomePage() {
     >
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
-        <div className="flex items-center justify-between">
-          <UserMenu />
-          <div className="flex items-center">
-            {splitCount > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-11 w-11"
-                onClick={() => setHistoryOpen(true)}
-              >
-                <History className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                  {splitCount > 9 ? "9+" : splitCount}
-                </span>
-              </Button>
-            )}
-          </div>
+        <div className="flex items-center justify-end">
+          {splitCount > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-11 w-11"
+              onClick={() => setHistoryOpen(true)}
+            >
+              <History className="h-5 w-5 text-muted-foreground" />
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {splitCount > 9 ? "9+" : splitCount}
+              </span>
+            </Button>
+          )}
         </div>
       </div>
 

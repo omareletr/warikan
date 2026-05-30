@@ -13,8 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { SplitCard } from "@/components/split/split-card";
 import { getSplits, clearAllSplits } from "@/lib/splits";
-import { subscribeToSplits, deleteFirestoreSplit } from "@/lib/firestore-splits";
-import { useAuth } from "@/lib/auth-context";
 import type { Split } from "@/lib/types";
 
 const INITIAL_SHOW = 10;
@@ -25,25 +23,17 @@ interface HistorySheetProps {
 }
 
 export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
-  const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
   const [splits, setSplits] = useState<Split[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const visible = showAll ? splits : splits.slice(0, INITIAL_SHOW);
 
   useEffect(() => {
-    if (!user) {
-      setSplits(getSplits());
-      return () => {};
-    }
-    return subscribeToSplits(user.uid, setSplits);
-  }, [user]);
+    if (open) setSplits(getSplits());
+  }, [open]);
 
-  async function handleClearAll() {
+  function handleClearAll() {
     clearAllSplits();
-    if (user) {
-      await Promise.all(splits.map((s) => deleteFirestoreSplit(user.uid, s.id)));
-    }
     setSplits([]);
     setShowAll(false);
     setShowConfirm(false);

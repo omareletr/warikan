@@ -147,11 +147,13 @@ export default function PaymentPage() {
   }
 
   /**
-   * Publishes the pay URL into the active collab room (if one exists) so that
+   * Sends finalize_payment to the active collab room (if one exists) so that
    * guests waiting on the Done screen are automatically redirected.
-   * Fire-and-forget — never throws or blocks the host UI.
+   * Safe to call early (e.g. when opening the QR drawer or Share sheet) — does
+   * NOT close the room or clear the session key.
+   * Never throws.
    */
-  function broadcastPayUrl() {
+  async function broadcastPayUrl(): Promise<void> {
     const roomId =
       typeof sessionStorage !== "undefined"
         ? sessionStorage.getItem(ROOM_SESSION_KEY)
@@ -161,9 +163,39 @@ export default function PaymentPage() {
     sendRoomAction(roomId, { type: "finalize_payment", payUrl: url }).catch(() => {});
   }
 
+  /**
+   * Called when the host taps "All Done". Awaits finalize_payment so guests
+   * receive the pay URL before the room is closed and the session key cleared.
+   * Never throws.
+   */
+  async function finalizeAndCloseRoom(): Promise<void> {
+    const roomId =
+      typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem(ROOM_SESSION_KEY)
+        : null;
+    if (!roomId) return;
+    const url = getShareUrl();
+    // Send finalize_payment first and wait for it — guests need payUrl before close.
+    try {
+      await sendRoomAction(roomId, { type: "finalize_payment", payUrl: url });
+    } catch {
+      // finalize_payment failed — still close so the room is cleaned up.
+      // Guests won't be auto-redirected but the host flow continues.
+    }
+    // Now close the room and clear the session key.
+    try {
+      await sendRoomAction(roomId, { type: "close" });
+    } catch {
+      // Ignore — room TTL will handle cleanup.
+    }
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem(ROOM_SESSION_KEY);
+    }
+  }
+
   async function handleDone() {
-    // Notify any guests still waiting on the Done screen before we navigate away.
-    broadcastPayUrl();
+    // Finalize the collab room: broadcast payUrl to guests, then close the room.
+    await finalizeAndCloseRoom();
     setSaving(true);
     setSaveError(null);
     const split: Split = {

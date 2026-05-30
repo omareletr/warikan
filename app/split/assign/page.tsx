@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useSpring, useTransform } from "framer-motion";
-import { ArrowLeft, Gift, Users } from "lucide-react";
+import { ArrowLeft, Gift, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -400,14 +400,15 @@ export default function AssignPage() {
           )}
           {loaded && state.people.length >= 2 && (
             <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Invite people"
+              variant="outline"
+              size="sm"
+              aria-label="Start a live split session"
               disabled={isCreatingRoom}
               onClick={handleInvite}
-              className="ml-auto"
+              className="ml-auto h-8 gap-1.5 rounded-full border-emerald-500/40 px-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
             >
-              <Users className="h-5 w-5" />
+              <UserPlus className="h-3.5 w-3.5" />
+              Live Split
             </Button>
           )}
         </div>

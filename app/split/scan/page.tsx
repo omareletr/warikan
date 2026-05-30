@@ -17,15 +17,12 @@ import { closeRoomIfActive } from "@/lib/room-client";
 // ── Detection constants ───────────────────────────────────────────────────────
 const SAMPLE_W = 160;
 const SAMPLE_H = 90;
-const CHECKS_REQUIRED = 2;
+const CHECKS_REQUIRED = 3;
 const DETECTION_INTERVAL_MS = 600;
 
-// Sobel edge density thresholds — receipts: ~0.08–0.22, blank surfaces: <0.04
-const EDGE_DENSITY_MIN = 0.055;
-const EDGE_DENSITY_MAX = 0.38;
-// Aspect ratio guard — receipts are taller than wide
-const ASPECT_RATIO_MIN = 1.15;
-const ASPECT_RATIO_MAX = 5.5;
+// Receipts with printed text: ~0.07–0.25; blank surfaces/hands: <0.05; busy backgrounds: >0.35
+const EDGE_DENSITY_MIN = 0.06;
+const EDGE_DENSITY_MAX = 0.35;
 
 // ── Visual constants ──────────────────────────────────────────────────────────
 const BRACKET_COLOR_IDLE   = "rgba(255, 255, 255, 0.35)";
@@ -78,10 +75,9 @@ function toGrayscale(data: Uint8ClampedArray, w: number, h: number): Uint8Array 
   return gray;
 }
 
-/** Returns {density, aspectRatio} of detected edges in the downsampled frame. */
-function analyzeEdges(gray: Uint8Array, w: number, h: number): { density: number; aspectRatio: number } {
+/** Returns edge density of the downsampled frame center region. */
+function analyzeEdges(gray: Uint8Array, w: number, h: number): { density: number } {
   let edgeCount = 0;
-  let minX = w, maxX = 0, minY = h, maxY = 0;
 
   // Only analyze the center 60% of the frame to ignore the vignette boundary
   const x0 = Math.floor(w * 0.2), x1 = Math.floor(w * 0.8);
@@ -98,22 +94,11 @@ function analyzeEdges(gray: Uint8Array, w: number, h: number): { density: number
         -gray[(y - 1) * w + (x - 1)] - 2 * gray[(y - 1) * w + x] - gray[(y - 1) * w + (x + 1)]
         + gray[(y + 1) * w + (x - 1)] + 2 * gray[(y + 1) * w + x] + gray[(y + 1) * w + (x + 1)];
       const mag = Math.sqrt(gx * gx + gy * gy);
-      if (mag > 30) {
-        edgeCount++;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
+      if (mag > 30) edgeCount++;
     }
   }
 
-  const density = edgeCount / total;
-  const edgeW = maxX > minX ? maxX - minX : 0;
-  const edgeH = maxY > minY ? maxY - minY : 0;
-  const aspectRatio = edgeW > 4 ? edgeH / edgeW : 0;
-
-  return { density, aspectRatio };
+  return { density: edgeCount / total };
 }
 
 // ── Native scan page ──────────────────────────────────────────────────────────
@@ -285,7 +270,7 @@ function WebScanPage({
       ctx.drawImage(video, 0, 0, SAMPLE_W, SAMPLE_H);
       const imageData = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H);
       const gray = toGrayscale(imageData.data, SAMPLE_W, SAMPLE_H);
-      const { density, aspectRatio } = analyzeEdges(gray, SAMPLE_W, SAMPLE_H);
+      const { density } = analyzeEdges(gray, SAMPLE_W, SAMPLE_H);
 
       // BarcodeDetector: barcode presence is a high-confidence receipt signal.
       // Still requires CHECKS_REQUIRED consecutive frames before capture fires.
@@ -301,10 +286,7 @@ function WebScanPage({
 
       const detected =
         barcodeFound ||
-        (density > EDGE_DENSITY_MIN &&
-          density < EDGE_DENSITY_MAX &&
-          aspectRatio > ASPECT_RATIO_MIN &&
-          aspectRatio < ASPECT_RATIO_MAX);
+        (density > EDGE_DENSITY_MIN && density < EDGE_DENSITY_MAX);
 
       if (detected) {
         consecutiveRef.current += 1;

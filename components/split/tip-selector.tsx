@@ -1,6 +1,7 @@
 "use client";
 
 import { Toggle } from "@/components/ui/toggle";
+import { useTranslations } from "next-intl";
 
 const TIP_OPTIONS = [15, 18, 20, 25] as const;
 
@@ -15,6 +16,7 @@ export function TipSelector({
   tipAmount,
   onTipChange,
 }: TipSelectorProps) {
+  const t = useTranslations("review");
   const activePercent = subtotal > 0
     ? TIP_OPTIONS.find(
         (p) => Math.abs(tipAmount - subtotal * (p / 100)) < 0.01
@@ -42,7 +44,7 @@ export function TipSelector({
         onPressedChange={() => onTipChange(0)}
         className="h-11 px-3 text-base"
       >
-        None
+        {t("tipNone")}
       </Toggle>
     </div>
   );

@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
+import { slideOffset } from "@/lib/rtl-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +33,7 @@ function FeeRow({ fee, onUpdate, onRemove }: FeeRowProps) {
   const [editing, setEditing] = useState(!fee.name);
   const [name, setName] = useState(fee.name);
   const [amount, setAmount] = useState(fee.amount ? fee.amount.toString() : "");
+  const t = useTranslations("review");
 
   function save() {
     onUpdate({ ...fee, name: name.trim() || fee.name, amount: Math.max(0, parseFloat(amount) || 0) });
@@ -53,7 +57,7 @@ function FeeRow({ fee, onUpdate, onRemove }: FeeRowProps) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="flex-1 min-w-0"
-          placeholder="Fee name"
+          placeholder={t("feeName")}
           autoFocus
           onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
         />
@@ -112,6 +116,9 @@ export default function ReviewPage() {
   const [retryKey, setRetryKey] = useState(0);
   const [itemsRef] = useAutoAnimate<HTMLDivElement>();
   const [feesRef] = useAutoAnimate<HTMLDivElement>();
+  const t = useTranslations("review");
+  const tCommon = useTranslations("common");
+  const { isRTL } = useLocale();
 
   useEffect(() => {
     if (loaded && !state.image && state.lineItems.length === 0) router.replace("/");
@@ -209,13 +216,13 @@ export default function ReviewPage() {
   const totalFees = state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={`flex min-h-dvh flex-col px-6 ${totalFees > 0 ? "pb-80" : "pb-72"}`}>
+    <motion.main initial={fromPop ? false : { opacity: 0, x: slideOffset(isRTL) }} animate={{ opacity: 1, x: 0 }} className={`flex min-h-dvh flex-col px-6 ${totalFees > 0 ? "pb-80" : "pb-72"}`}>
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
             <Link href={state.editingSplitId ? `/split/detail?id=${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
-          <h1 className="text-xl font-bold">Review items</h1>
+          <h1 className="text-xl font-bold">{t("title")}</h1>
         </div>
       </div>
 
@@ -224,19 +231,17 @@ export default function ReviewPage() {
       {error && (
         <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-5">
           <p className="text-base font-medium text-destructive">
-            {error === "timeout" ? "Receipt parsing timed out." : "We couldn't read this receipt."}
+            {error === "timeout" ? t("timeout") : t("parseFailed")}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {error === "timeout"
-              ? "The request took too long. Try again or add items manually."
-              : "Try a clearer photo with better lighting, or add items manually below."}
+            {error === "timeout" ? t("timeoutDetail") : t("parseFailedDetail")}
           </p>
           <div className="mt-4 flex gap-3">
             <Button variant="outline" size="sm" onClick={() => { setError(null); setRetryKey((k) => k + 1); }}>
-              Try again
+              {t("tryAgain")}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setError(null)}>
-              Add items manually
+              {t("addManually")}
             </Button>
           </div>
         </div>
@@ -245,18 +250,18 @@ export default function ReviewPage() {
       {loaded && !loading && (
         <div className="mt-8 flex flex-col gap-8">
           <section>
-            <label className="mb-2 block text-base font-semibold text-muted-foreground">Restaurant</label>
+            <label className="mb-2 block text-base font-semibold text-muted-foreground">{t("restaurant")}</label>
             <Input
               value={state.restaurantName}
               onChange={(e) => updateRestaurantName(e.target.value)}
-              placeholder="Restaurant name (optional)"
+              placeholder={t("restaurantPlaceholder")}
             />
           </section>
 
           <section>
-            <p className="mb-3 text-base font-semibold text-muted-foreground">Items</p>
+            <p className="mb-3 text-base font-semibold text-muted-foreground">{t("items")}</p>
             {state.lineItems.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">No items yet — tap Add Item to get started.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{t("noItems")}</p>
             )}
             <div ref={itemsRef} className="divide-y divide-border/40">
               {state.lineItems.map((item) => (
@@ -264,12 +269,12 @@ export default function ReviewPage() {
               ))}
             </div>
             <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={addItem}>
-              <Plus className="mr-1.5 h-4 w-4" />Add Item
+              <Plus className="mr-1.5 h-4 w-4" />{t("addItem")}
             </Button>
           </section>
 
           <section>
-            <p className="mb-3 text-base font-semibold text-muted-foreground">Fees</p>
+            <p className="mb-3 text-base font-semibold text-muted-foreground">{t("feesSection")}</p>
 
             <div ref={feesRef} className="divide-y divide-border/40">
               {state.fees.map((fee) => (
@@ -277,26 +282,26 @@ export default function ReviewPage() {
               ))}
             </div>
             <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={addFee}>
-              <Plus className="mr-1.5 h-4 w-4" />Add Fee
+              <Plus className="mr-1.5 h-4 w-4" />{t("addFee")}
             </Button>
           </section>
 
           <section>
-            <p className="mb-4 text-base font-semibold text-muted-foreground">Tax & Tip</p>
+            <p className="mb-4 text-base font-semibold text-muted-foreground">{t("taxAndTip")}</p>
             <div className="flex flex-col gap-5">
               <div>
-                <label className="mb-2 block text-base text-muted-foreground">Tax</label>
+                <label className="mb-2 block text-base text-muted-foreground">{t("taxLabel")}</label>
                 <div className="relative flex items-center">
                   <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
                   <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" className="h-11 pl-6" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-base text-muted-foreground">Tip</label>
+                <label className="mb-2 block text-base text-muted-foreground">{t("tipLabel")}</label>
                 <TipSelector subtotal={subtotal} tipAmount={state.tipAmount} onTipChange={updateTip} />
                 <div className="relative mt-3 flex items-center">
                   <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
-                  <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="h-11 pl-6" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
+                  <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder={t("customAmount")} className="h-11 pl-6" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
                 </div>
               </div>
             </div>
@@ -307,7 +312,7 @@ export default function ReviewPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           {state.lineItems.length > 0 && <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />}
-          <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
+          <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>{tCommon("continue")}</Button>
         </div>
       </div>
     </motion.main>

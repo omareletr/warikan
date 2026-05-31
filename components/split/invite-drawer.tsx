@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion"
 import type { PanInfo } from "framer-motion";
 import { Copy, Check, X, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 interface InviteDrawerProps {
@@ -76,6 +77,7 @@ function InviteDrawerContent({
 }: InviteDrawerProps) {
   const y = useMotionValue(0);
   const [copied, setCopied] = useState(false);
+  const t = useTranslations("invite");
 
   function handleDragEnd(_: PointerEvent, info: PanInfo) {
     if (info.velocity.y > 500 || info.offset.y > 180) {
@@ -142,7 +144,7 @@ function InviteDrawerContent({
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
             <p id="invite-drawer-title" className="text-xl font-bold">
-              Invite your table
+              {t("title")}
             </p>
           </div>
 
@@ -150,7 +152,7 @@ function InviteDrawerContent({
             <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400">
-                {connectedCount} of {peopleCount} joined
+                {t("joined", { n: connectedCount, total: peopleCount })}
               </span>
             </div>
             <ConnectionDots connected={connectedCount} total={peopleCount} />
@@ -178,7 +180,7 @@ function InviteDrawerContent({
           transition={{ delay: 0.20, type: "spring", damping: 22, stiffness: 300 }}
           className="mt-8 flex flex-col items-center gap-1"
         >
-          <p className="text-xs text-muted-foreground">can&apos;t scan?</p>
+          <p className="text-xs text-muted-foreground">{t("cantScan")}</p>
           <p className="font-mono text-xs tabular-nums text-muted-foreground">
             {joinUrl.replace(/^https?:\/\//, "").replace(new RegExp(roomId, "i"), "")}
             <span className="font-semibold text-foreground">
@@ -211,12 +213,12 @@ function InviteDrawerContent({
                 >
                   <Check className="h-4 w-4 text-primary" />
                 </motion.span>
-                <span className="text-primary">Copied!</span>
+                <span className="text-primary">{t("copied")}</span>
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4" />
-                Copy invite link
+                {t("copyLink")}
               </>
             )}
           </Button>

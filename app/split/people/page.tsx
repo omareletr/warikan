@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Gift, X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
+import { slideOffset } from "@/lib/rtl-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +23,9 @@ export default function PeoplePage() {
   const router = useRouter();
   const { state, loaded, setPeople } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
+  const t = useTranslations("people");
+  const tCommon = useTranslations("common");
+  const { isRTL } = useLocale();
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [animatingId, setAnimatingId] = useState<string | null>(null);
@@ -74,26 +80,26 @@ export default function PeoplePage() {
   }
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: slideOffset(isRTL) }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
             <Link href="/split/review"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
-          <h1 className="text-xl font-bold">Who&apos;s splitting?</h1>
+          <h1 className="text-xl font-bold">{t("title")}</h1>
         </div>
       </div>
 
       {loaded && (
         <div className="mt-8 flex gap-3">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a name" onKeyDown={(e) => e.key === "Enter" && addPerson()} />
-          <Button onClick={addPerson} disabled={!name.trim()}>Add</Button>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} onKeyDown={(e) => e.key === "Enter" && addPerson()} />
+          <Button onClick={addPerson} disabled={!name.trim()}>{t("addButton")}</Button>
         </div>
       )}
 
       {loaded && state.people.length > 0 && (
         <div className="mt-8">
-          <p className="mb-4 text-base font-semibold text-muted-foreground">In This Split</p>
+          <p className="mb-4 text-base font-semibold text-muted-foreground">{t("inThisSplit")}</p>
           <div ref={listRef} className="flex flex-col gap-3">
             {state.people.map((person, i) => {
               const cannotCover = !person.covered && state.people.filter(p => !p.covered).length <= 2;
@@ -130,7 +136,7 @@ export default function PeoplePage() {
                       {person.name}
                     </button>
                   )}
-                  {person.covered && !editingId && <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>}
+                  {person.covered && !editingId && <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">{t("coveredBadge")}</Badge>}
                 </div>
                 <motion.div
                   animate={animatingId === person.id ? "pop" : "idle"}
@@ -147,7 +153,7 @@ export default function PeoplePage() {
                     if (animatingId === person.id) setAnimatingId(null);
                   }}
                 >
-                  <Button variant="ghost" size="icon" disabled={cannotCover} className={cn("h-9 w-9 disabled:opacity-30", person.covered ? "text-amber-400" : "text-muted-foreground")} aria-label={cannotCover ? "Need at least 2 people to split — can't cover everyone" : person.covered ? "Remove birthday/covered mode" : "Mark as covered (birthday mode)"} onClick={() => toggleCovered(person.id)}>
+                  <Button variant="ghost" size="icon" disabled={cannotCover} className={cn("h-9 w-9 disabled:opacity-30", person.covered ? "text-amber-400" : "text-muted-foreground")}                   aria-label={cannotCover ? t("coveredAriaOff") : person.covered ? t("coveredAriaRemove") : t("coveredAriaAdd")} onClick={() => toggleCovered(person.id)}>
                     <Gift className="h-4 w-4" />
                   </Button>
                 </motion.div>
@@ -163,7 +169,7 @@ export default function PeoplePage() {
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || state.people.length < 2} onClick={() => router.push("/split/assign")}>
-            {!loaded ? "Loading..." : state.people.length < 2 ? "Add at least 2 people" : `Continue with ${state.people.length} people`}
+            {!loaded ? tCommon("loading") : state.people.length < 2 ? t("addAtLeast2") : t("continueWith", { n: state.people.length })}
           </Button>
         </div>
       </div>

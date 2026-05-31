@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -105,6 +106,7 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
   const [phase, setPhase] = useState<Phase>("hidden");
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  const tHero = useTranslations("hero");
 
   // Runs before first paint — if the animation already played this page load,
   // snap to final state immediately without framer-motion animating in.
@@ -406,13 +408,13 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
       {/* ── Tagline text ─────────────────────────────────── */}
       <div className="mt-6 text-center">
         <TaglineLine
-          text="Pay your share."
+          text={tHero("tagline1")}
           show={phaseGte("text")}
           delayOffset={0}
           skipIntro={skipIntro}
         />
         <TaglineLine
-          text="Keep your friends."
+          text={tHero("tagline2")}
           show={phaseGte("text")}
           delayOffset={0.3}
           skipIntro={skipIntro}

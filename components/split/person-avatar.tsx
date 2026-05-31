@@ -1,5 +1,8 @@
+"use client";
+
 import { Gift } from "lucide-react";
 import NumberFlow from "@number-flow/react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/calculate";
 import type { Person } from "@/lib/types";
@@ -24,6 +27,7 @@ interface PersonAvatarProps {
 }
 
 export function PersonAvatar({ person, selected, runningTotal, onClick, colorIndex = 0, online, done }: PersonAvatarProps) {
+  const tCommon = useTranslations("common");
   const color = person.covered
     ? { bg: "bg-amber-500/15", text: "text-amber-400", ring: "ring-amber-400", activeBg: "bg-amber-500", selectedText: "text-amber-900", outline: "outline-amber-400" }
     : AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
@@ -50,7 +54,7 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
       <span className={cn("max-w-[72px] text-center text-sm leading-tight line-clamp-2", person.covered && "text-muted-foreground")}>{person.name}</span>
       {runningTotal !== undefined && (
         <span className={cn("text-sm tabular-nums", person.covered && "text-amber-400")}>
-          {person.covered ? "Covered" : (
+          {person.covered ? tCommon("covered") : (
             <NumberFlow
               value={runningTotal}
               format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }}

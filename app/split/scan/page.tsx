@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ImagePlus, Camera, Receipt, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import {
@@ -111,6 +112,7 @@ function NativeScanPage({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("scan");
 
   async function handleNativeAction(action: "camera" | "library") {
     setError(null);
@@ -147,9 +149,9 @@ function NativeScanPage({
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
           <Receipt className="h-10 w-10 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold">Scan Receipt</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="text-base text-muted-foreground">
-          Use your camera or photo library
+          {t("subtitle")}
         </p>
       </div>
       <div className="fixed bottom-0 left-0 right-0 p-4">
@@ -167,7 +169,7 @@ function NativeScanPage({
             ) : (
               <Camera className="h-5 w-5" />
             )}
-            Take Photo
+            {t("takePhoto")}
           </Button>
           <Button
             variant="outline"
@@ -176,7 +178,7 @@ function NativeScanPage({
             onClick={() => handleNativeAction("library")}
           >
             <ImagePlus className="h-5 w-5" />
-            Choose from Library
+            {t("chooseLibrary")}
           </Button>
         </div>
       </div>
@@ -192,6 +194,7 @@ function WebScanPage({
   setImage: (base64: string, mimeType: string) => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("scan");
   const videoRef = useRef<HTMLVideoElement>(null);
   const sampleCanvasRef = useRef<HTMLCanvasElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -323,25 +326,25 @@ function WebScanPage({
 
   const statusConfig = {
     searching: {
-      text: "Point camera at receipt",
+      text: t("pointCamera"),
       dotColor: "rgba(255,255,255,0.35)",
       textColor: "rgba(255,255,255,0.60)",
       showSpinner: false,
     },
     steady: {
-      text: "Hold steady…",
+      text: t("holdSteady"),
       dotColor: "rgba(251, 191, 36, 1)", // amber
       textColor: "rgba(251, 191, 36, 0.95)",
       showSpinner: false,
     },
     capturing: {
-      text: "Scanning…",
+      text: t("scanning"),
       dotColor: "rgba(255, 255, 255, 0.90)",
       textColor: "rgba(255, 255, 255, 0.90)",
       showSpinner: false,
     },
     processing: {
-      text: "Processing…",
+      text: t("processing"),
       dotColor: "rgba(255, 255, 255, 0.90)",
       textColor: "rgba(255, 255, 255, 0.90)",
       showSpinner: true,
@@ -446,14 +449,14 @@ function WebScanPage({
             className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/90 px-8 text-center"
           >
             <p className="text-base text-white/70">
-              Camera access is required to scan receipts.
+              {t("cameraRequired")}
             </p>
             <Button
               className="h-14 w-full max-w-xs gap-3 rounded-2xl text-base font-semibold"
               onClick={() => uploadInputRef.current?.click()}
             >
               <ImagePlus className="h-5 w-5" />
-              Upload a Photo Instead
+              {t("uploadInstead")}
             </Button>
           </motion.div>
         )}

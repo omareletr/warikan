@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion"
 import type { PanInfo } from "framer-motion";
 import { Copy, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -27,6 +28,7 @@ export function QRDrawer(props: QRDrawerProps) {
 function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps) {
   const y = useMotionValue(0);
   const [copied, setCopied] = useState(false);
+  const t = useTranslations("qr");
 
   function handleDragEnd(_: PointerEvent, info: PanInfo) {
     if (info.velocity.y > 500 || info.offset.y > 180) {
@@ -74,9 +76,9 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, type: "spring", damping: 22, stiffness: 300 }}
         >
-          <p id="qr-drawer-title" className="text-xl font-bold">Scan to pay</p>
+          <p id="qr-drawer-title" className="text-xl font-bold">{t("title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Everyone picks their name and pays.
+            {t("subtitle")}
           </p>
         </motion.div>
 
@@ -121,12 +123,12 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
                 >
                   <Check className="h-4 w-4 text-primary" />
                 </motion.span>
-                <span className="text-primary">Copied!</span>
+                <span className="text-primary">{t("copied")}</span>
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4" />
-                Copy link
+                {t("copyLink")}
               </>
             )}
           </Button>

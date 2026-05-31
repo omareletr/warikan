@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ChevronDown, Copy, Check, Gift } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
+import { slideOffset } from "@/lib/rtl-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +23,9 @@ export default function SummaryPage() {
   const [fromPop] = useState(() => consumePopFlag());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const t = useTranslations("summary");
+  const tCommon = useTranslations("common");
+  const { isRTL } = useLocale();
 
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
@@ -29,23 +35,23 @@ export default function SummaryPage() {
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: slideOffset(isRTL) }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
-          <h1 className="text-xl font-bold">Summary</h1>
+          <h1 className="text-xl font-bold">{t("title")}</h1>
         </div>
       </div>
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
         <AnimatedTotal amount={grandTotal} />
-        <p className="mt-1 text-xs text-muted-foreground">incl. tax & tip</p>
-        <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("inclTaxTip")}</p>
+        <p className="mt-2 text-base text-muted-foreground">{t("splitBetween", { n: state.people.length })}</p>
       </div>
 
       <div className="mt-10">
-        <p className="mb-4 text-base font-semibold text-muted-foreground">Each person owes</p>
+        <p className="mb-4 text-base font-semibold text-muted-foreground">{t("eachPersonOwes")}</p>
         <div className="flex flex-col gap-3">
           {totals.map((pt, i) => {
             const expanded = expandedId === pt.person.id;
@@ -61,11 +67,11 @@ export default function SummaryPage() {
                     </div>
                     <span className="flex-1 truncate text-left text-base font-medium">{pt.person.name}</span>
                     {pt.person.covered ? (
-                      <span className="text-sm font-medium text-amber-400">Covered</span>
+                      <span className="text-sm font-medium text-amber-400">{t("coveredLabel")}</span>
                     ) : pt.total > 0 ? (
                       <span className="font-mono text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
                     ) : (
-                      <span className="text-sm font-medium text-muted-foreground">Not splitting</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t("notSplitting")}</span>
                     )}
                     <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.22, ease: "easeInOut" }}>
                       <ChevronDown className="h-5 w-5 text-muted-foreground" />
@@ -77,17 +83,17 @@ export default function SummaryPage() {
                       <div className="border-t border-border/50 px-5 pb-5 pt-4">
                       {pt.items.map((item, j) => (
                         <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
-                          <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground">split {item.splitCount} ways</span>}</span>
+                           <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground">{t("splitNWays", { n: item.splitCount })}</span>}</span>
                           <span className="font-mono tabular-nums">{formatCurrency(item.price)}</span>
                         </div>
                       ))}
                       <Separator className="my-3" />
-                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tax</span><span className="font-mono tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
-                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tip</span><span className="font-mono tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
-                      {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="font-mono tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
+                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>{tCommon("tax")}</span><span className="font-mono tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
+                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>{tCommon("tip")}</span><span className="font-mono tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
+                      {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>{tCommon("fees")}</span><span className="font-mono tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
                       {pt.coveredExtra > 0 && (
-                        <div className="flex justify-between py-2 text-base text-amber-400">
-                          <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}&apos;s share</span>
+                         <div className="flex justify-between py-2 text-base text-amber-400">
+                           <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />{t("coveringShare", { name: totals.filter((tot) => tot.person.covered).map((tot) => tot.person.name).join(", ") })}</span>
                           <span className="font-mono tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
                         </div>
                       )}
@@ -115,9 +121,9 @@ export default function SummaryPage() {
                 // clipboard unavailable — silently ignore, no false feedback
               }
             }}>
-              {copied ? <><motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}><Check className="h-4 w-4 text-primary" /></motion.span>Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
+              {copied ? <><motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}><Check className="h-4 w-4 text-primary" /></motion.span>{t("copied")}</> : <><Copy className="h-4 w-4" />{t("copyAll")}</>}
             </Button>
-            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Payment</Button>
+            <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>{t("payment")}</Button>
           </div>
         </div>
       </div>

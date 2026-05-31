@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import type { PanInfo } from "framer-motion";
 import { Send, Copy, QrCode, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Separator } from "@/components/ui/separator";
 
 interface ShareSheetProps {
@@ -25,6 +26,7 @@ export function ShareSheet(props: ShareSheetProps) {
 function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
   const y = useMotionValue(0);
   const [copied, setCopied] = useState(false);
+  const t = useTranslations("shareSheet");
 
   function handleDragEnd(_: PointerEvent, info: PanInfo) {
     if (info.velocity.y > 500 || info.offset.y > 180) {
@@ -60,24 +62,24 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
     {
       id: "share",
       icon: Send,
-      label: "Share link",
-      sublabel: "Opens share sheet",
+      label: t("title"),
+      sublabel: t("shareDesc"),
       action: handleShare,
       highlight: false,
     },
     {
       id: "copy",
       icon: copied ? Check : Copy,
-      label: copied ? "Copied!" : "Copy link",
-      sublabel: "Copies to clipboard",
+      label: copied ? t("copied") : t("copyLink"),
+      sublabel: t("copyDesc"),
       action: handleCopy,
       highlight: copied,
     },
     ...(onShowQR ? [{
       id: "qr",
       icon: QrCode,
-      label: "Show QR code",
-      sublabel: "For in-person payments",
+      label: t("showQR"),
+      sublabel: t("qrDesc"),
       action: handleQR,
       highlight: false,
     }] : []),

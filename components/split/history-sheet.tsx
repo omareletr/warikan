@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslations } from "next-intl";
 import { SplitCard } from "@/components/split/split-card";
 import { getSplits, clearAllSplits } from "@/lib/splits";
 import type { Split } from "@/lib/types";
@@ -27,6 +28,8 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
   const [splits, setSplits] = useState<Split[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const visible = showAll ? splits : splits.slice(0, INITIAL_SHOW);
+  const t = useTranslations("history");
+  const tCommon = useTranslations("common");
 
   useEffect(() => {
     if (open) setSplits(getSplits());
@@ -44,16 +47,16 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8 pt-6 max-h-[75dvh] flex flex-col gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="mb-4 flex items-center gap-3 shrink-0">
-            <SheetTitle>Recent splits</SheetTitle>
+            <SheetTitle>{t("title")}</SheetTitle>
             {splits.length > 0 && (
               <Button variant="ghost" size="sm" className="text-destructive h-8 px-2" onClick={() => setShowConfirm(true)}>
-                Clear all
+                {t("clearAll")}
               </Button>
             )}
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto">
             {splits.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No splits yet.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{t("noSplits")}</p>
             ) : (
               <div className="flex flex-col gap-3 pb-4">
                 {visible.map((split) => (
@@ -65,7 +68,7 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
                     className="text-muted-foreground"
                     onClick={() => setShowAll(true)}
                   >
-                    Show {splits.length - INITIAL_SHOW} more
+                    {t("showMore", { n: splits.length - INITIAL_SHOW })}
                   </Button>
                 )}
               </div>
@@ -77,16 +80,16 @@ export function HistorySheet({ open, onOpenChange }: HistorySheetProps) {
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Clear all splits?</DialogTitle>
+            <DialogTitle>{t("clearConfirmTitle")}</DialogTitle>
             <DialogDescription asChild>
               <div>
-                <p className="font-medium text-foreground">{splits.length} saved split{splits.length !== 1 ? "s" : ""}</p>
-                <p className="mt-1">This will be permanently removed and cannot be undone.</p>
+                <p className="font-medium text-foreground">{splits.length !== 1 ? t("savedSplits_plural", { n: splits.length }) : t("savedSplits", { n: splits.length })}</p>
+                <p className="mt-1">{t("clearConfirmDesc")}</p>
               </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="destructive" onClick={handleClearAll}>Clear all</Button>
+            <Button variant="destructive" onClick={handleClearAll}>{t("clearAll")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

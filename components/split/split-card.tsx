@@ -1,11 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/calculate";
 import type { Split } from "@/lib/types";
 import { Users } from "lucide-react";
+import { useLocale } from "@/lib/locale-context";
 
 export function SplitCard({ split }: { split: Split }) {
-  const date = new Date(split.date).toLocaleDateString("en-US", {
+  const { locale } = useLocale();
+  const date = new Date(split.date).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
   });

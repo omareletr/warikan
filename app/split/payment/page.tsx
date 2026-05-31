@@ -6,6 +6,9 @@ import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Gift, QrCode, Send } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
+import { slideOffset } from "@/lib/rtl-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,6 +68,8 @@ export default function PaymentPage() {
   const router = useRouter();
   const { state, loaded, reset } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
+  const t = useTranslations("payment");
+  const { isRTL } = useLocale();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<PaymentAppId>("venmo");
   const [handles, setHandles] = useState<Partial<Record<PaymentAppId, string>>>({});
@@ -229,7 +234,7 @@ export default function PaymentPage() {
   return (
     <>
       <motion.main
-        initial={fromPop ? false : { opacity: 0, x: 20 }}
+        initial={fromPop ? false : { opacity: 0, x: slideOffset(isRTL) }}
         animate={{ opacity: 1, x: 0 }}
         className="flex min-h-dvh flex-col px-6 pb-40"
       >
@@ -240,7 +245,7 @@ export default function PaymentPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
-            <h1 className="flex-1 text-xl font-bold">Payment</h1>
+            <h1 className="flex-1 text-xl font-bold">{t("title")}</h1>
             {handle && (
               <Button
                 variant="ghost"
@@ -256,7 +261,7 @@ export default function PaymentPage() {
 
         {/* Payment app selector */}
         <div className="mt-6">
-          <label className="mb-2 block text-base text-muted-foreground">Payment app</label>
+          <label className="mb-2 block text-base text-muted-foreground">{t("paymentApp")}</label>
           <div className="flex gap-2">
             {PAYMENT_APPS.map((app) => {
               const Logo = APP_LOGOS[app.id];
@@ -282,7 +287,7 @@ export default function PaymentPage() {
         {/* Handle input */}
         <div className="mt-4">
           <label className="mb-2 block text-base text-muted-foreground">
-            {currentApp.name} username
+            {t("appUsername", { app: currentApp.name })}
           </label>
           <div className="relative flex items-center">
             {currentApp.handlePrefix && (
@@ -323,7 +328,7 @@ export default function PaymentPage() {
                   <div className="flex-1">
                     <p className="truncate text-base font-medium">{pt.person.name}</p>
                     {pt.person.covered ? (
-                      <p className="text-base text-amber-400">Covered by group</p>
+                      <p className="text-base text-amber-400">{t("coveredByGroup")}</p>
                     ) : (
                       <p className="font-mono text-2xl font-semibold tabular-nums text-primary">
                         {formatCurrency(pt.total)}
@@ -348,12 +353,12 @@ export default function PaymentPage() {
                           >
                             <Check className="h-3.5 w-3.5 text-primary" />
                           </motion.span>
-                          Copied
+                          {t("copied")}
                         </>
                       ) : (
                         <>
                           <Copy className="h-3.5 w-3.5" />
-                          Copy
+                          {t("copy")}
                         </>
                       )}
                     </Button>
@@ -375,7 +380,7 @@ export default function PaymentPage() {
 
         {venmoFailed && (
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Venmo not found — make sure the app is installed.
+            {t("venmoNotFound")}
           </p>
         )}
       </motion.main>
@@ -394,14 +399,14 @@ export default function PaymentPage() {
               onClick={() => { broadcastPayUrl(); setShowShareSheet(true); }}
             >
               <Send className="h-4 w-4" />
-              Share
+              {t("share")}
             </Button>
             <Button
               className="h-14 flex-1 rounded-2xl text-base font-semibold"
               disabled={!loaded || saving}
               onClick={handleDone}
             >
-              {!loaded ? "Loading..." : saving ? "Saving..." : "All Done"}
+              {!loaded ? t("loading") : saving ? t("saving") : t("done")}
             </Button>
           </div>
         </div>

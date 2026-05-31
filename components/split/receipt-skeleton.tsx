@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 function SkeletonBlock({ className }: { className?: string }) {
   return (
@@ -39,9 +40,10 @@ const LINE_ITEMS = [
 const DOT_DURATION = 1.2;
 
 function TypingDots() {
+  const t = useTranslations("review");
   return (
     <p className="mb-6 text-xl font-semibold text-foreground">
-      Parsing receipt
+      {t("parsingReceipt")}
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}

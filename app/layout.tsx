@@ -1,12 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, JetBrains_Mono } from "next/font/google";
+import { Manrope, JetBrains_Mono, Noto_Sans_Arabic } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
+// Import all locale messages at build time (server component)
+import enMessages from "@/messages/en.json";
+import frMessages from "@/messages/fr.json";
+import arMessages from "@/messages/ar.json";
+import type { AbstractIntlMessages } from "next-intl";
+import type { Locale } from "@/lib/locale-context";
+
+const allMessages: Record<Locale, AbstractIntlMessages> = {
+  en: enMessages as AbstractIntlMessages,
+  fr: frMessages as AbstractIntlMessages,
+  ar: arMessages as AbstractIntlMessages,
+};
+
 const manrope = Manrope({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-syne",
+});
+
+// Noto Sans Arabic — loaded for Arabic locale UI text
+const notoSansArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-arabic",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -32,9 +52,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${manrope.variable} ${jetbrainsMono.variable}`}>
+    // lang and dir are set dynamically on the client via LocaleProvider
+    // suppressHydrationWarning prevents mismatch warnings
+    <html lang="en" dir="ltr" className={`dark ${manrope.variable} ${jetbrainsMono.variable} ${notoSansArabic.variable}`} suppressHydrationWarning>
       <body className={`${manrope.className} min-h-dvh`} suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers messages={allMessages}>{children}</Providers>
       </body>
     </html>
   );

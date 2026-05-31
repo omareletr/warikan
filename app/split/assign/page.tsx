@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useSpring, useTransform } from "framer-motion";
 import { ArrowLeft, Gift, UserPlus } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
+import { slideOffset } from "@/lib/rtl-motion";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,6 +42,9 @@ export default function AssignPage() {
   const { state, loaded, updateLineItems } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
+  const t = useTranslations("assign");
+  const tCommon = useTranslations("common");
+  const { isRTL } = useLocale();
 
   // Collaborative room state
   // Restore roomId from sessionStorage so navigating back and returning keeps
@@ -385,16 +391,16 @@ export default function AssignPage() {
   const displaySlots = useTransform(springValue, (v) => Math.round(v));
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: slideOffset(isRTL) }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
-          <h1 className="text-xl font-bold shrink-0">Assign dishes</h1>
+          <h1 className="text-xl font-bold shrink-0">{t("title")}</h1>
           {roomState && roomState.connectedPeople.length > 0 && (
             <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400 whitespace-nowrap">
-                {roomState.connectedPeople.length} of {state.people.length} joined
+                {t("joined", { connected: roomState.connectedPeople.length, total: state.people.length })}
               </span>
             </div>
           )}
@@ -402,13 +408,13 @@ export default function AssignPage() {
             <Button
               variant="outline"
               size="sm"
-              aria-label="Start a live split session"
+              aria-label={t("liveSplit")}
               disabled={isCreatingRoom}
               onClick={handleInvite}
               className="ml-auto h-8 gap-1.5 rounded-full border-emerald-500/40 px-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
             >
               <UserPlus className="h-3.5 w-3.5" />
-              Live Split
+              {t("liveSplit")}
             </Button>
           )}
         </div>
@@ -442,35 +448,35 @@ export default function AssignPage() {
             <div className="flex items-center gap-2 min-w-0">
               <div className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400 animate-pulse" />
               <p className="text-base font-semibold text-muted-foreground truncate">
-                {state.people.find((p) => p.id === selectedPersonId)?.name ?? ""} is claiming dishes…
+                {t("claiming", { name: state.people.find((p) => p.id === selectedPersonId)?.name ?? "" })}
               </p>
             </div>
           ) : (
             <>
               <p className="text-base font-semibold text-muted-foreground truncate min-w-0">
-                {loaded ? `Assigning to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
+                {loaded ? t("assigningTo", { name: state.people.find((p) => p.id === selectedPersonId)?.name ?? "" }) : ""}
               </p>
               <div className="flex items-center gap-2 shrink-0">
                 {hasAnyAssigned && (
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive animate-in fade-in slide-in-from-right-2 duration-200">
-                        Clear all
+                        {t("clearAll")}
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader className="text-left">
-                        <DialogTitle>Clear all assignments?</DialogTitle>
+                        <DialogTitle>{t("clearAllTitle")}</DialogTitle>
                         <DialogDescription className="mt-1">
-                          All dish assignments will be removed. You&apos;ll need to start over.
+                          {t("clearAllDesc")}
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter className="mt-2 flex-row gap-3">
                         <DialogClose asChild>
-                          <Button variant="outline" className="h-12 flex-1 rounded-2xl text-base">Cancel</Button>
+                          <Button variant="outline" className="h-12 flex-1 rounded-2xl text-base">{tCommon("cancel")}</Button>
                         </DialogClose>
                         <DialogClose asChild>
-                          <Button variant="destructive" className="h-12 flex-1 rounded-2xl text-base" onClick={clearAllAssignments}>Clear all</Button>
+                          <Button variant="destructive" className="h-12 flex-1 rounded-2xl text-base" onClick={clearAllAssignments}>{t("clearAll")}</Button>
                         </DialogClose>
                       </DialogFooter>
                     </DialogContent>
@@ -478,7 +484,7 @@ export default function AssignPage() {
                 )}
                 {hasUnclaimed && (
                   <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-primary/40 text-primary hover:bg-primary/10 hover:text-primary" onClick={assignRestToSelected}>
-                    Assign rest
+                    {t("assignRest")}
                   </Button>
                 )}
               </div>
@@ -566,7 +572,7 @@ export default function AssignPage() {
                       })}
                     </div>
 
-                    <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)}/ea</span>
+                    <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)}/{t("perEach")}</span>
                   </div>
                 </div>
               );
@@ -622,7 +628,7 @@ export default function AssignPage() {
                       onClick={(e) => { e.stopPropagation(); toggleAssignment(item.id); }}
                       className="rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
                     >
-                      Share
+                      {t("share")}
                     </button>
                   )}
                   <div className="text-right">
@@ -642,20 +648,20 @@ export default function AssignPage() {
         {!loaded ? (
           <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
             <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled>
-              Loading...
+              {tCommon("loading")}
             </Button>
           </div>
         ) : allAssigned ? (
           <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
             <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={handleContinue}>
-              Continue
+              {tCommon("continue")}
             </Button>
           </div>
         ) : (
           <div className="flex justify-center pb-1">
             <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
               <motion.span>{displaySlots}</motion.span>
-              {` of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`}
+              {` / ${totalSlots} ${totalSlots === 1 ? t("portion") : t("portions_plural")} `}
             </span>
           </div>
         )}

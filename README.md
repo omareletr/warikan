@@ -25,12 +25,15 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 
 | Layer | Tech |
 |---|---|
-| Framework | Next.js 16 (App Router) |
+| Framework | Next.js 15 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
 | Components | shadcn/ui (Radix UI primitives) |
 | Animations | Framer Motion |
 | Receipt Parsing | Google Gemini Flash (multimodal) |
+| Real-time Collab | Firebase (Firestore) |
+| API Rate Limiting | Upstash Redis |
+| API Validation | Zod |
 | Deployment | Netlify |
 
 ---
@@ -38,6 +41,8 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 ## Features
 
 - **AI receipt parsing** — Receipt photo sent directly to Gemini Flash; returns structured line items with no separate OCR step
+- **Advanced receipt scanner** — Full-screen auto-detecting scanner with edge detection, perimeter trace animation, and bracket UI; or upload a photo from your library
+- **Live collaborative splitting** — Host shares a QR code or invite link; guests join on their own device, pick their name, and assign their own dishes in real time. Firebase-backed, no account needed
 - **Flexible tip & tax** — Quick-select tip percentages (15/18/20/25%) or enter a custom amount; tax and tip are prorated proportionally
 - **Fees support** — Extra line fees (service charge, delivery fee, etc.) split proportionally
 - **Birthday / covered mode** — Mark someone as "covered" and their share is redistributed equally among the rest of the group
@@ -51,26 +56,31 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 
 ```
 /app
-  /page.tsx                    — Home (recent splits list)
-  /split/scan/page.tsx         — Camera / photo upload
-  /split/review/page.tsx       — Edit line items, set tax & tip
-  /split/people/page.tsx       — Add people, toggle birthday mode
-  /split/assign/page.tsx       — Assign dishes to people
-  /split/summary/page.tsx      — Per-person itemized totals
-  /split/payment/page.tsx      — Copy amounts, payment app deep links, QR
-  /split/[id]/page.tsx         — View a saved split
-  /pay/page.tsx                — QR pay landing page
-  /api/parse-receipt/route.ts  — Gemini API endpoint (server-side)
+  /page.tsx                        — Home (recent splits list)
+  /join/[roomId]/page.tsx          — Guest join page for collab sessions
+  /split/scan/page.tsx             — Camera / photo upload
+  /split/review/page.tsx           — Edit line items, set tax & tip
+  /split/people/page.tsx           — Add people, toggle birthday mode
+  /split/assign/page.tsx           — Assign dishes to people
+  /split/summary/page.tsx          — Per-person itemized totals
+  /split/payment/page.tsx          — Copy amounts, payment app deep links, QR
+  /split/[id]/page.tsx             — View a saved split
+  /pay/page.tsx                    — QR pay landing page
+  /api/parse-receipt/route.ts      — Gemini API endpoint (server-side)
+  /api/room/[roomId]/route.ts      — Room state API (collab)
 /components
-  /ui/                         — shadcn/ui components
-  /split/                      — App-specific components
+  /ui/                             — shadcn/ui components
+  /split/                          — App-specific components
 /lib
-  /gemini.ts                   — Gemini API client + receipt parsing prompt
-  /calculate.ts                — Split calculation logic (pure functions)
-  /payment-apps.ts             — Venmo / Cash App / PayPal deep link builders
-  /split-flow-context.tsx      — React Context for split flow state
-  /splits.ts                   — localStorage read/write for splits
-  /types.ts                    — TypeScript interfaces
+  /gemini.ts                       — Gemini API client + receipt parsing prompt
+  /calculate.ts                    — Split calculation logic (pure functions)
+  /payment-apps.ts                 — Venmo / Cash App / PayPal deep link builders
+  /room-client.ts                  — Real-time room client utilities (collab)
+  /firebase.ts                     — Firebase init
+  /firestore-splits.ts             — Firestore splits persistence
+  /split-flow-context.tsx          — React Context for split flow state
+  /splits.ts                       — localStorage read/write for splits
+  /types.ts                        — TypeScript interfaces
 ```
 
 ---
@@ -89,10 +99,18 @@ Deployed to Netlify via `@netlify/plugin-nextjs`. Pushing to `staging` deploys t
 
 ---
 
+## Security
+
+- **Rate limiting** — `/api/parse-receipt` is rate-limited via Upstash Redis to prevent abuse
+- **Input validation** — Gemini API responses are validated with Zod before reaching the client
+- **Origin gating** — API routes reject requests from unknown origins
+- **MIME & size checks** — Image uploads are validated by type and capped at 10 MB
+- **Response headers** — Security headers set via `netlify.toml`
+
+---
+
 ## Roadmap (V2+)
 
-- Firebase Authentication (Google, Apple, Email)
 - Cloud sync for splits
 - Friends system
-- Collaborative real-time splitting via QR session
 - Light mode

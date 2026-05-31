@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslations } from "next-intl";
 import type { LineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculate";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,8 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity.toString());
   const [price, setPrice] = useState(item.price.toString());
+  const t = useTranslations("lineItem");
+  const tCommon = useTranslations("common");
 
   function save() {
     onUpdate({
@@ -45,18 +48,18 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
     <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Remove item?</DialogTitle>
+          <DialogTitle>{t("removeTitle")}</DialogTitle>
           <DialogDescription>
-            <span className="font-medium text-foreground">{item.name || "This item"}</span>
-            {" "}will be removed from the receipt.
+            <span className="font-medium text-foreground">{item.name || "..."}</span>
+            {" "}{t("removeDesc")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-row gap-3 pt-2">
           <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>
-            Cancel
+            {tCommon("cancel")}
           </Button>
           <Button variant="destructive" className="flex-1" onClick={() => { setShowConfirm(false); onRemove(); }}>
-            Remove
+            {tCommon("remove")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -101,7 +104,7 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
             />
             {(parseInt(quantity) || 1) > 1 && (
               <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                /ea
+                {t("perEach")}
               </span>
             )}
           </div>

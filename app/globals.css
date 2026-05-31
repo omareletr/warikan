@@ -134,3 +134,44 @@
   initial-value: 0deg;
   inherits: false;
 }
+
+/* ── Arabic font override ───────────────────────────────────────────────────── */
+/* When the page is in Arabic (RTL), use Noto Sans Arabic which renders Arabic
+   script correctly. The latin glyphs fall back to Manrope. */
+[dir="rtl"] body,
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] span,
+[dir="rtl"] p,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3 {
+  font-family: var(--font-arabic), var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── RTL (Arabic) layout adjustments ───────────────────────────────────────── */
+/* Tailwind's logical properties (ms-, me-, ps-, pe-) handle most RTL layout
+   automatically via the dir attribute. These rules cover edge cases where
+   Tailwind doesn't auto-flip. */
+
+[dir="rtl"] .sticky-header::before {
+  /* The fade mask still reads left-to-right in RTL — invert it */
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 20px), transparent);
+}
+
+/* Flip slide-in animations for RTL: pages entering from the right should
+   come from the left (opposite direction) */
+[dir="rtl"] .rtl-slide {
+  direction: rtl;
+}
+
+/* Ensure Arabic numerals display correctly in monospaced contexts */
+[dir="rtl"] .tabular-nums {
+  font-feature-settings: "tnum" 1;
+}
+
+/* Horizontal scroll fade mask should be mirrored in RTL */
+[dir="rtl"] [style*="linear-gradient(to right"] {
+  mask-image: linear-gradient(to left, transparent, black 24px, black calc(100% - 24px), transparent);
+}

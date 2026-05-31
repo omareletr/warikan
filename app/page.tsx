@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Camera, ImagePlus, FlaskConical, History } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { HeroConceptA } from "@/components/split/hero-concept-a";
 import { HistorySheet } from "@/components/split/history-sheet";
+import { LanguagePicker } from "@/components/split/language-picker";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { closeRoomIfActive } from "@/lib/room-client";
@@ -42,6 +44,7 @@ export default function HomePage() {
   const router = useRouter();
   const { setImage, setReceiptData, reset } = useSplitFlow();
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations("home");
 
   const [fromPop] = useState(() => consumePopFlag());
   const [heroReady, setHeroReady] = useState(false);
@@ -78,7 +81,7 @@ export default function HomePage() {
       >
         <Link href="/split/scan">
           <Camera className="h-5 w-5" />
-          Scan Receipt
+          {t("scanReceipt")}
         </Link>
       </Button>
       <Button
@@ -87,7 +90,7 @@ export default function HomePage() {
         onClick={() => uploadInputRef.current?.click()}
       >
         <ImagePlus className="h-5 w-5" />
-        Upload Photo
+        {t("uploadPhoto")}
       </Button>
     </>
   );
@@ -101,7 +104,8 @@ export default function HomePage() {
     >
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-1">
+          <LanguagePicker />
           {splitCount > 0 && (
             <Button
               variant="ghost"
@@ -151,7 +155,7 @@ export default function HomePage() {
           }}
         >
           <FlaskConical className="h-3.5 w-3.5" />
-          Try demo receipt
+          {t("tryDemo")}
         </Button>
       </motion.div>
 

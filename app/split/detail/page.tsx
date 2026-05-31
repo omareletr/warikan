@@ -6,6 +6,9 @@ import { Loader2 as SuspenseLoader } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Send } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
+import { slideOffset } from "@/lib/rtl-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -49,6 +52,9 @@ function SplitDetailContent() {
   const [fromPop] = useState(() => consumePopFlag());
   const [split, setSplit] = useState<Split | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const t = useTranslations("detail");
+  const tCommon = useTranslations("common");
+  const tSummary = useTranslations("summary");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -77,15 +83,16 @@ function SplitDetailContent() {
   if (!split) {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-        <p className="text-xl font-bold">Split not found</p>
-        <p className="mt-2 text-base text-muted-foreground">This split may have been deleted.</p>
-        <Button className="mt-6" asChild><Link href="/">Go Home</Link></Button>
+        <p className="text-xl font-bold">{t("notFound")}</p>
+        <p className="mt-2 text-base text-muted-foreground">{t("notFoundDesc")}</p>
+        <Button className="mt-6" asChild><Link href="/">{tCommon("goHome")}</Link></Button>
       </main>
     );
   }
 
+  const { locale, isRTL } = useLocale();
   const totals = calculateSplit(split.people, split.lineItems, split.taxAmount, split.tipAmount, split.fees);
-  const date = new Date(split.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const date = new Date(split.date).toLocaleDateString(locale, { month: "long", day: "numeric", year: "numeric" });
 
   const payApp = payAppId ? getPaymentApp(payAppId) : null;
 
@@ -128,13 +135,13 @@ function SplitDetailContent() {
 
   return (
     <>
-      <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
+      <motion.main initial={fromPop ? false : { opacity: 0, x: slideOffset(isRTL) }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="-ml-3" asChild aria-label="Go back">
               <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
-            <h1 className="flex-1 text-xl font-bold">Split details</h1>
+            <h1 className="flex-1 text-xl font-bold">{t("title")}</h1>
             <Button variant="ghost" size="icon" aria-label="Share split" onClick={() => setShowShareSheet(true)}>
               <Send className="h-5 w-5" />
             </Button>
@@ -146,17 +153,17 @@ function SplitDetailContent() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Delete split</DialogTitle>
+                  <DialogTitle>{t("deleteTitle")}</DialogTitle>
                   <DialogDescription asChild>
                     <div>
                       <p className="font-medium text-foreground">{split.restaurantName ?? "Split"}</p>
                       <p className="mt-1 text-muted-foreground">{date} · {formatCurrency(split.totalAmount)}</p>
-                      <p className="mt-3">This will be permanently removed and cannot be undone.</p>
+                      <p className="mt-3">{t("deleteDesc")}</p>
                     </div>
                   </DialogDescription>
-                </DialogHeader>
+                  </DialogHeader>
                 <DialogFooter>
-                  <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                  <Button variant="destructive" onClick={handleDelete}>{tCommon("delete")}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -170,7 +177,7 @@ function SplitDetailContent() {
         </div>
 
         <div className="mt-10">
-          <p className="mb-4 text-base font-semibold text-muted-foreground">Each person owes</p>
+          <p className="mb-4 text-base font-semibold text-muted-foreground">{t("eachPersonOwes")}</p>
           <div className="flex flex-col gap-3">
             {totals.map((pt, i) => {
               const expanded = expandedId === pt.person.id;
@@ -186,7 +193,7 @@ function SplitDetailContent() {
                       </div>
                       <span className="flex-1 text-left text-base font-medium">{pt.person.name}</span>
                       {pt.person.covered ? (
-                        <span className="text-sm font-medium text-amber-400">Covered</span>
+                        <span className="text-sm font-medium text-amber-400">{t("covered")}</span>
                       ) : (
                         <span className="font-mono text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
                       )}
@@ -200,17 +207,17 @@ function SplitDetailContent() {
                         <div className="border-t border-border/50 px-5 pb-5 pt-4">
                         {pt.items.map((item, j) => (
                           <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
-                            <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground/60">split {item.splitCount} ways</span>}</span>
+                            <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}                        {item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground/60">{tSummary("splitNWays", { n: item.splitCount })}</span>}</span>
                             <span className="font-mono tabular-nums">{formatCurrency(item.price)}</span>
                           </div>
                         ))}
                         <Separator className="my-3" />
-                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tax</span><span className="font-mono tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
-                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tip</span><span className="font-mono tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
-                        {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="font-mono tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
+                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>{tCommon("tax")}</span><span className="font-mono tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
+                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>{tCommon("tip")}</span><span className="font-mono tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
+                        {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>{tCommon("fees")}</span><span className="font-mono tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
                         {pt.coveredExtra > 0 && (
                           <div className="flex justify-between py-2 text-base text-amber-400">
-                            <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}&apos;s share</span>
+                            <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />{tSummary("coveringShare", { name: totals.filter((tot) => tot.person.covered).map((tot) => tot.person.name).join(", ") })}</span>
                             <span className="font-mono tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
                           </div>
                         )}
@@ -248,16 +255,16 @@ function SplitDetailContent() {
             <div className="flex gap-3">
               <Button variant="outline" className="h-12 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={handleEdit}>
                 <Pencil className="h-4 w-4" />
-                Edit Items
+                {t("editItems")}
               </Button>
               <Button variant="outline" className="h-12 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={handleEditAssignments}>
                 <Users className="h-4 w-4" />
-                Edit Assignments
+                {t("editAssignments")}
               </Button>
             </div>
             <Button className="h-14 w-full gap-2 rounded-2xl text-base font-semibold" onClick={handlePayments}>
               <CreditCard className="h-4 w-4" />
-              Payments
+              {t("payments")}
             </Button>
           </div>
         </div>

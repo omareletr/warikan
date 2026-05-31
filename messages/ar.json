@@ -39,7 +39,8 @@
     "scanning": "جارٍ المسح…",
     "processing": "جارٍ المعالجة…",
     "cameraRequired": "يلزم الوصول إلى الكاميرا لمسح الفواتير.",
-    "uploadInstead": "رفع صورة بدلاً من ذلك"
+    "uploadInstead": "رفع صورة بدلاً من ذلك",
+    "photoTooLarge": "الصورة كبيرة جداً. يرجى رفع صورة أقل من 10 ميغابايت."
   },
   "review": {
     "title": "مراجعة الأصناف",
@@ -86,7 +87,7 @@
     "clearAllTitle": "مسح جميع التوزيعات؟",
     "clearAllDesc": "ستُزال جميع توزيعات الأطباق. ستحتاج إلى البدء من جديد.",
     "assignRest": "توزيع الباقي",
-    "portions": "{assigned} من {total} {unit} موزّعة",
+    "portions": "من {total} {unit} موزّعة",
     "portion": "حصة",
     "portions_plural": "حصص",
     "share": "مشاركة",
@@ -157,6 +158,20 @@
     "subtitle": "يختار كل شخص اسمه ويدفع.",
     "copyLink": "نسخ الرابط",
     "copied": "تم النسخ!"
+  },
+  "pay": {
+    "invalidLink": "رابط غير صالح",
+    "invalidLinkDesc": "رابط الدفع هذا مفقود أو منتهي الصلاحية. اطلب من المنظم مشاركة رابط جديد.",
+    "payingVia": "الدفع عبر {app} {handle}",
+    "tapNameToPay": "اضغط على اسمك للدفع",
+    "yourShare": "نصيبك من الفاتورة",
+    "tapNameGeneral": "اضغط على اسم للدفع",
+    "everyonesShare": "نصيب الجميع",
+    "you": "أنت",
+    "pay": "ادفع",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "startYourOwn": "ابدأ تقسيمك الخاص"
   },
   "hero": {
     "tagline1": "ادفع نصيبك.",

@@ -52,9 +52,8 @@ export function LocaleProvider({ children, messages }: LocaleProviderProps) {
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     localStorage.setItem(LOCALE_KEY, newLocale);
-    const localeInfo = LOCALES.find((l) => l.code === newLocale);
-    document.documentElement.lang = newLocale;
-    document.documentElement.dir = localeInfo?.dir ?? "ltr";
+    // DOM attributes (lang, dir) are updated by the useEffect below when locale changes.
+    // No need to mutate them here — setState triggers a re-render which fires the effect.
   }, []);
 
   useEffect(() => {

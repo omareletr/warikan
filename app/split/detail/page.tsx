@@ -55,6 +55,7 @@ function SplitDetailContent() {
   const t = useTranslations("detail");
   const tCommon = useTranslations("common");
   const tSummary = useTranslations("summary");
+  const { locale, isRTL } = useLocale();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -90,7 +91,6 @@ function SplitDetailContent() {
     );
   }
 
-  const { locale, isRTL } = useLocale();
   const totals = calculateSplit(split.people, split.lineItems, split.taxAmount, split.tipAmount, split.fees);
   const date = new Date(split.date).toLocaleDateString(locale, { month: "long", day: "numeric", year: "numeric" });
 

@@ -39,7 +39,8 @@
     "scanning": "Scanning…",
     "processing": "Processing…",
     "cameraRequired": "Camera access is required to scan receipts.",
-    "uploadInstead": "Upload a Photo Instead"
+    "uploadInstead": "Upload a Photo Instead",
+    "photoTooLarge": "Photo too large. Please upload a photo under 10 MB."
   },
   "review": {
     "title": "Review items",
@@ -86,7 +87,7 @@
     "clearAllTitle": "Clear all assignments?",
     "clearAllDesc": "All dish assignments will be removed. You'll need to start over.",
     "assignRest": "Assign rest",
-    "portions": "{assigned} of {total} {unit} assigned",
+    "portions": "of {total} {unit} assigned",
     "portion": "portion",
     "portions_plural": "portions",
     "share": "Share",
@@ -157,6 +158,20 @@
     "subtitle": "Everyone picks their name and pays.",
     "copyLink": "Copy link",
     "copied": "Copied!"
+  },
+  "pay": {
+    "invalidLink": "Invalid link",
+    "invalidLinkDesc": "This payment link is missing or expired. Ask the organizer to share a new link.",
+    "payingVia": "Paying via {app} {handle}",
+    "tapNameToPay": "Tap your name to pay",
+    "yourShare": "Your share of the bill",
+    "tapNameGeneral": "Tap a name to pay",
+    "everyonesShare": "Everyone's share",
+    "you": "You",
+    "pay": "Pay",
+    "copy": "Copy",
+    "copied": "Copied",
+    "startYourOwn": "Start your own split"
   },
   "hero": {
     "tagline1": "Pay your share.",

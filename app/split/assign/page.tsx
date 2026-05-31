@@ -661,7 +661,7 @@ export default function AssignPage() {
           <div className="flex justify-center pb-1">
             <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
               <motion.span>{displaySlots}</motion.span>
-              {` / ${totalSlots} ${totalSlots === 1 ? t("portion") : t("portions_plural")} `}
+              {" "}{t("portions", { total: totalSlots, unit: totalSlots === 1 ? t("portion") : t("portions_plural") })}
             </span>
           </div>
         )}

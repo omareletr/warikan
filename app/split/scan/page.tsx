@@ -207,6 +207,7 @@ function WebScanPage({
 
   const [status, setStatus] = useState<DetectionStatus>("searching");
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Init BarcodeDetector if available
   useEffect(() => {
@@ -311,9 +312,11 @@ function WebScanPage({
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert("Photo too large. Please upload a photo under 10 MB.");
+      setUploadError(t("photoTooLarge"));
+      e.target.value = "";
       return;
     }
+    setUploadError(null);
     try {
       const { base64, mimeType } = await readFileAsBase64(file);
       setImage(base64, mimeType);
@@ -437,6 +440,26 @@ function WebScanPage({
             animate={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Upload error overlay */}
+      <AnimatePresence>
+        {uploadError && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/90 px-8 text-center z-10"
+          >
+            <p className="text-base text-white/70">{uploadError}</p>
+            <Button
+              className="h-14 w-full max-w-xs gap-3 rounded-2xl text-base font-semibold"
+              onClick={() => setUploadError(null)}
+            >
+              OK
+            </Button>
+          </motion.div>
         )}
       </AnimatePresence>
 

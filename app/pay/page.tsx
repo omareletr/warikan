@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export default function PayPage() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [highlightedPerson, setHighlightedPerson] = useState<string | null>(null);
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
+  const t = useTranslations("pay");
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -49,9 +51,9 @@ export default function PayPage() {
   if (loaded && !data) {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-        <p className="text-xl font-bold">Invalid link</p>
+        <p className="text-xl font-bold">{t("invalidLink")}</p>
         <p className="mt-2 text-base text-muted-foreground">
-          This payment link is missing or expired. Ask the organizer to share a new link.
+          {t("invalidLinkDesc")}
         </p>
       </main>
     );
@@ -115,7 +117,7 @@ export default function PayPage() {
             </p>
             {hasHandle && appConfig && (
               <p className="mt-2 text-base text-muted-foreground">
-                Paying via {appConfig.name} {handleLabel()}
+                {t("payingVia", { app: appConfig.name, handle: handleLabel() })}
               </p>
             )}
           </div>
@@ -123,11 +125,11 @@ export default function PayPage() {
           <p className="mb-4 mt-10 text-base font-semibold text-muted-foreground">
             {highlightedPerson
               ? hasHandle
-                ? `Tap your name to pay`
-                : `Your share of the bill`
+                ? t("tapNameToPay")
+                : t("yourShare")
               : hasHandle
-              ? "Tap a name to pay"
-              : "Everyone's share"}
+              ? t("tapNameGeneral")
+              : t("everyonesShare")}
           </p>
 
           <div className="flex flex-col gap-4">
@@ -156,7 +158,7 @@ export default function PayPage() {
                           {person.name}
                           {isHighlighted && (
                             <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                              You
+                              {t("you")}
                             </span>
                           )}
                         </p>
@@ -164,7 +166,7 @@ export default function PayPage() {
                           {formatCurrency(person.amount)}
                         </p>
                       </div>
-                      <Button size="sm">Pay</Button>
+                      <Button size="sm">{t("pay")}</Button>
                     </Card>
                   ) : (
                     <Card className={`flex items-center gap-4 p-5 ${isHighlighted ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}>
@@ -176,7 +178,7 @@ export default function PayPage() {
                           {person.name}
                           {isHighlighted && (
                             <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                              You
+                              {t("you")}
                             </span>
                           )}
                         </p>
@@ -201,7 +203,7 @@ export default function PayPage() {
                         ) : (
                           <Copy className="h-3.5 w-3.5" />
                         )}
-                        {copiedIdx === i ? "Copied" : "Copy"}
+                        {copiedIdx === i ? t("copied") : t("copy")}
                       </Button>
                     </Card>
                   )}
@@ -215,7 +217,7 @@ export default function PayPage() {
               href="/"
               className="text-sm text-muted-foreground underline-offset-4 hover:underline"
             >
-              Start your own split
+              {t("startYourOwn")}
             </Link>
           </div>
         </>

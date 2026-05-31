@@ -39,7 +39,8 @@
     "scanning": "Numérisation…",
     "processing": "Traitement…",
     "cameraRequired": "L'accès à la caméra est requis pour scanner les reçus.",
-    "uploadInstead": "Télécharger une photo à la place"
+    "uploadInstead": "Télécharger une photo à la place",
+    "photoTooLarge": "Photo trop volumineuse. Veuillez télécharger une photo de moins de 10 Mo."
   },
   "review": {
     "title": "Vérifier les articles",
@@ -86,7 +87,7 @@
     "clearAllTitle": "Effacer toutes les assignations ?",
     "clearAllDesc": "Toutes les assignations de plats seront supprimées. Vous devrez recommencer.",
     "assignRest": "Assigner le reste",
-    "portions": "{assigned} sur {total} {unit} assigné(s)",
+    "portions": "sur {total} {unit} assignée(s)",
     "portion": "portion",
     "portions_plural": "portions",
     "share": "Partager",
@@ -157,6 +158,20 @@
     "subtitle": "Chacun choisit son nom et paie.",
     "copyLink": "Copier le lien",
     "copied": "Copié !"
+  },
+  "pay": {
+    "invalidLink": "Lien invalide",
+    "invalidLinkDesc": "Ce lien de paiement est manquant ou expiré. Demandez à l'organisateur de partager un nouveau lien.",
+    "payingVia": "Paiement via {app} {handle}",
+    "tapNameToPay": "Appuyez sur votre nom pour payer",
+    "yourShare": "Votre part de la note",
+    "tapNameGeneral": "Appuyez sur un nom pour payer",
+    "everyonesShare": "La part de chacun",
+    "you": "Vous",
+    "pay": "Payer",
+    "copy": "Copier",
+    "copied": "Copié",
+    "startYourOwn": "Créez votre propre partage"
   },
   "hero": {
     "tagline1": "Payez votre part.",

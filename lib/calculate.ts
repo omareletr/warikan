@@ -1,4 +1,5 @@
 import type { LineItem, Fee, Person, PersonTotal } from "./types";
+import { normalizeLineItems } from "./line-items";
 
 // Distributes `total` across `values` so that rounded shares sum exactly to `total`.
 function largestRemainder(values: number[], total: number): number[] {
@@ -20,28 +21,39 @@ export function calculateSplit(
   tipAmount: number,
   fees: Fee[]
 ): PersonTotal[] {
-  const overallSubtotal = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const normalizedItems = normalizeLineItems(lineItems);
+  const overallSubtotal = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalFees = fees.reduce((sum, fee) => sum + fee.amount, 0);
 
   const totals = people.map((person) => {
-    const assignedItems = lineItems
-      .filter((item) => item.assignedToIds.includes(person.id))
-      .map((item) => {
-        const personClaims = item.assignedToIds.filter((id) => id === person.id).length;
-        const totalClaims = item.assignedToIds.length;
-        // For multi-quantity items, each claim represents one unit at `item.price`.
-        // For single-quantity items (or shared single items), divide total by claimant count.
-        const price =
-          item.quantity > 1
-            ? item.price * personClaims
-            : (item.price * personClaims) / totalClaims;
-        return {
+    const assignedItemsByName = new Map<string, { name: string; quantity: number; price: number; splitCounts: Set<number> }>();
+
+    for (const item of normalizedItems) {
+      for (const portion of item.portions ?? []) {
+        if (!portion.assignedToIds.includes(person.id) || portion.assignedToIds.length === 0) continue;
+        const existing = assignedItemsByName.get(item.name) ?? {
           name: item.name,
-          quantity: personClaims,
-          price,
-          splitCount: item.quantity <= 1 ? totalClaims : 1,
+          quantity: 0,
+          price: 0,
+          splitCounts: new Set<number>(),
         };
-      });
+        existing.quantity += 1;
+        existing.price += item.price / portion.assignedToIds.length;
+        existing.splitCounts.add(portion.assignedToIds.length);
+        assignedItemsByName.set(item.name, existing);
+      }
+    }
+
+    const assignedItems = Array.from(assignedItemsByName.values()).map((item) => {
+      const splitCounts = Array.from(item.splitCounts);
+      return {
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        splitCount: splitCounts.length === 1 ? splitCounts[0] : 1,
+        mixedSplits: splitCounts.length > 1,
+      };
+    });
 
     const subtotal = assignedItems.reduce((sum, item) => sum + item.price, 0);
 

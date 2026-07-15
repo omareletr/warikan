@@ -16,6 +16,7 @@ import { ReceiptSkeleton } from "@/components/split/receipt-skeleton";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
+import { normalizeLineItem, normalizeLineItems } from "@/lib/line-items";
 import type { Fee, LineItem } from "@/lib/types";
 
 // Inline-editable fee row
@@ -138,11 +139,11 @@ export default function ReviewPage() {
         const data = await res.json();
         setReceiptData({
           restaurantName: data.restaurantName ?? "",
-          lineItems: (data.lineItems ?? []).map(
+          lineItems: normalizeLineItems((data.lineItems ?? []).map(
             (item: { name: string; quantity?: number; price: number }) => ({
               id: crypto.randomUUID(), name: item.name, quantity: item.quantity ?? 1, price: item.price, assignedToIds: [],
             })
-          ),
+          )),
           fees: (data.fees ?? []).map(
             (fee: { name: string; amount: number }) => ({ id: crypto.randomUUID(), name: fee.name, amount: fee.amount })
           ),
@@ -160,12 +161,12 @@ export default function ReviewPage() {
   }, [state.image, state.imageMimeType, state.lineItems.length, setReceiptData, retryKey]);
 
   function addItem() {
-    const newItem: LineItem = { id: crypto.randomUUID(), name: "", quantity: 1, price: 0, assignedToIds: [] };
+    const newItem: LineItem = normalizeLineItem({ id: crypto.randomUUID(), name: "", quantity: 1, price: 0, assignedToIds: [] });
     updateLineItems([...state.lineItems, newItem]);
   }
 
   function updateItem(updated: LineItem) {
-    updateLineItems(state.lineItems.map((i) => (i.id === updated.id ? updated : i)));
+    updateLineItems(state.lineItems.map((i) => (i.id === updated.id ? normalizeLineItem(updated) : i)));
   }
 
   function removeItem(id: string) {
@@ -194,7 +195,7 @@ export default function ReviewPage() {
         id: state.editingSplitId,
         date: new Date().toISOString(),
         restaurantName: state.restaurantName || undefined,
-        lineItems: state.lineItems,
+        lineItems: normalizeLineItems(state.lineItems),
         fees: state.fees,
         taxAmount: state.taxAmount,
         tipAmount: state.tipAmount,

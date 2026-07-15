@@ -1,8 +1,14 @@
+export interface LineItemPortion {
+  id: string;
+  assignedToIds: string[];
+}
+
 export interface LineItem {
   id: string;
   name: string;
   quantity: number;
   price: number;
+  portions?: LineItemPortion[];
   assignedToIds: string[];
 }
 
@@ -38,7 +44,7 @@ export interface PersonTotal {
   feesShare: number;
   coveredExtra: number;
   total: number;
-  items: { name: string; quantity: number; price: number; splitCount: number }[];
+  items: { name: string; quantity: number; price: number; splitCount: number; mixedSplits?: boolean }[];
 }
 
 // ─── Collaborative Room Types ─────────────────────────────────────────────
@@ -49,6 +55,7 @@ export interface RoomState {
   lineItems: LineItem[];         // full item list from host
   people: Person[];              // full people list from host
   assignments: Record<string, string[]>; // itemId → assignedToIds
+  portionAssignments?: Record<string, string[][]>; // itemId → portionIndex → assignedToIds
   connectedPeople: string[];     // array of personIds currently "present"
   donePeople: string[];          // personIds who tapped "I'm done" (offline but slot stays claimed)
   claimedBy: Record<string, string>;   // personId → name (who has claimed that identity slot)
@@ -81,8 +88,10 @@ export interface RoomAction {
   restaurantName?: string;
   // For "host_assign" — host sends the full resulting assignment array for one item
   assignedToIds?: string[];
+  portionIndex?: number;
   // For "host_bulk_assign" — host sends the complete assignments map
   assignments?: Record<string, string[]>;
+  portionAssignments?: Record<string, string[][]>;
   // For "finalize_payment" — host sends the shareable /pay#<encoded> URL
   payUrl?: string;
 }

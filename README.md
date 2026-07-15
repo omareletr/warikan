@@ -13,7 +13,7 @@ A mobile web app for splitting restaurant receipts fairly. Photograph a receipt,
 1. **Scan** — Take a photo or upload an image of your receipt
 2. **Review** — AI extracts line items; correct any mistakes and set tax & tip
 3. **People** — Add the names of everyone splitting the bill
-4. **Assign** — Tap a person, tap their dishes
+4. **Assign** — Tap a person, tap their dishes or split individual quantity units
 5. **Summary** — See each person's itemized total
 6. **Payment** — Copy amounts or send deep links via Venmo, Cash App, or PayPal
 
@@ -40,7 +40,9 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 - **AI receipt parsing** — Receipt photo sent directly to Gemini Flash; returns structured line items with no separate OCR step
 - **Flexible tip & tax** — Quick-select tip percentages (15/18/20/25%) or enter a custom amount; tax and tip are prorated proportionally
 - **Fees support** — Extra line fees (service charge, delivery fee, etc.) split proportionally
+- **Per-unit quantity sharing** — Multi-quantity dishes can be split unit by unit, so one unit can be shared while another is assigned whole
 - **Birthday / covered mode** — Mark someone as "covered" and their share is redistributed equally among the rest of the group
+- **Live split sessions** — Guests can join by QR/link and claim or share dishes, including individual units of quantity-based items
 - **Multi-payment app support** — Deep links for Venmo, Cash App, and PayPal; shareable QR code encodes all amounts in the URL fragment (no server needed)
 - **Split history** — Recent splits saved locally with full per-person breakdown
 - **Mobile-first** — Designed for 390px, dark theme only
@@ -52,6 +54,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 ```
 /app
   /page.tsx                    — Home (recent splits list)
+  /join/[roomId]/page.tsx      — Guest live split session
   /split/scan/page.tsx         — Camera / photo upload
   /split/review/page.tsx       — Edit line items, set tax & tip
   /split/people/page.tsx       — Add people, toggle birthday mode
@@ -61,12 +64,14 @@ Everything runs in the browser. No account required. Splits are saved to `localS
   /split/[id]/page.tsx         — View a saved split
   /pay/page.tsx                — QR pay landing page
   /api/parse-receipt/route.ts  — Gemini API endpoint (server-side)
+  /api/room/[roomId]/route.ts  — Live split room API
 /components
   /ui/                         — shadcn/ui components
   /split/                      — App-specific components
 /lib
   /gemini.ts                   — Gemini API client + receipt parsing prompt
   /calculate.ts                — Split calculation logic (pure functions)
+  /line-items.ts               — Line item quantity/portion normalization helpers
   /payment-apps.ts             — Venmo / Cash App / PayPal deep link builders
   /split-flow-context.tsx      — React Context for split flow state
   /splits.ts                   — localStorage read/write for splits
@@ -77,7 +82,8 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 
 ## Split Calculation
 
-- Each dish's cost is divided equally among the people assigned to it
+- Single dishes are divided equally among the people assigned to them
+- Quantity-based dishes are split per unit; each unit can be assigned whole or shared among multiple people
 - Tax, tip, and fees are prorated: `(person_subtotal / total_subtotal) × (tax + tip + fees)`
 - **Covered person:** their total is redistributed equally among all non-covered payers; their own total becomes $0
 

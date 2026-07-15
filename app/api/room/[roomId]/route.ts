@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import type { RoomState, RoomAction, LineItem, Person } from "@/lib/types";
+import {
+  applyPortionAssignments,
+  legacyAssignmentsToPortionAssignments,
+  lineItemsToPortionAssignments,
+  normalizeLineItems,
+  portionAssignmentsToLegacy,
+} from "@/lib/line-items";
 
 // Room actions mutate Redis state — always dynamic.
 export const dynamic = "force-dynamic";
@@ -76,7 +83,16 @@ function versionKey(roomId: string): string {
 async function getRoom(roomId: string): Promise<RoomState | null> {
   if (!redis) return null;
   const data = await redis.get<RoomState>(roomKey(roomId));
-  return data ?? null;
+  if (!data) return null;
+  const lineItems = normalizeLineItems(data.lineItems ?? []);
+  const portionAssignments = data.portionAssignments
+    ?? legacyAssignmentsToPortionAssignments(lineItems, data.assignments ?? {});
+  return {
+    ...data,
+    lineItems: applyPortionAssignments(lineItems, portionAssignments),
+    portionAssignments,
+    assignments: data.assignments ?? portionAssignmentsToLegacy(portionAssignments),
+  };
 }
 
 async function saveRoom(state: RoomState): Promise<RoomState> {
@@ -192,16 +208,13 @@ export async function POST(
       return jsonError("Room already exists", "room_exists", 409, cors);
     }
 
-    const lineItems: LineItem[] = (action.lineItems ?? []).map((item) => ({
+    const lineItems: LineItem[] = normalizeLineItems((action.lineItems ?? []).map((item) => ({
       ...item,
       assignedToIds: item.assignedToIds ?? [],
-    }));
+    })));
 
-    // Seed assignments from any existing assignedToIds on the line items
-    const assignments: Record<string, string[]> = {};
-    for (const item of lineItems) {
-      assignments[item.id] = [...item.assignedToIds];
-    }
+    const portionAssignments = lineItemsToPortionAssignments(lineItems);
+    const assignments = portionAssignmentsToLegacy(portionAssignments);
 
     const newState: RoomState = {
       roomId,
@@ -209,6 +222,7 @@ export async function POST(
       lineItems,
       people: action.people ?? [],
       assignments,
+      portionAssignments,
       connectedPeople: [],
       donePeople: [],
       claimedBy: {},
@@ -335,10 +349,10 @@ export async function POST(
 
   // ── claim_item ────────────────────────────────────────────────────────────
   if (action.type === "claim_item") {
-    const { personId, itemId } = action;
-    if (!personId || !itemId) {
+    const { personId, itemId, portionIndex } = action;
+    if (!personId || !itemId || portionIndex === undefined) {
       return jsonError(
-        "personId and itemId are required for claim_item",
+        "personId, itemId, and portionIndex are required for claim_item",
         "missing_field",
         400,
         cors
@@ -355,39 +369,24 @@ export async function POST(
       return jsonError("Item is not available", "item_unavailable", 409, cors);
     }
 
-    const current = state.assignments[itemId] ?? [];
-    const qty = lineItem.quantity <= 1 ? 1 : lineItem.quantity;
-    let newAssignment: string[];
-
-    if (qty <= 1) {
-      // Single-quantity item — sharing is allowed (multiple people can split it)
-      if (current.includes(personId)) {
-        // Already sharing — toggle off (unclaim)
-        newAssignment = current.filter((id) => id !== personId);
-      } else {
-        // Unclaimed or claimed by others — add this person (share)
-        newAssignment = [...current, personId];
-      }
-    } else {
-      // Multi-quantity item
-      const personClaimCount = current.filter((id) => id === personId).length;
-      const slotsRemaining = qty - current.length;
-
-      if (slotsRemaining > 0) {
-        // There are open slots — add one claim for this person
-        newAssignment = [...current, personId];
-      } else if (personClaimCount > 0) {
-        // Fully claimed and this person has claims — remove all their claims
-        newAssignment = current.filter((id) => id !== personId);
-      } else {
-        // Fully claimed and person has no claims
-        return jsonError("Item already claimed", "already_claimed", 409, cors);
-      }
+    const portionAssignments = state.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(state.lineItems, state.assignments ?? {});
+    const itemPortions = portionAssignments[itemId] ?? [];
+    if (portionIndex < 0 || portionIndex >= itemPortions.length) {
+      return jsonError("Portion not found", "portion_not_found", 404, cors);
     }
+    const currentPortion = itemPortions[portionIndex] ?? [];
+    const newPortion = currentPortion.includes(personId)
+      ? currentPortion
+      : [...currentPortion, personId];
+    const newItemPortions = itemPortions.map((portion, index) => index === portionIndex ? newPortion : portion);
+    const newPortionAssignments = { ...portionAssignments, [itemId]: newItemPortions };
+    const newAssignments = portionAssignmentsToLegacy(newPortionAssignments);
 
     const claimState: RoomState = {
       ...state,
-      assignments: { ...state.assignments, [itemId]: newAssignment },
+      portionAssignments: newPortionAssignments,
+      assignments: newAssignments,
     };
     const savedClaimState = await saveRoom(claimState);
     return NextResponse.json(savedClaimState, { headers: cors });
@@ -395,27 +394,31 @@ export async function POST(
 
   // ── unclaim_item ──────────────────────────────────────────────────────────
   if (action.type === "unclaim_item") {
-    const { personId, itemId } = action;
-    if (!personId || !itemId) {
+    const { personId, itemId, portionIndex } = action;
+    if (!personId || !itemId || portionIndex === undefined) {
       return jsonError(
-        "personId and itemId are required for unclaim_item",
+        "personId, itemId, and portionIndex are required for unclaim_item",
         "missing_field",
         400,
         cors
       );
     }
 
-    // Remove one occurrence of personId immutably
-    const unclaimCurrent = state.assignments[itemId] ?? [];
-    const unclaimIdx = unclaimCurrent.indexOf(personId);
-    const unclaimAssignment =
-      unclaimIdx !== -1
-        ? [...unclaimCurrent.slice(0, unclaimIdx), ...unclaimCurrent.slice(unclaimIdx + 1)]
-        : unclaimCurrent;
+    const portionAssignments = state.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(state.lineItems, state.assignments ?? {});
+    const itemPortions = portionAssignments[itemId] ?? [];
+    if (portionIndex < 0 || portionIndex >= itemPortions.length) {
+      return jsonError("Portion not found", "portion_not_found", 404, cors);
+    }
+    const newItemPortions = itemPortions.map((portion, index) => (
+      index === portionIndex ? portion.filter((id) => id !== personId) : portion
+    ));
+    const newPortionAssignments = { ...portionAssignments, [itemId]: newItemPortions };
 
     const unclaimState: RoomState = {
       ...state,
-      assignments: { ...state.assignments, [itemId]: unclaimAssignment },
+      portionAssignments: newPortionAssignments,
+      assignments: portionAssignmentsToLegacy(newPortionAssignments),
     };
     const savedUnclaimState = await saveRoom(unclaimState);
     return NextResponse.json(savedUnclaimState, { headers: cors });
@@ -436,8 +439,13 @@ export async function POST(
     // Host sends the full resulting assignedToIds array — use it verbatim.
     // This preserves guest claims alongside host changes without any server-side
     // toggle logic that could race with the client's optimistic update.
+    const currentPortionAssignments = state.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(state.lineItems, state.assignments ?? {});
+    const nextPortionAssignments = action.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(state.lineItems, { ...state.assignments, [itemId]: assignedToIds ?? [] });
     const hostAssignState: RoomState = {
       ...state,
+      portionAssignments: { ...currentPortionAssignments, [itemId]: nextPortionAssignments[itemId] ?? [] },
       assignments: { ...state.assignments, [itemId]: assignedToIds ?? [] },
     };
     const savedHostState = await saveRoom(hostAssignState);
@@ -454,22 +462,27 @@ export async function POST(
     // any personIds that appear in the server's current assignment list but NOT
     // in the host's list AND NOT already present in the host's list for that item.
     // This preserves the host's intent while keeping concurrent guest claims.
-    const hostAssignments = action.assignments ?? state.assignments;
-    const mergedAssignments: Record<string, string[]> = {};
+    const serverPortionAssignments = state.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(state.lineItems, state.assignments ?? {});
+    const hostPortionAssignments = action.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(state.lineItems, action.assignments ?? state.assignments);
+    const mergedPortionAssignments: Record<string, string[][]> = {};
 
     for (const item of state.lineItems) {
-      const hostIds: string[] = hostAssignments[item.id] ?? [];
-      const serverIds: string[] = state.assignments[item.id] ?? [];
-
-      // Find personIds that the guest claimed concurrently (in server but not in host snapshot)
-      const hostSet = new Set(hostIds);
-      const extraIds = serverIds.filter((id) => !hostSet.has(id) && state.connectedPeople.includes(id));
-
-      mergedAssignments[item.id] = extraIds.length > 0 ? [...hostIds, ...extraIds] : hostIds;
+      const hostPortions = hostPortionAssignments[item.id] ?? [];
+      const serverPortions = serverPortionAssignments[item.id] ?? [];
+      mergedPortionAssignments[item.id] = hostPortions.map((hostIds, portionIndex) => {
+        const serverIds = serverPortions[portionIndex] ?? [];
+        const hostSet = new Set(hostIds);
+        const extraIds = serverIds.filter((id) => !hostSet.has(id) && state.connectedPeople.includes(id));
+        return extraIds.length > 0 ? [...hostIds, ...extraIds] : hostIds;
+      });
     }
+    const mergedAssignments = portionAssignmentsToLegacy(mergedPortionAssignments);
 
     const bulkAssignState: RoomState = {
       ...state,
+      portionAssignments: mergedPortionAssignments,
       assignments: mergedAssignments,
     };
     const savedBulkState = await saveRoom(bulkAssignState);

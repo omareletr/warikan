@@ -11,6 +11,12 @@ import {
   initials,
   inlineInitials,
 } from "@/lib/calculate";
+import {
+  applyPortionAssignments,
+  countAssignedPortions,
+  legacyAssignmentsToPortionAssignments,
+  normalizeLineItem,
+} from "@/lib/line-items";
 import { cn } from "@/lib/utils";
 import {
   subscribeToRoom,
@@ -45,10 +51,11 @@ function personColorByIndex(index: number, covered?: boolean) {
 }
 
 function countClaimedSlots(room: RoomState): number {
-  return room.lineItems.reduce((sum, item) => {
-    const assigned = room.assignments[item.id] ?? [];
-    return sum + Math.min(assigned.length, Math.max(item.quantity ?? 1, 1));
-  }, 0);
+  const items = applyPortionAssignments(
+    room.lineItems,
+    room.portionAssignments ?? legacyAssignmentsToPortionAssignments(room.lineItems, room.assignments ?? {})
+  );
+  return items.reduce((sum, item) => sum + countAssignedPortions(item), 0);
 }
 
 function countTotalSlots(room: RoomState): number {
@@ -445,36 +452,21 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
     return personColorByIndex(idx, person?.covered);
   }
 
-  async function handleItemTap(item: LineItem) {
-    const assigned = room.assignments[item.id] ?? [];
-    const isMultiQty = (item.quantity ?? 1) > 1;
-    const myClaims = assigned.filter((id) => id === myPersonId).length;
+  function getItemPortions(item: LineItem): string[][] {
+    const portionAssignments = room.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(room.lineItems, room.assignments ?? {});
+    return portionAssignments[item.id] ?? normalizeLineItem(item).portions?.map((portion) => portion.assignedToIds) ?? [];
+  }
 
-    let actionType: "claim_item" | "unclaim_item";
-
-    if (isMultiQty) {
-      const unclaimed = item.quantity - assigned.length;
-      if (unclaimed > 0) {
-        // There are open slots — always claim one more
-        actionType = "claim_item";
-      } else if (myClaims > 0) {
-        // Fully claimed and I hold some — remove one of my claims
-        actionType = "unclaim_item";
-      } else {
-        // Fully claimed by others — shake
-        triggerShake(item.id, true);
-        return;
-      }
-    } else {
-      if (myClaims > 0) {
-        actionType = "unclaim_item";
-      } else {
-        actionType = "claim_item";
-      }
-    }
+  async function handleItemTap(item: LineItem, portionIndex: number) {
+    const portions = getItemPortions(item);
+    const assigned = portions[portionIndex] ?? [];
+    const actionType: "claim_item" | "unclaim_item" = assigned.includes(myPersonId)
+      ? "unclaim_item"
+      : "claim_item";
 
     // Optimistic update
-    const optimisticRoom = applyOptimisticUpdate(room, item.id, myPersonId, actionType);
+    const optimisticRoom = applyOptimisticUpdate(room, item.id, portionIndex, myPersonId, actionType);
     onRoomUpdate(optimisticRoom);
 
     try {
@@ -482,6 +474,7 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
         type: actionType,
         personId: myPersonId,
         itemId: item.id,
+        portionIndex,
       });
       onRoomUpdate(updated);
     } catch (err: unknown) {
@@ -498,14 +491,15 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
   }
 
   // Avatar badge taps always remove one claim — never add.
-  async function handleUnclaim(item: LineItem) {
-    const optimisticRoom = applyOptimisticUpdate(room, item.id, myPersonId, "unclaim_item");
+  async function handleUnclaim(item: LineItem, portionIndex: number) {
+    const optimisticRoom = applyOptimisticUpdate(room, item.id, portionIndex, myPersonId, "unclaim_item");
     onRoomUpdate(optimisticRoom);
     try {
       const updated = await sendRoomAction(room.roomId, {
         type: "unclaim_item",
         personId: myPersonId,
         itemId: item.id,
+        portionIndex,
       });
       onRoomUpdate(updated);
     } catch {
@@ -514,14 +508,15 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
   }
 
   // Share button taps: add my claim to an item already held by others.
-  async function handleShare(item: LineItem) {
-    const optimisticRoom = applyOptimisticUpdate(room, item.id, myPersonId, "claim_item");
+  async function handleShare(item: LineItem, portionIndex: number) {
+    const optimisticRoom = applyOptimisticUpdate(room, item.id, portionIndex, myPersonId, "claim_item");
     onRoomUpdate(optimisticRoom);
     try {
       const updated = await sendRoomAction(room.roomId, {
         type: "claim_item",
         personId: myPersonId,
         itemId: item.id,
+        portionIndex,
       });
       onRoomUpdate(updated);
     } catch {
@@ -583,121 +578,100 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
 
         <div className="flex flex-col gap-2">
           {room.lineItems.map((item) => {
-            const assigned = room.assignments[item.id] ?? [];
-            const isMultiQty = (item.quantity ?? 1) > 1;
-            const myClaims = assigned.filter((id) => id === myPersonId).length;
-            const isClaimedByMe = myClaims > 0;
+            const normalizedItem = normalizeLineItem(item);
+            const portions = getItemPortions(item);
+            const assigned = portions[0] ?? [];
+            const isMultiQty = normalizedItem.quantity > 1;
+            const isClaimedByMe = portions.some((portion) => portion.includes(myPersonId));
             const isShaking = shakingItemId === item.id;
-            const isTaken = takenItemId === item.id;
 
             if (isMultiQty) {
-              const totalClaims = assigned.length;
-              const unclaimed = item.quantity - totalClaims;
-              const isFullyClaimed = unclaimed <= 0;
-
-              const claimsByPerson: Record<string, number> = {};
-              for (const pid of assigned) {
-                claimsByPerson[pid] = (claimsByPerson[pid] ?? 0) + 1;
-              }
+              const assignedPortions = portions.filter((portion) => portion.length > 0).length;
 
               return (
                 <ShakeItem key={item.id} shaking={isShaking}>
                   <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleItemTap(item)}
-                    onKeyDown={(e) => e.key === "Enter" && handleItemTap(item)}
                     className={cn(
                       "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
                       isClaimedByMe
-                        ? "cursor-pointer border-primary/40 bg-primary/5 active:opacity-75"
-                        : isFullyClaimed && !isClaimedByMe
-                        ? "cursor-default border-transparent opacity-40"
-                        : "cursor-pointer border-transparent active:scale-[0.98]"
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-transparent"
                     )}
                   >
-                    {isTaken && (
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="mb-1 self-start rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive"
-                      >
-                        Taken!
-                      </motion.span>
-                    )}
-
                     <div className="flex items-start justify-between">
                       <div className="flex min-w-0 flex-1 items-center gap-2.5">
                         <span className="flex h-6 w-8 flex-shrink-0 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">
-                          ×{item.quantity}
+                          ×{normalizedItem.quantity}
                         </span>
-                        <span className="text-base">{item.name}</span>
+                        <div className="min-w-0">
+                          <span className="block truncate text-base">{normalizedItem.name}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions claimed</span>
+                        </div>
                       </div>
                       <span className="ml-3 flex-shrink-0 font-mono text-base font-medium tabular-nums">
-                        {formatCurrency(item.price * item.quantity)}
+                        {formatCurrency(normalizedItem.price * normalizedItem.quantity)}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Dot progress */}
+                    <div className="flex flex-wrap items-center gap-2 border-b border-border/40 pb-3">
                       <div className="flex items-center gap-1.5">
                         <div className="flex gap-1">
-                          {Array.from({ length: item.quantity }, (_, dotIdx) => (
+                          {portions.map((portion, dotIdx) => (
                             <div
                               key={dotIdx}
                               className={cn(
                                 "h-2 w-2 rounded-full transition-colors",
-                                dotIdx < totalClaims ? "bg-primary" : "bg-muted"
+                                portion.length > 0 ? "bg-primary" : "bg-muted"
                               )}
                             />
                           ))}
                         </div>
                         <span className="text-xs tabular-nums text-muted-foreground">
-                          {totalClaims}/{item.quantity}
+                          {assignedPortions}/{normalizedItem.quantity}
                         </span>
                       </div>
-
-                      {/* Avatar badges */}
-                      <div className="flex gap-1.5">
-                        {Object.entries(claimsByPerson).map(([pid, count]) => {
-                          const person = room.people.find((p) => p.id === pid);
-                          if (!person) return null;
-                          const color = personColorForId(pid);
-                          const isMe = pid === myPersonId;
-
-                          return (
-                            <button
-                              key={pid}
-                              onClick={(e) => {
-                                if (!isMe) return;
-                                e.stopPropagation();
-                                void handleUnclaim(item);
-                              }}
-                              className={cn(
-                                "flex h-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
-                                color.bg,
-                                color.text,
-                                count > 1 && "gap-0.5 px-2",
-                                isMe ? "active:opacity-70" : "cursor-default"
-                              )}
-                            >
-                              {person.covered ? (
-                                <Gift className="h-3 w-3" />
-                              ) : (
-                                inlineInitials(person.name)
-                              )}
-                              {count > 1 && (
-                                <span className="tabular-nums">×{count}</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-
                       <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
-                        {formatCurrency(item.price)}/ea
+                        {formatCurrency(normalizedItem.price)}/ea
                       </span>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      {portions.map((portion, portionIndex) => {
+                        const claimedByMe = portion.includes(myPersonId);
+                        return (
+                          <button
+                            key={portionIndex}
+                            onClick={() => handleItemTap(item, portionIndex)}
+                            className={cn(
+                              "flex min-h-12 items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+                              claimedByMe ? "bg-primary/10" : "bg-secondary/50",
+                              "active:opacity-75"
+                            )}
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium">Unit {portionIndex + 1}</p>
+                              <div className="mt-1 flex flex-wrap gap-1.5">
+                                {portion.length === 0 ? (
+                                  <span className="text-xs text-muted-foreground">Unclaimed</span>
+                                ) : portion.map((pid) => {
+                                  const person = room.people.find((p) => p.id === pid);
+                                  if (!person) return null;
+                                  const color = personColorForId(pid);
+                                  const isMe = pid === myPersonId;
+                                  return (
+                                    <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text, isMe && "ring-1 ring-primary/40")}>
+                                      {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                              {portion.length > 1 ? formatCurrency(normalizedItem.price / portion.length) : formatCurrency(normalizedItem.price)}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </ShakeItem>
@@ -711,7 +685,7 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
             return (
               <ShakeItem key={item.id} shaking={isShaking}>
                 <button
-                  onClick={() => !claimedByOther && handleItemTap(item)}
+                  onClick={() => !claimedByOther && handleItemTap(item, 0)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
                     isClaimedByMe
@@ -766,7 +740,7 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
                     {claimedByOther && (
                       <button
                         onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); void handleShare(item); }}
+                        onClick={(e) => { e.stopPropagation(); void handleShare(item, 0); }}
                         className="rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
                       >
                         Share
@@ -847,26 +821,28 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
 function applyOptimisticUpdate(
   room: RoomState,
   itemId: string,
+  portionIndex: number,
   personId: string,
   action: "claim_item" | "unclaim_item"
 ): RoomState {
-  const current = room.assignments[itemId] ?? [];
-  let updated: string[];
+  const portionAssignments = room.portionAssignments
+    ?? legacyAssignmentsToPortionAssignments(room.lineItems, room.assignments ?? {});
+  const itemPortions = portionAssignments[itemId] ?? [];
+  const current = itemPortions[portionIndex] ?? [];
+  let updatedPortion: string[];
 
   if (action === "claim_item") {
-    updated = [...current, personId];
+    updatedPortion = current.includes(personId) ? current : [...current, personId];
   } else {
-    const idx = current.indexOf(personId);
-    if (idx === -1) return room;
-    updated = [...current.slice(0, idx), ...current.slice(idx + 1)];
+    updatedPortion = current.filter((id) => id !== personId);
   }
+  const updatedItemPortions = itemPortions.map((portion, index) => index === portionIndex ? updatedPortion : portion);
+  const updatedPortionAssignments = { ...portionAssignments, [itemId]: updatedItemPortions };
 
   return {
     ...room,
-    assignments: {
-      ...room.assignments,
-      [itemId]: updated,
-    },
+    portionAssignments: updatedPortionAssignments,
+    assignments: { ...room.assignments, [itemId]: updatedItemPortions.flat() },
   };
 }
 

@@ -1,4 +1,5 @@
 import type { Split } from "./types";
+import { normalizeLineItems } from "./line-items";
 
 const STORAGE_KEY = "warikan_splits";
 
@@ -9,7 +10,7 @@ export function getSplits(): Split[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as Split[];
     if (!Array.isArray(parsed)) throw new Error("invalid");
-    return parsed;
+    return parsed.map((split) => ({ ...split, lineItems: normalizeLineItems(split.lineItems) }));
   } catch {
     console.error("Warikan: split history corrupted — clearing storage.");
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
@@ -18,12 +19,13 @@ export function getSplits(): Split[] {
 }
 
 export function saveSplit(split: Split): void {
+  const normalizedSplit = { ...split, lineItems: normalizeLineItems(split.lineItems) };
   const splits = getSplits();
   const idx = splits.findIndex((s) => s.id === split.id);
   if (idx >= 0) {
-    splits[idx] = split;
+    splits[idx] = normalizedSplit;
   } else {
-    splits.unshift(split);
+    splits.unshift(normalizedSplit);
   }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(splits));

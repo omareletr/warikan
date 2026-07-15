@@ -21,6 +21,15 @@ import { InviteDrawer } from "@/components/split/invite-drawer";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { formatCurrency, initials, inlineInitials } from "@/lib/calculate";
+import {
+  applyPortionAssignments,
+  countAssignedPortions,
+  flattenPortionAssignments,
+  isLineItemFullyAssigned,
+  legacyAssignmentsToPortionAssignments,
+  lineItemsToPortionAssignments,
+  normalizeLineItem,
+} from "@/lib/line-items";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/lib/platform";
 import {
@@ -32,13 +41,14 @@ import {
   subscribeToRoom,
   ROOM_SESSION_KEY,
 } from "@/lib/room-client";
-import type { RoomState } from "@/lib/types";
+import type { LineItem, RoomState } from "@/lib/types";
 
 export default function AssignPage() {
   const router = useRouter();
   const { state, loaded, updateLineItems } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   // Collaborative room state
   // Restore roomId from sessionStorage so navigating back and returning keeps
@@ -74,7 +84,7 @@ export default function AssignPage() {
   // Wrapper that keeps ref and context in sync atomically for write paths.
   // useCallback with a stable dep (updateLineItems is already a useCallback)
   // makes the stability explicit so the SSE closure never captures a stale version.
-  const setLineItems = useCallback((items: typeof state.lineItems) => {
+  const setLineItems = useCallback((items: LineItem[]) => {
     lineItemsRef.current = items;
     updateLineItems(items);
   }, [updateLineItems]);
@@ -133,19 +143,21 @@ export default function AssignPage() {
         const pending = pendingAssignmentsRef.current;
         const hasPending = Object.keys(pending).length > 0;
 
+        const serverPortionAssignments = updatedRoom.portionAssignments
+          ?? legacyAssignmentsToPortionAssignments(updatedRoom.lineItems, updatedRoom.assignments ?? {});
         const updatedLineItems = lineItemsRef.current.map((item) => {
-          const serverIds = updatedRoom.assignments[item.id] ?? [];
+          const serverPortions = serverPortionAssignments[item.id] ?? [];
           if (hasPending) {
             const sentIds = pending[item.id];
             // sentIds may be undefined for items not in the snapshot (shouldn't
             // happen after a bulk write, but guard anyway).
             if (sentIds !== undefined &&
-                JSON.stringify([...sentIds].sort()) === JSON.stringify([...serverIds].sort())) {
+                JSON.stringify([...sentIds].sort()) === JSON.stringify(flattenPortionAssignments(serverPortions.map((assignedToIds, index) => ({ id: `${item.id}-${index}`, assignedToIds }))).sort())) {
               return item; // echo of our write — keep local
             }
           }
           // No pending write, or server diverged (guest changed it) — accept server.
-          return { ...item, assignedToIds: serverIds };
+          return applyPortionAssignments([item], { [item.id]: serverPortions })[0];
         });
 
         // Clear pending only once we've confirmed the echo arrived
@@ -222,9 +234,10 @@ export default function AssignPage() {
   // Send the host's full assignments map in a single atomic write.
   // One HTTP request regardless of how many items changed — no concurrent
   // read-modify-write races on the server.
-  function sendBulkAssign(updatedItems: typeof state.lineItems) {
+  function sendBulkAssign(updatedItems: LineItem[]) {
     if (!roomId) return;
     const assignments: Record<string, string[]> = {};
+    const portionAssignments = lineItemsToPortionAssignments(updatedItems);
     for (const item of updatedItems) {
       assignments[item.id] = item.assignedToIds;
     }
@@ -233,6 +246,7 @@ export default function AssignPage() {
     sendRoomAction(roomId, {
       type: "host_bulk_assign",
       assignments,
+      portionAssignments,
     }).catch(() => {
       // On failure, clear pending so the next SSE push restores truth.
       pendingAssignmentsRef.current = {};
@@ -244,42 +258,63 @@ export default function AssignPage() {
     const updatedItems = state.lineItems.map((item) => {
       if (item.id !== itemId) return item;
 
-      if (item.quantity <= 1) {
-        const assigned = item.assignedToIds.includes(selectedPersonId);
-        return {
-          ...item,
+      const normalized = normalizeLineItem(item);
+      if (normalized.quantity <= 1) {
+        const assigned = (normalized.portions?.[0]?.assignedToIds ?? []).includes(selectedPersonId);
+        const portions = [{
+          ...(normalized.portions?.[0] ?? { id: crypto.randomUUID() }),
           assignedToIds: assigned
-            ? item.assignedToIds.filter((id) => id !== selectedPersonId)
-            : [...item.assignedToIds, selectedPersonId],
+            ? (normalized.portions?.[0]?.assignedToIds ?? []).filter((id) => id !== selectedPersonId)
+            : [...(normalized.portions?.[0]?.assignedToIds ?? []), selectedPersonId],
+        }];
+        return {
+          ...normalized,
+          portions,
+          assignedToIds: flattenPortionAssignments(portions),
         };
       }
-
-      // Multi-qty: claim-based
-      const unclaimed = item.quantity - item.assignedToIds.length;
-      const personClaims = item.assignedToIds.filter((id) => id === selectedPersonId).length;
-
-      if (unclaimed > 0) {
-        return { ...item, assignedToIds: [...item.assignedToIds, selectedPersonId] };
-      }
-      if (personClaims > 0) {
-        return { ...item, assignedToIds: item.assignedToIds.filter((id) => id !== selectedPersonId) };
-      }
-      return item;
+      return normalized;
     });
 
     setLineItems(updatedItems);
     sendBulkAssign(updatedItems);
   }
 
-  function removeClaim(itemId: string, personId: string) {
+  function togglePortionAssignment(itemId: string, portionIndex: number) {
     void hapticTap();
     const updatedItems = state.lineItems.map((item) => {
       if (item.id !== itemId) return item;
-      const idx = item.assignedToIds.indexOf(personId);
-      if (idx === -1) return item;
-      const ids = [...item.assignedToIds];
-      ids.splice(idx, 1);
-      return { ...item, assignedToIds: ids };
+      const normalized = normalizeLineItem(item);
+      const portions = [...(normalized.portions ?? [])];
+      const portion = portions[portionIndex];
+      if (!portion) return normalized;
+      const assigned = portion.assignedToIds.includes(selectedPersonId);
+      portions[portionIndex] = {
+        ...portion,
+        assignedToIds: assigned
+          ? portion.assignedToIds.filter((id) => id !== selectedPersonId)
+          : [...portion.assignedToIds, selectedPersonId],
+      };
+      return normalizeLineItem({ ...normalized, portions });
+    });
+
+    setLineItems(updatedItems);
+    sendBulkAssign(updatedItems);
+  }
+
+  function removeClaim(itemId: string, portionIndex: number, personId: string) {
+    void hapticTap();
+    const updatedItems = state.lineItems.map((item) => {
+      if (item.id !== itemId) return item;
+      const normalized = normalizeLineItem(item);
+      const portions = [...(normalized.portions ?? [])];
+      const portion = portions[portionIndex];
+      if (!portion) return normalized;
+      portions[portionIndex] = {
+        ...portion,
+        assignedToIds: portion.assignedToIds.filter((id) => id !== personId),
+      };
+      return normalizeLineItem({ ...normalized, portions });
     });
 
     setLineItems(updatedItems);
@@ -288,27 +323,25 @@ export default function AssignPage() {
 
   function runningTotal(personId: string): number {
     return state.lineItems.reduce((sum, item) => {
-      const personClaims = item.assignedToIds.filter((id) => id === personId).length;
-      if (personClaims === 0) return sum;
-      // Multi-qty: each claim = one unit at item.price
-      // Single-qty: split evenly among all assignees
-      const share =
-        item.quantity > 1
-          ? item.price * personClaims
-          : (item.price * personClaims) / item.assignedToIds.length;
+      const normalized = normalizeLineItem(item);
+      const share = (normalized.portions ?? []).reduce((portionSum, portion) => {
+        if (!portion.assignedToIds.includes(personId) || portion.assignedToIds.length === 0) return portionSum;
+        return portionSum + item.price / portion.assignedToIds.length;
+      }, 0);
       return sum + share;
     }, 0);
   }
 
   const hasAnyAssigned = state.lineItems.some((item) => {
-    const assigned = roomState
-      ? (roomState.assignments[item.id] ?? [])
-      : item.assignedToIds;
-    return assigned.length > 0;
+    return countAssignedPortions(item) > 0;
   });
 
   function clearAllAssignments() {
-    const updatedItems = state.lineItems.map((item) => ({ ...item, assignedToIds: [] }));
+    const updatedItems = state.lineItems.map((item) => normalizeLineItem({
+      ...item,
+      portions: (normalizeLineItem(item).portions ?? []).map((portion) => ({ ...portion, assignedToIds: [] })),
+      assignedToIds: [],
+    }));
     setLineItems(updatedItems);
     sendBulkAssign(updatedItems);
   }
@@ -317,17 +350,11 @@ export default function AssignPage() {
     // Use roomState.assignments as the base so we don't clobber guest claims
     // that arrived since the last SSE update.
     const updatedItems = state.lineItems.map((item) => {
-      const baseIds: string[] = roomState
-        ? (roomState.assignments[item.id] ?? [])
-        : item.assignedToIds;
-
-      if (item.quantity <= 1) {
-        if (baseIds.length > 0) return { ...item, assignedToIds: baseIds };
-        return { ...item, assignedToIds: [selectedPersonId] };
-      }
-      const unclaimed = item.quantity - baseIds.length;
-      if (unclaimed <= 0) return { ...item, assignedToIds: baseIds };
-      return { ...item, assignedToIds: [...baseIds, ...Array(unclaimed).fill(selectedPersonId)] };
+      const normalized = normalizeLineItem(item);
+      const portions = (normalized.portions ?? []).map((portion) => (
+        portion.assignedToIds.length > 0 ? portion : { ...portion, assignedToIds: [selectedPersonId] }
+      ));
+      return normalizeLineItem({ ...normalized, portions });
     });
 
     setLineItems(updatedItems);
@@ -352,10 +379,7 @@ export default function AssignPage() {
   // button unlocks as soon as guests finish claiming, without waiting for
   // the SSE update to propagate back through updateLineItems.
   const allAssigned = state.lineItems.every((item) => {
-    const assigned = roomState
-      ? (roomState.assignments[item.id] ?? [])
-      : item.assignedToIds;
-    return item.quantity <= 1 ? assigned.length > 0 : assigned.length >= item.quantity;
+    return isLineItemFullyAssigned(item);
   });
 
   // Admin override is only allowed when the selected person is NOT actively
@@ -364,21 +388,11 @@ export default function AssignPage() {
   const selectedPersonIsOnline = roomState?.connectedPeople.includes(selectedPersonId) ?? false;
 
   const hasUnclaimed = state.lineItems.some((item) => {
-    const assigned = roomState
-      ? (roomState.assignments[item.id] ?? [])
-      : item.assignedToIds;
-    return item.quantity <= 1
-      ? assigned.length === 0
-      : assigned.length < item.quantity;
+    return !isLineItemFullyAssigned(item);
   });
 
   const totalSlots = state.lineItems.reduce((sum, item) => sum + Math.max(item.quantity, 1), 0);
-  const assignedSlots = state.lineItems.reduce((sum, item) => {
-    const assigned = roomState
-      ? (roomState.assignments[item.id] ?? [])
-      : item.assignedToIds;
-    return sum + Math.min(assigned.length, Math.max(item.quantity, 1));
-  }, 0);
+  const assignedSlots = state.lineItems.reduce((sum, item) => sum + countAssignedPortions(item), 0);
 
   const springValue = useSpring(assignedSlots, { stiffness: 120, damping: 20, mass: 0.8 });
   useEffect(() => { springValue.set(assignedSlots); }, [assignedSlots, springValue]);
@@ -488,93 +502,119 @@ export default function AssignPage() {
 
         <div className="flex flex-col gap-2">
           {state.lineItems.map((item) => {
-            if (item.quantity > 1) {
-              const totalClaims = item.assignedToIds.length;
-              const unclaimed = item.quantity - totalClaims;
-              const myClaims = item.assignedToIds.filter((id) => id === selectedPersonId).length;
-              const isAssignedToMe = myClaims > 0;
-              const isFullyClaimed = unclaimed <= 0;
-
-              const claimsByPerson: Record<string, number> = {};
-              for (const pid of item.assignedToIds) {
-                claimsByPerson[pid] = (claimsByPerson[pid] || 0) + 1;
-              }
-
-              // In collab mode the host can override only when the selected person is not
-              // actively online. If they are connected (green dot), block all changes.
-              const hostCanOverride = roomId && !selectedPersonIsOnline;
-              const effectivelyBlockedMulti = selectedPersonIsOnline
-                ? true
-                : (isFullyClaimed && !isAssignedToMe) && !hostCanOverride;
+            const normalizedItem = normalizeLineItem(item);
+            if (normalizedItem.quantity > 1) {
+              const portions = normalizedItem.portions ?? [];
+              const assignedPortions = portions.filter((portion) => portion.assignedToIds.length > 0).length;
+              const isAssignedToMe = portions.some((portion) => portion.assignedToIds.includes(selectedPersonId));
+              const expanded = expandedItemId === item.id;
 
               return (
                 <div
                   key={item.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => !effectivelyBlockedMulti && toggleAssignment(item.id)}
-                  onKeyDown={(e) => e.key === "Enter" && !effectivelyBlockedMulti && toggleAssignment(item.id)}
                   className={cn(
                     "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
-                    effectivelyBlockedMulti
+                    selectedPersonIsOnline
                       ? "border-transparent opacity-60 cursor-default"
                       : isAssignedToMe
-                      ? "border-primary/40 bg-primary/5 cursor-pointer active:opacity-75"
-                      : "border-transparent cursor-pointer active:scale-[0.98]"
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-transparent"
                   )}
                 >
-                  <div className="flex items-start justify-between">
+                  <button
+                    className="flex items-start justify-between text-left"
+                    onClick={() => setExpandedItemId(expanded ? null : item.id)}
+                  >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums flex-shrink-0">×{item.quantity}</span>
-                      <span className="text-base">{item.name}</span>
+                      <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums flex-shrink-0">×{normalizedItem.quantity}</span>
+                      <div className="min-w-0">
+                        <span className="block truncate text-base">{normalizedItem.name}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions assigned</span>
+                      </div>
                     </div>
-                    <span className="flex-shrink-0 ml-3 font-mono text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
-                  </div>
+                    <span className="flex-shrink-0 ml-3 font-mono text-base font-medium tabular-nums">{formatCurrency(normalizedItem.price * normalizedItem.quantity)}</span>
+                  </button>
 
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5">
                       <div className="flex gap-1">
-                        {Array.from({ length: item.quantity }, (_, i) => (
+                        {portions.map((portion, i) => (
                           <div
-                            key={i}
+                            key={portion.id}
                             className={cn(
                               "h-2 w-2 rounded-full transition-colors",
-                              i < totalClaims ? "bg-primary" : "bg-muted"
+                              portion.assignedToIds.length > 0 ? "bg-primary" : "bg-muted"
                             )}
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-muted-foreground tabular-nums">{totalClaims}/{item.quantity}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity}</span>
                     </div>
+                    <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(normalizedItem.price)}/ea</span>
+                  </div>
 
-                    <div className="flex gap-1.5">
-                      {Object.entries(claimsByPerson).map(([pid, count]) => {
-                        const person = state.people.find((p) => p.id === pid);
-                        if (!person) return null;
-                        const color = personColor(pid);
+                  {expanded && (
+                    <div className="mt-2 flex flex-col gap-2 border-t border-border/40 pt-3">
+                      {portions.map((portion, portionIndex) => {
+                        const selected = portion.assignedToIds.includes(selectedPersonId);
                         return (
                           <button
-                            key={pid}
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => { e.stopPropagation(); if (!roomState?.connectedPeople.includes(pid)) removeClaim(item.id, pid); }}
-                            className={cn("relative flex h-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text, count > 1 ? "px-1.5 gap-0.5" : "w-6", roomState?.connectedPeople.includes(pid) ? "pointer-events-none" : "active:opacity-70")}
+                            key={portion.id}
+                            onClick={() => !selectedPersonIsOnline && togglePortionAssignment(item.id, portionIndex)}
+                            className={cn(
+                              "flex min-h-12 items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+                              selected ? "bg-primary/10" : "bg-secondary/50",
+                              selectedPersonIsOnline ? "cursor-default opacity-70" : "active:opacity-75"
+                            )}
                           >
-                            {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
-                            {count > 1 && <span className="tabular-nums">×{count}</span>}
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium">Unit {portionIndex + 1}</p>
+                              <div className="mt-1 flex flex-wrap gap-1.5">
+                                {portion.assignedToIds.length === 0 ? (
+                                  <span className="text-xs text-muted-foreground">Unassigned</span>
+                                ) : portion.assignedToIds.map((pid) => {
+                                  const person = state.people.find((p) => p.id === pid);
+                                  if (!person) return null;
+                                  const color = personColor(pid);
+                                  return (
+                                    <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text)}>
+                                      {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              {portion.assignedToIds.map((pid) => (
+                                !roomState?.connectedPeople.includes(pid) && !selectedPersonIsOnline ? (
+                                  <span
+                                    key={pid}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => { e.stopPropagation(); removeClaim(item.id, portionIndex, pid); }}
+                                    className="rounded-full px-2 py-1 text-xs text-muted-foreground"
+                                  >
+                                    Remove
+                                  </span>
+                                ) : null
+                              ))}
+                              <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                                {portion.assignedToIds.length > 1 ? formatCurrency(normalizedItem.price / portion.assignedToIds.length) : formatCurrency(normalizedItem.price)}
+                              </span>
+                            </div>
                           </button>
                         );
                       })}
                     </div>
-
-                    <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)}/ea</span>
-                  </div>
+                  )}
                 </div>
               );
             }
 
             // Single-quantity item
-            const isAssignedToMe = item.assignedToIds.includes(selectedPersonId);
-            const claimedByOthers = item.assignedToIds.length > 0 && !isAssignedToMe;
+            const singleAssignedIds = normalizedItem.portions?.[0]?.assignedToIds ?? [];
+            const isAssignedToMe = singleAssignedIds.includes(selectedPersonId);
+            const claimedByOthers = singleAssignedIds.length > 0 && !isAssignedToMe;
             // In collab mode the host can override only when the selected person is not
             // actively online. If they are connected (green dot), block all changes.
             const effectivelyClaimedByOthers = (roomId && !selectedPersonIsOnline) ? false : claimedByOthers;
@@ -598,9 +638,9 @@ export default function AssignPage() {
                   {isAssignedToMe && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
                   <span className="text-base">
                     {item.name}
-                    {item.assignedToIds.length > 0 && (
+                    {singleAssignedIds.length > 0 && (
                       <span className="inline-flex gap-1.5 ml-1.5 align-middle">
-                        {item.assignedToIds.map((pid) => {
+                        {singleAssignedIds.map((pid) => {
                           const person = state.people.find((p) => p.id === pid);
                           if (!person) return null;
                           const color = personColor(pid);
@@ -627,8 +667,8 @@ export default function AssignPage() {
                   )}
                   <div className="text-right">
                     <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
-                    {item.assignedToIds.length > 1 && (
-                      <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / item.assignedToIds.length)} ea</p>
+                    {singleAssignedIds.length > 1 && (
+                      <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / singleAssignedIds.length)} ea</p>
                     )}
                   </div>
                 </div>

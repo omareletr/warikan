@@ -77,7 +77,7 @@ export default function SummaryPage() {
                       <div className="border-t border-border/50 px-5 pb-5 pt-4">
                       {pt.items.map((item, j) => (
                         <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
-                          <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground">split {item.splitCount} ways</span>}</span>
+                          <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.mixedSplits ? <span className="ml-1 text-sm text-muted-foreground">mixed splits</span> : item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground">split {item.splitCount} ways</span>}</span>
                           <span className="font-mono tabular-nums">{formatCurrency(item.price)}</span>
                         </div>
                       ))}

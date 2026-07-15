@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { LineItem, Fee, Person, Split } from "./types";
+import { normalizeLineItems } from "./line-items";
 
 const FLOW_KEY = "warikan_flow";
 
@@ -33,7 +34,9 @@ function loadFromStorage(): SplitFlowState {
   if (typeof window === "undefined") return initialState;
   try {
     const raw = localStorage.getItem(FLOW_KEY);
-    return raw ? { ...initialState, ...JSON.parse(raw) } : initialState;
+    if (!raw) return initialState;
+    const parsed = { ...initialState, ...JSON.parse(raw) } as SplitFlowState;
+    return { ...parsed, lineItems: normalizeLineItems(parsed.lineItems) };
   } catch {
     return initialState;
   }
@@ -94,7 +97,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
       setState((prev) => ({
         ...prev,
         restaurantName: data.restaurantName ?? "",
-        lineItems: data.lineItems,
+        lineItems: normalizeLineItems(data.lineItems),
         fees: data.fees,
         taxAmount: data.taxAmount,
         tipAmount: data.tipAmount,
@@ -108,7 +111,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateLineItems = useCallback((lineItems: LineItem[]) => {
-    setState((prev) => ({ ...prev, lineItems }));
+    setState((prev) => ({ ...prev, lineItems: normalizeLineItems(lineItems) }));
   }, []);
 
   const updateFees = useCallback((fees: Fee[]) => {
@@ -132,7 +135,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
       image: null,
       imageMimeType: null,
       restaurantName: split.restaurantName ?? "",
-      lineItems: split.lineItems,
+      lineItems: normalizeLineItems(split.lineItems),
       fees: split.fees,
       taxAmount: split.taxAmount,
       tipAmount: split.tipAmount,

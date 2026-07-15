@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, useSpring, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import { ArrowLeft, Gift, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,7 @@ export default function AssignPage() {
   const [fromPop] = useState(() => consumePopFlag());
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   // Collaborative room state
   // Restore roomId from sessionStorage so navigating back and returning keeps
@@ -280,6 +281,41 @@ export default function AssignPage() {
     sendBulkAssign(updatedItems);
   }
 
+  function toggleQuickPortionAssignment(itemId: string) {
+    if (selectedPersonIsOnline) return;
+    void hapticTap();
+    let changed = false;
+    const updatedItems = state.lineItems.map((item) => {
+      if (item.id !== itemId) return item;
+      const normalized = normalizeLineItem(item);
+      if (normalized.quantity <= 1) return normalized;
+
+      const portions = [...(normalized.portions ?? [])];
+      const soloPortionIndex = portions.findLastIndex((portion) => (
+        portion.assignedToIds.length === 1 && portion.assignedToIds[0] === selectedPersonId
+      ));
+
+      if (soloPortionIndex >= 0) {
+        portions[soloPortionIndex] = { ...portions[soloPortionIndex], assignedToIds: [] };
+        changed = true;
+        return normalizeLineItem({ ...normalized, portions });
+      }
+
+      const firstUnassignedIndex = portions.findIndex((portion) => portion.assignedToIds.length === 0);
+      if (firstUnassignedIndex >= 0) {
+        portions[firstUnassignedIndex] = { ...portions[firstUnassignedIndex], assignedToIds: [selectedPersonId] };
+        changed = true;
+        return normalizeLineItem({ ...normalized, portions });
+      }
+
+      return normalized;
+    });
+
+    if (!changed) return;
+    setLineItems(updatedItems);
+    sendBulkAssign(updatedItems);
+  }
+
   function togglePortionAssignment(itemId: string, portionIndex: number) {
     void hapticTap();
     const updatedItems = state.lineItems.map((item) => {
@@ -320,6 +356,29 @@ export default function AssignPage() {
     setLineItems(updatedItems);
     sendBulkAssign(updatedItems);
   }
+
+  function getClaimsByPerson(portions: NonNullable<LineItem["portions"]>) {
+    return portions.reduce<Record<string, number>>((claims, portion) => {
+      for (const personId of portion.assignedToIds) {
+        claims[personId] = (claims[personId] ?? 0) + 1;
+      }
+      return claims;
+    }, {});
+  }
+
+  const dropdownMotion = shouldReduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.12 },
+      }
+    : {
+        initial: { height: 0, opacity: 0, y: -6 },
+        animate: { height: "auto", opacity: 1, y: 0 },
+        exit: { height: 0, opacity: 0, y: -6 },
+        transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] as const },
+      };
 
   function runningTotal(personId: string): number {
     return state.lineItems.reduce((sum, item) => {
@@ -508,6 +567,11 @@ export default function AssignPage() {
               const assignedPortions = portions.filter((portion) => portion.assignedToIds.length > 0).length;
               const isAssignedToMe = portions.some((portion) => portion.assignedToIds.includes(selectedPersonId));
               const expanded = expandedItemId === item.id;
+              const claimsByPerson = getClaimsByPerson(portions);
+              const claimEntries = Object.entries(claimsByPerson);
+              const hasRemovableChips = portions.some((portion) => (
+                portion.assignedToIds.some((pid) => !roomState?.connectedPeople.includes(pid))
+              )) && !selectedPersonIsOnline;
 
               return (
                 <div
@@ -521,92 +585,152 @@ export default function AssignPage() {
                       : "border-transparent"
                   )}
                 >
-                  <button
-                    className="flex items-start justify-between text-left"
-                    onClick={() => setExpandedItemId(expanded ? null : item.id)}
+                  <div
+                    role="button"
+                    tabIndex={selectedPersonIsOnline ? -1 : 0}
+                    className={cn(
+                      "flex flex-col gap-3 text-left",
+                      selectedPersonIsOnline ? "cursor-default" : "cursor-pointer active:opacity-75"
+                    )}
+                    onClick={() => toggleQuickPortionAssignment(item.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        toggleQuickPortionAssignment(item.id);
+                      }
+                    }}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span className="flex h-6 w-8 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums flex-shrink-0">×{normalizedItem.quantity}</span>
-                      <div className="min-w-0">
-                        <span className="block truncate text-base">{normalizedItem.name}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions assigned</span>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <span className="flex h-6 w-8 flex-shrink-0 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">×{normalizedItem.quantity}</span>
+                        <div className="min-w-0">
+                          <span className="block truncate text-base">{normalizedItem.name}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions assigned</span>
+                        </div>
                       </div>
+                      <span className="flex-shrink-0 font-mono text-base font-medium tabular-nums">{formatCurrency(normalizedItem.price * normalizedItem.quantity)}</span>
                     </div>
-                    <span className="flex-shrink-0 ml-3 font-mono text-base font-medium tabular-nums">{formatCurrency(normalizedItem.price * normalizedItem.quantity)}</span>
-                  </button>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex gap-1">
-                        {portions.map((portion, i) => (
-                          <div
-                            key={portion.id}
-                            className={cn(
-                              "h-2 w-2 rounded-full transition-colors",
-                              portion.assignedToIds.length > 0 ? "bg-primary" : "bg-muted"
-                            )}
-                          />
-                        ))}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex gap-1">
+                          {portions.map((portion) => (
+                            <div
+                              key={portion.id}
+                              className={cn(
+                                "h-2 w-2 rounded-full transition-colors",
+                                portion.assignedToIds.length > 0 ? "bg-primary" : "bg-muted"
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity}</span>
+                      {claimEntries.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {claimEntries.map(([pid, count]) => {
+                            const person = state.people.find((p) => p.id === pid);
+                            if (!person) return null;
+                            const color = personColor(pid);
+                            return (
+                              <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text)}>
+                                {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                {count > 1 && <span className="font-mono tabular-nums">×{count}</span>}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {assignedPortions > 0 && !selectedPersonIsOnline && (
+                        <button
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedItemId(expanded ? null : item.id);
+                          }}
+                          className="ml-auto rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
+                        >
+                          Share
+                        </button>
+                      )}
+                      <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(normalizedItem.price)}/ea</span>
                     </div>
-                    <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(normalizedItem.price)}/ea</span>
                   </div>
 
-                  {expanded && (
-                    <div className="mt-2 flex flex-col gap-2 border-t border-border/40 pt-3">
-                      {portions.map((portion, portionIndex) => {
-                        const selected = portion.assignedToIds.includes(selectedPersonId);
-                        return (
-                          <button
-                            key={portion.id}
-                            onClick={() => !selectedPersonIsOnline && togglePortionAssignment(item.id, portionIndex)}
-                            className={cn(
-                              "flex min-h-12 items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
-                              selected ? "bg-primary/10" : "bg-secondary/50",
-                              selectedPersonIsOnline ? "cursor-default opacity-70" : "active:opacity-75"
-                            )}
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium">Unit {portionIndex + 1}</p>
-                              <div className="mt-1 flex flex-wrap gap-1.5">
-                                {portion.assignedToIds.length === 0 ? (
-                                  <span className="text-xs text-muted-foreground">Unassigned</span>
-                                ) : portion.assignedToIds.map((pid) => {
-                                  const person = state.people.find((p) => p.id === pid);
-                                  if (!person) return null;
-                                  const color = personColor(pid);
-                                  return (
-                                    <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text)}>
-                                      {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
-                                    </span>
-                                  );
-                                })}
+                  <AnimatePresence initial={false}>
+                    {expanded && (
+                      <motion.div
+                        key={`${item.id}-share`}
+                        className="overflow-hidden"
+                        {...dropdownMotion}
+                      >
+                        <div className="mt-2 flex flex-col gap-2 border-t border-border/40 pt-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-medium text-muted-foreground">Choose a portion to share</p>
+                            {hasRemovableChips && <p className="text-xs text-muted-foreground">Tap a name to remove</p>}
+                          </div>
+                          {portions.map((portion, portionIndex) => {
+                            const selected = portion.assignedToIds.includes(selectedPersonId);
+                            return (
+                              <div
+                                key={portion.id}
+                                role="button"
+                                tabIndex={selectedPersonIsOnline ? -1 : 0}
+                                onClick={() => !selectedPersonIsOnline && togglePortionAssignment(item.id, portionIndex)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter" || event.key === " ") {
+                                    event.preventDefault();
+                                    if (!selectedPersonIsOnline) togglePortionAssignment(item.id, portionIndex);
+                                  }
+                                }}
+                                className={cn(
+                                  "flex min-h-12 items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+                                  selected ? "bg-primary/10" : "bg-secondary/50",
+                                  selectedPersonIsOnline ? "cursor-default opacity-70" : "cursor-pointer active:opacity-75"
+                                )}
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium">Portion {portionIndex + 1}</p>
+                                  <div className="mt-1 flex flex-wrap gap-1.5">
+                                    {portion.assignedToIds.length === 0 ? (
+                                      <span className="text-xs text-muted-foreground">Unassigned</span>
+                                    ) : portion.assignedToIds.map((pid) => {
+                                      const person = state.people.find((p) => p.id === pid);
+                                      if (!person) return null;
+                                      const color = personColor(pid);
+                                      const removable = !roomState?.connectedPeople.includes(pid) && !selectedPersonIsOnline;
+                                      const chipClassName = cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text);
+                                      if (!removable) {
+                                        return (
+                                          <span key={pid} className={chipClassName}>
+                                            {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                          </span>
+                                        );
+                                      }
+                                      return (
+                                        <button
+                                          key={pid}
+                                          aria-label={`Remove ${person.name} from Portion ${portionIndex + 1}`}
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={(e) => { e.stopPropagation(); removeClaim(item.id, portionIndex, pid); }}
+                                          className={chipClassName}
+                                        >
+                                          {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                                <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                                  {portion.assignedToIds.length > 1 ? formatCurrency(normalizedItem.price / portion.assignedToIds.length) : formatCurrency(normalizedItem.price)}
+                                </span>
                               </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              {portion.assignedToIds.map((pid) => (
-                                !roomState?.connectedPeople.includes(pid) && !selectedPersonIsOnline ? (
-                                  <span
-                                    key={pid}
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(e) => { e.stopPropagation(); removeClaim(item.id, portionIndex, pid); }}
-                                    className="rounded-full px-2 py-1 text-xs text-muted-foreground"
-                                  >
-                                    Remove
-                                  </span>
-                                ) : null
-                              ))}
-                              <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                                {portion.assignedToIds.length > 1 ? formatCurrency(normalizedItem.price / portion.assignedToIds.length) : formatCurrency(normalizedItem.price)}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             }

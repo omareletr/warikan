@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ArrowLeft, CheckCircle, ExternalLink, PartyPopper, RefreshCw, Wifi, WifiOff, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
@@ -436,7 +436,9 @@ interface AssigningProps {
 function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: AssigningProps) {
   const [shakingItemId, setShakingItemId] = useState<string | null>(null);
   const [takenItemId, setTakenItemId] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const myPerson = room.people.find((p) => p.id === myPersonId);
   const myIndex = room.people.findIndex((p) => p.id === myPersonId);
@@ -457,6 +459,57 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
       ?? legacyAssignmentsToPortionAssignments(room.lineItems, room.assignments ?? {});
     return portionAssignments[item.id] ?? normalizeLineItem(item).portions?.map((portion) => portion.assignedToIds) ?? [];
   }
+
+  function getClaimsByPerson(portions: string[][]) {
+    return portions.reduce<Record<string, number>>((claims, portion) => {
+      for (const personId of portion) {
+        claims[personId] = (claims[personId] ?? 0) + 1;
+      }
+      return claims;
+    }, {});
+  }
+
+  function findSoloPortionIndexForMe(portions: string[][]) {
+    for (let index = portions.length - 1; index >= 0; index -= 1) {
+      if (portions[index].length === 1 && portions[index][0] === myPersonId) return index;
+    }
+    return -1;
+  }
+
+  function findFirstUnassignedPortionIndex(portions: string[][]) {
+    return portions.findIndex((portion) => portion.length === 0);
+  }
+
+  function handleQuickMultiTap(item: LineItem) {
+    const portions = getItemPortions(item);
+    const soloPortionIndex = findSoloPortionIndexForMe(portions);
+    if (soloPortionIndex >= 0) {
+      void handleUnclaim(item, soloPortionIndex);
+      return;
+    }
+
+    const firstUnassignedIndex = findFirstUnassignedPortionIndex(portions);
+    if (firstUnassignedIndex >= 0) {
+      void handleItemTap(item, firstUnassignedIndex);
+      return;
+    }
+
+    triggerShake(item.id, true);
+  }
+
+  const dropdownMotion = shouldReduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.12 },
+      }
+    : {
+        initial: { height: 0, opacity: 0, y: -6 },
+        animate: { height: "auto", opacity: 1, y: 0 },
+        exit: { height: 0, opacity: 0, y: -6 },
+        transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] as const },
+      };
 
   async function handleItemTap(item: LineItem, portionIndex: number) {
     const portions = getItemPortions(item);
@@ -587,6 +640,9 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
 
             if (isMultiQty) {
               const assignedPortions = portions.filter((portion) => portion.length > 0).length;
+              const expanded = expandedItemId === item.id;
+              const claimEntries = Object.entries(getClaimsByPerson(portions));
+              const hasMyRemovableChips = portions.some((portion) => portion.includes(myPersonId));
 
               return (
                 <ShakeItem key={item.id} shaking={isShaking}>
@@ -598,81 +654,157 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
                         : "border-transparent"
                     )}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                        <span className="flex h-6 w-8 flex-shrink-0 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">
-                          ×{normalizedItem.quantity}
-                        </span>
-                        <div className="min-w-0">
-                          <span className="block truncate text-base">{normalizedItem.name}</span>
-                          <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions claimed</span>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex cursor-pointer flex-col gap-3 text-left active:opacity-75"
+                      onClick={() => handleQuickMultiTap(item)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleQuickMultiTap(item);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                          <span className="flex h-6 w-8 flex-shrink-0 items-center justify-center rounded-md bg-secondary text-sm font-medium tabular-nums">
+                            ×{normalizedItem.quantity}
+                          </span>
+                          <div className="min-w-0">
+                            <span className="block truncate text-base">{normalizedItem.name}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions claimed</span>
+                          </div>
                         </div>
-                      </div>
-                      <span className="ml-3 flex-shrink-0 font-mono text-base font-medium tabular-nums">
-                        {formatCurrency(normalizedItem.price * normalizedItem.quantity)}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 border-b border-border/40 pb-3">
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex gap-1">
-                          {portions.map((portion, dotIdx) => (
-                            <div
-                              key={dotIdx}
-                              className={cn(
-                                "h-2 w-2 rounded-full transition-colors",
-                                portion.length > 0 ? "bg-primary" : "bg-muted"
-                              )}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                          {assignedPortions}/{normalizedItem.quantity}
+                        <span className="flex-shrink-0 font-mono text-base font-medium tabular-nums">
+                          {formatCurrency(normalizedItem.price * normalizedItem.quantity)}
                         </span>
                       </div>
-                      <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
-                        {formatCurrency(normalizedItem.price)}/ea
-                      </span>
-                    </div>
 
-                    <div className="flex flex-col gap-2">
-                      {portions.map((portion, portionIndex) => {
-                        const claimedByMe = portion.includes(myPersonId);
-                        return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex gap-1">
+                            {portions.map((portion, dotIdx) => (
+                              <div
+                                key={dotIdx}
+                                className={cn(
+                                  "h-2 w-2 rounded-full transition-colors",
+                                  portion.length > 0 ? "bg-primary" : "bg-muted"
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {assignedPortions}/{normalizedItem.quantity}
+                          </span>
+                        </div>
+                        {claimEntries.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {claimEntries.map(([pid, count]) => {
+                              const person = room.people.find((p) => p.id === pid);
+                              if (!person) return null;
+                              const color = personColorForId(pid);
+                              return (
+                                <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text, pid === myPersonId && "ring-1 ring-primary/40")}>
+                                  {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                  {count > 1 && <span className="font-mono tabular-nums">×{count}</span>}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {assignedPortions > 0 && (
                           <button
-                            key={portionIndex}
-                            onClick={() => handleItemTap(item, portionIndex)}
-                            className={cn(
-                              "flex min-h-12 items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
-                              claimedByMe ? "bg-primary/10" : "bg-secondary/50",
-                              "active:opacity-75"
-                            )}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedItemId(expanded ? null : item.id);
+                            }}
+                            className="ml-auto rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
                           >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium">Unit {portionIndex + 1}</p>
-                              <div className="mt-1 flex flex-wrap gap-1.5">
-                                {portion.length === 0 ? (
-                                  <span className="text-xs text-muted-foreground">Unclaimed</span>
-                                ) : portion.map((pid) => {
-                                  const person = room.people.find((p) => p.id === pid);
-                                  if (!person) return null;
-                                  const color = personColorForId(pid);
-                                  const isMe = pid === myPersonId;
-                                  return (
-                                    <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text, isMe && "ring-1 ring-primary/40")}>
-                                      {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                              {portion.length > 1 ? formatCurrency(normalizedItem.price / portion.length) : formatCurrency(normalizedItem.price)}
-                            </span>
+                            Share
                           </button>
-                        );
-                      })}
+                        )}
+                        <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                          {formatCurrency(normalizedItem.price)}/ea
+                        </span>
+                      </div>
                     </div>
+
+                    <AnimatePresence initial={false}>
+                      {expanded && (
+                        <motion.div
+                          key={`${item.id}-share`}
+                          className="overflow-hidden"
+                          {...dropdownMotion}
+                        >
+                          <div className="mt-2 flex flex-col gap-2 border-t border-border/40 pt-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-xs font-medium text-muted-foreground">Choose a portion to share</p>
+                              {hasMyRemovableChips && <p className="text-xs text-muted-foreground">Tap your name to remove</p>}
+                            </div>
+                            {portions.map((portion, portionIndex) => {
+                              const claimedByMe = portion.includes(myPersonId);
+                              return (
+                                <div
+                                  key={portionIndex}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => handleItemTap(item, portionIndex)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault();
+                                      void handleItemTap(item, portionIndex);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+                                    claimedByMe ? "bg-primary/10" : "bg-secondary/50",
+                                    "active:opacity-75"
+                                  )}
+                                >
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium">Portion {portionIndex + 1}</p>
+                                    <div className="mt-1 flex flex-wrap gap-1.5">
+                                      {portion.length === 0 ? (
+                                        <span className="text-xs text-muted-foreground">Unassigned</span>
+                                      ) : portion.map((pid) => {
+                                        const person = room.people.find((p) => p.id === pid);
+                                        if (!person) return null;
+                                        const color = personColorForId(pid);
+                                        const isMe = pid === myPersonId;
+                                        const chipClassName = cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text, isMe && "ring-1 ring-primary/40");
+                                        if (!isMe) {
+                                          return (
+                                            <span key={pid} className={chipClassName}>
+                                              {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                            </span>
+                                          );
+                                        }
+                                        return (
+                                          <button
+                                            key={pid}
+                                            aria-label={`Remove ${person.name} from Portion ${portionIndex + 1}`}
+                                            onPointerDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => { e.stopPropagation(); void handleUnclaim(item, portionIndex); }}
+                                            className={chipClassName}
+                                          >
+                                            {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                                    {portion.length > 1 ? formatCurrency(normalizedItem.price / portion.length) : formatCurrency(normalizedItem.price)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </ShakeItem>
               );

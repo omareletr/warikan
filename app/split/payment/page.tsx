@@ -23,7 +23,7 @@ import {
 } from "@/lib/payment-apps";
 import type { PaymentAppId } from "@/lib/payment-apps";
 import { APP_URL } from "@/lib/platform";
-import { ROOM_SESSION_KEY, sendRoomAction } from "@/lib/room-client";
+import { ROOM_HOST_PERSON_KEY, ROOM_HOST_TOKEN_KEY, ROOM_SESSION_KEY, sendRoomAction } from "@/lib/room-client";
 
 /* ── Payment app logo SVGs ────────────────────────────────────────────────── */
 
@@ -155,9 +155,13 @@ export default function PaymentPage() {
       typeof sessionStorage !== "undefined"
         ? sessionStorage.getItem(ROOM_SESSION_KEY)
         : null;
+    const hostToken =
+      typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem(ROOM_HOST_TOKEN_KEY) ?? undefined
+        : undefined;
     if (!roomId) return;
     const url = getShareUrl();
-    sendRoomAction(roomId, { type: "finalize_payment", payUrl: url }).catch(() => {});
+    sendRoomAction(roomId, { type: "finalize_payment", hostToken, payUrl: url }).catch(() => {});
   }
 
   /**
@@ -170,23 +174,29 @@ export default function PaymentPage() {
       typeof sessionStorage !== "undefined"
         ? sessionStorage.getItem(ROOM_SESSION_KEY)
         : null;
+    const hostToken =
+      typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem(ROOM_HOST_TOKEN_KEY) ?? undefined
+        : undefined;
     if (!roomId) return;
     const url = getShareUrl();
     // Send finalize_payment first and wait for it — guests need payUrl before close.
     try {
-      await sendRoomAction(roomId, { type: "finalize_payment", payUrl: url });
+      await sendRoomAction(roomId, { type: "finalize_payment", hostToken, payUrl: url });
     } catch {
       // finalize_payment failed — still close so the room is cleaned up.
       // Guests won't be auto-redirected but the host flow continues.
     }
     // Now close the room and clear the session key.
     try {
-      await sendRoomAction(roomId, { type: "close" });
+      await sendRoomAction(roomId, { type: "close", hostToken });
     } catch {
       // Ignore — room TTL will handle cleanup.
     }
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem(ROOM_SESSION_KEY);
+      sessionStorage.removeItem(ROOM_HOST_TOKEN_KEY);
+      sessionStorage.removeItem(ROOM_HOST_PERSON_KEY);
     }
   }
 

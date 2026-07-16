@@ -14,6 +14,7 @@ interface InviteDrawerProps {
   joinUrl: string;       // full URL e.g. "https://warikan0.netlify.app/join/X7K2MN"
   peopleCount: number;   // total people in the split
   connectedCount: number; // how many guests have joined
+  selfServe?: boolean;
 }
 
 export function InviteDrawer(props: InviteDrawerProps) {
@@ -73,6 +74,7 @@ function InviteDrawerContent({
   joinUrl,
   peopleCount,
   connectedCount,
+  selfServe,
 }: InviteDrawerProps) {
   const y = useMotionValue(0);
   const [copied, setCopied] = useState(false);
@@ -150,10 +152,10 @@ function InviteDrawerContent({
             <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400">
-                {connectedCount} of {peopleCount} joined
+                {selfServe ? `${peopleCount} joined` : `${connectedCount} of ${peopleCount} joined`}
               </span>
             </div>
-            <ConnectionDots connected={connectedCount} total={peopleCount} />
+            <ConnectionDots connected={selfServe ? peopleCount : connectedCount} total={peopleCount} />
           </div>
         </motion.div>
 

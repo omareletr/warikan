@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
+import { createHash, randomBytes } from "crypto";
 import type { RoomState, RoomAction, LineItem, Person } from "@/lib/types";
 import {
   applyPortionAssignments,
@@ -33,8 +34,12 @@ const ROOM_TTL = 1800; // 30 minutes
 const ROOM_ID_RE = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
 const VALID_ACTION_TYPES = new Set<RoomAction["type"]>([
   "create",
+  "add_person",
   "join",
   "leave",
+  "rename_person",
+  "remove_person",
+  "update_person",
   "claim_item",
   "unclaim_item",
   "host_assign",
@@ -80,9 +85,58 @@ function versionKey(roomId: string): string {
   return `room:${roomId}:version`;
 }
 
-async function getRoom(roomId: string): Promise<RoomState | null> {
+interface PrivateRoomState extends RoomState {
+  hostTokenHash?: string;
+  participantTokenHashes?: Record<string, string>;
+}
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function createToken(): string {
+  return randomBytes(24).toString("hex");
+}
+
+function sanitizeRoomState(state: PrivateRoomState): RoomState {
+  const { hostTokenHash: _hostTokenHash, participantTokenHashes: _participantTokenHashes, ...publicState } = state;
+  return publicState;
+}
+
+function isValidHostToken(state: PrivateRoomState, token?: string): boolean {
+  if (!state.hostTokenHash) return true;
+  return Boolean(token && hashToken(token) === state.hostTokenHash);
+}
+
+function isValidParticipantToken(state: PrivateRoomState, personId?: string, token?: string): boolean {
+  if (!personId || !token) return false;
+  const expected = state.participantTokenHashes?.[personId];
+  return Boolean(expected && hashToken(token) === expected);
+}
+
+function disambiguateName(name: string, people: Person[], personId?: string): string {
+  const base = name.trim() || "Guest";
+  const existing = people.filter((p) => p.id !== personId).map((p) => p.name);
+  if (!existing.includes(base)) return base;
+  let n = 2;
+  while (existing.includes(`${base} (${n})`)) n++;
+  return `${base} (${n})`;
+}
+
+function nextGuestName(people: Person[]): string {
+  let n = 1;
+  const names = new Set(people.map((p) => p.name));
+  while (names.has(`Guest ${n}`)) n++;
+  return `Guest ${n}`;
+}
+
+function nonCoveredPayerCount(people: Person[]): number {
+  return people.filter((p) => !p.covered).length;
+}
+
+async function getPrivateRoom(roomId: string): Promise<PrivateRoomState | null> {
   if (!redis) return null;
-  const data = await redis.get<RoomState>(roomKey(roomId));
+  const data = await redis.get<PrivateRoomState>(roomKey(roomId));
   if (!data) return null;
   const lineItems = normalizeLineItems(data.lineItems ?? []);
   const portionAssignments = data.portionAssignments
@@ -92,14 +146,20 @@ async function getRoom(roomId: string): Promise<RoomState | null> {
     lineItems: applyPortionAssignments(lineItems, portionAssignments),
     portionAssignments,
     assignments: data.assignments ?? portionAssignmentsToLegacy(portionAssignments),
+    participantTokenHashes: data.participantTokenHashes ?? {},
   };
 }
 
-async function saveRoom(state: RoomState): Promise<RoomState> {
+async function getRoom(roomId: string): Promise<RoomState | null> {
+  const state = await getPrivateRoom(roomId);
+  return state ? sanitizeRoomState(state) : null;
+}
+
+async function saveRoom(state: PrivateRoomState): Promise<PrivateRoomState> {
   if (!redis) return state;
   // Build a new object with the incremented version so we never mutate the
   // caller's reference before the Redis write succeeds.
-  const newState: RoomState = { ...state, version: state.version + 1 };
+  const newState: PrivateRoomState = { ...state, version: state.version + 1 };
   await Promise.all([
     redis.set(roomKey(newState.roomId), newState, { ex: ROOM_TTL }),
     redis.set(versionKey(newState.roomId), newState.version, { ex: ROOM_TTL }),
@@ -108,7 +168,7 @@ async function saveRoom(state: RoomState): Promise<RoomState> {
   // Embedding the state in the publish payload lets the subscriber push it
   // directly to clients without a second Redis GET, cutting one full
   // round-trip from the notification → client latency.
-  redis.publish(`room:${newState.roomId}`, JSON.stringify(newState)).catch(() => {});
+  redis.publish(`room:${newState.roomId}`, JSON.stringify(sanitizeRoomState(newState))).catch(() => {});
   return newState;
 }
 
@@ -203,9 +263,13 @@ export async function POST(
 
   // ── create ──────────────────────────────────────────────────────────────
   if (action.type === "create") {
-    const existing = await getRoom(roomId);
+    const existing = await getPrivateRoom(roomId);
     if (existing) {
       return jsonError("Room already exists", "room_exists", 409, cors);
+    }
+
+    if (!action.hostToken) {
+      return jsonError("hostToken is required for create", "missing_field", 400, cors);
     }
 
     const lineItems: LineItem[] = normalizeLineItems((action.lineItems ?? []).map((item) => ({
@@ -216,8 +280,9 @@ export async function POST(
     const portionAssignments = lineItemsToPortionAssignments(lineItems);
     const assignments = portionAssignmentsToLegacy(portionAssignments);
 
-    const newState: RoomState = {
+    const newState: PrivateRoomState = {
       roomId,
+      entryMode: action.entryMode ?? ((action.people ?? []).length > 0 ? "roster" : "self_serve"),
       restaurantName: action.restaurantName,
       lineItems,
       people: action.people ?? [],
@@ -229,16 +294,68 @@ export async function POST(
       status: "waiting",
       createdAt: Date.now(),
       version: 0, // saveRoom will increment to 1
+      hostTokenHash: hashToken(action.hostToken),
+      participantTokenHashes: {},
     };
 
     const savedState = await saveRoom(newState);
-    return NextResponse.json(savedState, { status: 201, headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedState), { status: 201, headers: cors });
   }
 
   // All other actions require an existing room
-  const state = await getRoom(roomId);
+  const state = await getPrivateRoom(roomId);
   if (!state) {
     return NextResponse.json({ error: "not_found" }, { status: 404, headers: cors });
+  }
+  const currentState: PrivateRoomState = state;
+
+  function requireHost(): NextResponse | null {
+    return isValidHostToken(currentState, action.hostToken)
+      ? null
+      : jsonError("Host token is required", "invalid_host_token", 403, cors);
+  }
+
+  function requireParticipant(): NextResponse | null {
+    return isValidParticipantToken(currentState, action.personId, action.participantToken)
+      ? null
+      : jsonError("Participant token is required", "invalid_participant_token", 403, cors);
+  }
+
+  // ── add_person ───────────────────────────────────────────────────────────
+  if (action.type === "add_person") {
+    const hostAdding = Boolean(action.hostToken);
+    if (hostAdding) {
+      const hostError = requireHost();
+      if (hostError) return hostError;
+    }
+
+    const personId = action.personId ?? randomBytes(16).toString("hex");
+    if (state.people.some((p) => p.id === personId)) {
+      return jsonError("Person already exists", "person_exists", 409, cors);
+    }
+
+    const finalName = action.guest
+      ? nextGuestName(state.people)
+      : disambiguateName(action.name ?? "", state.people);
+    const participantToken = createToken();
+    const newPerson: Person = { id: personId, name: finalName };
+    const addPersonState: PrivateRoomState = {
+      ...state,
+      people: [...state.people, newPerson],
+      connectedPeople: state.connectedPeople.includes(personId)
+        ? state.connectedPeople
+        : [...state.connectedPeople, personId],
+      claimedBy: { ...state.claimedBy, [personId]: finalName },
+      participantTokenHashes: {
+        ...(state.participantTokenHashes ?? {}),
+        [personId]: hashToken(participantToken),
+      },
+    };
+    const savedAddPersonState = await saveRoom(addPersonState);
+    return NextResponse.json(
+      { room: sanitizeRoomState(savedAddPersonState), personId, participantToken },
+      { status: 201, headers: cors },
+    );
   }
 
   // ── join ─────────────────────────────────────────────────────────────────
@@ -252,9 +369,9 @@ export async function POST(
     const person: Person | undefined = state.people.find((p) => p.id === personId);
     const personName = person?.name ?? personId;
 
-    // Check if already claimed by a different session (same personId is idempotent)
+    // Check if already claimed by another session.
     const existingClaim = state.claimedBy[personId];
-    if (existingClaim !== undefined && existingClaim !== personName) {
+    if (existingClaim !== undefined) {
       return jsonError(
         "Identity already claimed",
         "identity_claimed",
@@ -263,16 +380,25 @@ export async function POST(
       );
     }
 
-    const updatedJoinState: RoomState = {
+    const participantToken = createToken();
+
+    const updatedJoinState: PrivateRoomState = {
       ...state,
       connectedPeople: state.connectedPeople.includes(personId)
         ? state.connectedPeople
         : [...state.connectedPeople, personId],
       claimedBy: { ...state.claimedBy, [personId]: personName },
+      participantTokenHashes: {
+        ...(state.participantTokenHashes ?? {}),
+        [personId]: hashToken(participantToken),
+      },
     };
 
     const savedJoinState = await saveRoom(updatedJoinState);
-    return NextResponse.json(savedJoinState, { headers: cors });
+    return NextResponse.json(
+      { room: sanitizeRoomState(savedJoinState), personId, participantToken },
+      { headers: cors },
+    );
   }
 
   // ── leave ─────────────────────────────────────────────────────────────────
@@ -281,6 +407,8 @@ export async function POST(
     if (!personId) {
       return jsonError("personId is required for leave", "missing_field", 400, cors);
     }
+    const participantError = requireParticipant();
+    if (participantError) return participantError;
 
     // Remove from connectedPeople AND release the identity claim so another
     // device can pick that name (handles the "went back and picked a different
@@ -288,14 +416,99 @@ export async function POST(
     const updatedClaimedBy = { ...state.claimedBy };
     delete updatedClaimedBy[personId];
 
-    const updatedLeaveState: RoomState = {
+    const updatedLeaveState: PrivateRoomState = {
       ...state,
       connectedPeople: state.connectedPeople.filter((id) => id !== personId),
       claimedBy: updatedClaimedBy,
     };
 
     const savedLeaveState = await saveRoom(updatedLeaveState);
-    return NextResponse.json(savedLeaveState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedLeaveState), { headers: cors });
+  }
+
+  // ── rename_person ────────────────────────────────────────────────────────
+  if (action.type === "rename_person") {
+    const { personId } = action;
+    const trimmed = action.name?.trim();
+    if (!personId || !trimmed) {
+      return jsonError("personId and name are required for rename_person", "missing_field", 400, cors);
+    }
+    const person = state.people.find((p) => p.id === personId);
+    if (!person) return jsonError("Person not found", "person_not_found", 404, cors);
+    const hostRenaming = Boolean(action.hostToken);
+    const authError = hostRenaming ? requireHost() : requireParticipant();
+    if (authError) return authError;
+
+    const finalName = disambiguateName(trimmed, state.people, personId);
+    const renamedState: PrivateRoomState = {
+      ...state,
+      people: state.people.map((p) => p.id === personId ? { ...p, name: finalName } : p),
+      claimedBy: state.claimedBy[personId] ? { ...state.claimedBy, [personId]: finalName } : state.claimedBy,
+    };
+    const savedRenamedState = await saveRoom(renamedState);
+    return NextResponse.json(sanitizeRoomState(savedRenamedState), { headers: cors });
+  }
+
+  // ── remove_person ────────────────────────────────────────────────────────
+  if (action.type === "remove_person") {
+    const hostError = requireHost();
+    if (hostError) return hostError;
+    const { personId } = action;
+    if (!personId) return jsonError("personId is required for remove_person", "missing_field", 400, cors);
+    if (!state.people.some((p) => p.id === personId)) return jsonError("Person not found", "person_not_found", 404, cors);
+
+    const currentPortionAssignments = state.portionAssignments
+      ?? legacyAssignmentsToPortionAssignments(state.lineItems, state.assignments ?? {});
+    const nextPortionAssignments = Object.fromEntries(
+      Object.entries(currentPortionAssignments).map(([itemId, portions]) => [
+        itemId,
+        portions.map((portion) => portion.filter((id) => id !== personId)),
+      ]),
+    );
+    const nextClaimedBy = { ...state.claimedBy };
+    delete nextClaimedBy[personId];
+    const nextParticipantTokenHashes = { ...(state.participantTokenHashes ?? {}) };
+    delete nextParticipantTokenHashes[personId];
+    const removedState: PrivateRoomState = {
+      ...state,
+      people: state.people.filter((p) => p.id !== personId),
+      connectedPeople: state.connectedPeople.filter((id) => id !== personId),
+      donePeople: state.donePeople.filter((id) => id !== personId),
+      claimedBy: nextClaimedBy,
+      participantTokenHashes: nextParticipantTokenHashes,
+      portionAssignments: nextPortionAssignments,
+      assignments: portionAssignmentsToLegacy(nextPortionAssignments),
+    };
+    const savedRemovedState = await saveRoom(removedState);
+    return NextResponse.json(sanitizeRoomState(savedRemovedState), { headers: cors });
+  }
+
+  // ── update_person ────────────────────────────────────────────────────────
+  if (action.type === "update_person") {
+    const hostError = requireHost();
+    if (hostError) return hostError;
+    const { personId } = action;
+    if (!personId) return jsonError("personId is required for update_person", "missing_field", 400, cors);
+    const person = state.people.find((p) => p.id === personId);
+    if (!person) return jsonError("Person not found", "person_not_found", 404, cors);
+    const nextPeople = state.people.map((p) => {
+      if (p.id !== personId) return p;
+      const nextName = action.name?.trim() ? disambiguateName(action.name, state.people, personId) : p.name;
+      return { ...p, name: nextName, covered: action.covered ?? p.covered };
+    });
+    if (nextPeople.some((p) => p.covered) && nonCoveredPayerCount(nextPeople) < 2) {
+      return jsonError("At least two non-covered payers are required", "too_few_payers", 409, cors);
+    }
+    const updatedPerson = nextPeople.find((p) => p.id === personId)!;
+    const updatedPersonState: PrivateRoomState = {
+      ...state,
+      people: nextPeople,
+      claimedBy: state.claimedBy[personId]
+        ? { ...state.claimedBy, [personId]: updatedPerson.name }
+        : state.claimedBy,
+    };
+    const savedUpdatedPersonState = await saveRoom(updatedPersonState);
+    return NextResponse.json(sanitizeRoomState(savedUpdatedPersonState), { headers: cors });
   }
 
   // ── guest_done ────────────────────────────────────────────────────────────
@@ -304,12 +517,14 @@ export async function POST(
     if (!personId) {
       return jsonError("personId is required for guest_done", "missing_field", 400, cors);
     }
+    const participantError = requireParticipant();
+    if (participantError) return participantError;
 
     // Remove from connectedPeople (go offline) but keep claimedBy intact so
     // the identity slot stays reserved. Add to donePeople so the host can show
     // a ✓ badge instead of a green dot.
     const currentDonePeople = state.donePeople ?? [];
-    const updatedGuestDoneState: RoomState = {
+    const updatedGuestDoneState: PrivateRoomState = {
       ...state,
       connectedPeople: state.connectedPeople.filter((id) => id !== personId),
       donePeople: currentDonePeople.includes(personId)
@@ -318,7 +533,7 @@ export async function POST(
     };
 
     const savedGuestDoneState = await saveRoom(updatedGuestDoneState);
-    return NextResponse.json(savedGuestDoneState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedGuestDoneState), { headers: cors });
   }
 
   // ── guest_back ────────────────────────────────────────────────────────────
@@ -327,6 +542,8 @@ export async function POST(
     if (!personId) {
       return jsonError("personId is required for guest_back", "missing_field", 400, cors);
     }
+    const participantError = requireParticipant();
+    if (participantError) return participantError;
 
     // If the host has already closed the room, guests can no longer go back.
     if (state.status === "done") {
@@ -335,7 +552,7 @@ export async function POST(
 
     // Re-add to connectedPeople (mark as online again) and remove from donePeople.
     const currentDonePeople = state.donePeople ?? [];
-    const updatedGuestBackState: RoomState = {
+    const updatedGuestBackState: PrivateRoomState = {
       ...state,
       connectedPeople: state.connectedPeople.includes(personId)
         ? state.connectedPeople
@@ -344,7 +561,7 @@ export async function POST(
     };
 
     const savedGuestBackState = await saveRoom(updatedGuestBackState);
-    return NextResponse.json(savedGuestBackState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedGuestBackState), { headers: cors });
   }
 
   // ── claim_item ────────────────────────────────────────────────────────────
@@ -357,6 +574,11 @@ export async function POST(
         400,
         cors
       );
+    }
+    const participantError = requireParticipant();
+    if (participantError) return participantError;
+    if (!state.people.some((p) => p.id === personId)) {
+      return jsonError("Person not found", "person_not_found", 404, cors);
     }
 
     const lineItem = state.lineItems.find((i) => i.id === itemId);
@@ -383,13 +605,13 @@ export async function POST(
     const newPortionAssignments = { ...portionAssignments, [itemId]: newItemPortions };
     const newAssignments = portionAssignmentsToLegacy(newPortionAssignments);
 
-    const claimState: RoomState = {
+    const claimState: PrivateRoomState = {
       ...state,
       portionAssignments: newPortionAssignments,
       assignments: newAssignments,
     };
     const savedClaimState = await saveRoom(claimState);
-    return NextResponse.json(savedClaimState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedClaimState), { headers: cors });
   }
 
   // ── unclaim_item ──────────────────────────────────────────────────────────
@@ -403,6 +625,8 @@ export async function POST(
         cors
       );
     }
+    const participantError = requireParticipant();
+    if (participantError) return participantError;
 
     const portionAssignments = state.portionAssignments
       ?? legacyAssignmentsToPortionAssignments(state.lineItems, state.assignments ?? {});
@@ -415,17 +639,19 @@ export async function POST(
     ));
     const newPortionAssignments = { ...portionAssignments, [itemId]: newItemPortions };
 
-    const unclaimState: RoomState = {
+    const unclaimState: PrivateRoomState = {
       ...state,
       portionAssignments: newPortionAssignments,
       assignments: portionAssignmentsToLegacy(newPortionAssignments),
     };
     const savedUnclaimState = await saveRoom(unclaimState);
-    return NextResponse.json(savedUnclaimState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedUnclaimState), { headers: cors });
   }
 
   // ── host_assign ───────────────────────────────────────────────────────────
   if (action.type === "host_assign") {
+    const hostError = requireHost();
+    if (hostError) return hostError;
     const { itemId, assignedToIds } = action;
     if (!itemId) {
       return jsonError(
@@ -443,17 +669,19 @@ export async function POST(
       ?? legacyAssignmentsToPortionAssignments(state.lineItems, state.assignments ?? {});
     const nextPortionAssignments = action.portionAssignments
       ?? legacyAssignmentsToPortionAssignments(state.lineItems, { ...state.assignments, [itemId]: assignedToIds ?? [] });
-    const hostAssignState: RoomState = {
+    const hostAssignState: PrivateRoomState = {
       ...state,
       portionAssignments: { ...currentPortionAssignments, [itemId]: nextPortionAssignments[itemId] ?? [] },
       assignments: { ...state.assignments, [itemId]: assignedToIds ?? [] },
     };
     const savedHostState = await saveRoom(hostAssignState);
-    return NextResponse.json(savedHostState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedHostState), { headers: cors });
   }
 
   // ── host_bulk_assign ──────────────────────────────────────────────────────
   if (action.type === "host_bulk_assign") {
+    const hostError = requireHost();
+    if (hostError) return hostError;
     // Host sends its complete assignments map — merge with the server's current
     // state so that any guest claims (claim_item) that arrived between the host's
     // last SSE update and this write are preserved rather than overwritten.
@@ -480,24 +708,28 @@ export async function POST(
     }
     const mergedAssignments = portionAssignmentsToLegacy(mergedPortionAssignments);
 
-    const bulkAssignState: RoomState = {
+    const bulkAssignState: PrivateRoomState = {
       ...state,
       portionAssignments: mergedPortionAssignments,
       assignments: mergedAssignments,
     };
     const savedBulkState = await saveRoom(bulkAssignState);
-    return NextResponse.json(savedBulkState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedBulkState), { headers: cors });
   }
 
   // ── close ─────────────────────────────────────────────────────────────────
   if (action.type === "close") {
-    const closeState: RoomState = { ...state, status: "done" };
+    const hostError = requireHost();
+    if (hostError) return hostError;
+    const closeState: PrivateRoomState = { ...state, status: "done" };
     const savedCloseState = await saveRoom(closeState);
-    return NextResponse.json(savedCloseState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedCloseState), { headers: cors });
   }
 
   // ── finalize_payment ──────────────────────────────────────────────────────
   if (action.type === "finalize_payment") {
+    const hostError = requireHost();
+    if (hostError) return hostError;
     if (!action.payUrl) {
       return jsonError("payUrl is required for finalize_payment", "missing_field", 400, cors);
     }
@@ -511,9 +743,9 @@ export async function POST(
     if (!isRelative && !isAbsolute) {
       return jsonError("Invalid payUrl", "invalid_pay_url", 400, cors);
     }
-    const payState: RoomState = { ...state, payUrl: action.payUrl };
+    const payState: PrivateRoomState = { ...state, payUrl: action.payUrl };
     const savedPayState = await saveRoom(payState);
-    return NextResponse.json(savedPayState, { headers: cors });
+    return NextResponse.json(sanitizeRoomState(savedPayState), { headers: cors });
   }
 
   // Should be unreachable given the VALID_ACTION_TYPES guard above

@@ -9,6 +9,15 @@ import { ArrowLeft, Gift, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { initials } from "@/lib/calculate";
@@ -17,8 +26,10 @@ import {
   generateRoomId,
   generateRoomToken,
   ROOM_AUTO_INVITE_KEY,
+  ROOM_HOST_PERSON_KEY,
   ROOM_HOST_TOKEN_KEY,
   ROOM_SESSION_KEY,
+  sendRoomAction,
 } from "@/lib/room-client";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import type { Person } from "@/lib/types";
@@ -32,11 +43,21 @@ export default function PeoplePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [animatingId, setAnimatingId] = useState<string | null>(null);
   const [isCreatingLive, setIsCreatingLive] = useState(false);
+  const [existingRoomId, setExistingRoomId] = useState<string | null>(null);
+  const [existingHostToken, setExistingHostToken] = useState<string | null>(null);
+  const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
 
   useEffect(() => {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
+
+  useEffect(() => {
+    if (typeof sessionStorage === "undefined") return;
+    setExistingRoomId(sessionStorage.getItem(ROOM_SESSION_KEY));
+    setExistingHostToken(sessionStorage.getItem(ROOM_HOST_TOKEN_KEY));
+  }, []);
+
   const [editingName, setEditingName] = useState("");
 
   function addPerson() {
@@ -82,10 +103,31 @@ export default function PeoplePage() {
     setEditingId(null);
   }
 
-  async function startLiveSplit() {
+  function requestStartLiveSplit() {
+    if (existingRoomId) {
+      setConfirmReplaceOpen(true);
+      return;
+    }
+    void startLiveSplit(false);
+  }
+
+  async function startLiveSplit(replaceExisting: boolean) {
     if (!loaded || isCreatingLive || state.lineItems.length === 0) return;
     setIsCreatingLive(true);
+    setConfirmReplaceOpen(false);
     try {
+      if (replaceExisting && typeof sessionStorage !== "undefined") {
+        const roomIdToClose = existingRoomId ?? sessionStorage.getItem(ROOM_SESSION_KEY);
+        const hostToken = existingHostToken ?? sessionStorage.getItem(ROOM_HOST_TOKEN_KEY) ?? undefined;
+        sessionStorage.removeItem(ROOM_SESSION_KEY);
+        sessionStorage.removeItem(ROOM_HOST_TOKEN_KEY);
+        sessionStorage.removeItem(ROOM_HOST_PERSON_KEY);
+        sessionStorage.removeItem(ROOM_AUTO_INVITE_KEY);
+        if (roomIdToClose) {
+          await sendRoomAction(roomIdToClose, { type: "close", hostToken }).catch(() => null);
+        }
+      }
+
       const roomId = generateRoomId();
       const hostToken = generateRoomToken();
       await createRoom(roomId, {
@@ -101,14 +143,18 @@ export default function PeoplePage() {
         sessionStorage.setItem(ROOM_HOST_TOKEN_KEY, hostToken);
         if (state.people.length === 0) sessionStorage.setItem(ROOM_AUTO_INVITE_KEY, "1");
       }
+      setExistingRoomId(roomId);
+      setExistingHostToken(hostToken);
       router.push("/split/assign");
     } catch {
       setIsCreatingLive(false);
     }
   }
 
+  const hasExistingRoom = Boolean(existingRoomId);
+
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={cn("flex min-h-dvh flex-col px-6", hasExistingRoom ? "pb-64" : "pb-48")}>
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -200,16 +246,39 @@ export default function PeoplePage() {
             variant="outline"
             className="h-12 w-full gap-2 rounded-2xl text-base font-semibold border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
             disabled={!loaded || isCreatingLive}
-            onClick={startLiveSplit}
+            onClick={requestStartLiveSplit}
           >
             <UserPlus className="h-4 w-4" />
-            {isCreatingLive ? "Starting live split..." : "Start Live Split"}
+            {isCreatingLive ? (hasExistingRoom ? "Starting new live split..." : "Starting live split...") : hasExistingRoom ? "Start New Live Split" : "Start Live Split"}
           </Button>
+          {hasExistingRoom && (
+            <Button variant="secondary" className="h-12 w-full rounded-2xl text-base font-semibold" disabled={!loaded || isCreatingLive} onClick={() => router.push("/split/assign")}>
+              Continue with Existing Split
+            </Button>
+          )}
           <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || state.people.length < 2} onClick={() => router.push("/split/assign")}>
             {!loaded ? "Loading..." : state.people.length < 2 ? "Add at least 2 people" : `Continue with ${state.people.length} people`}
           </Button>
         </div>
       </div>
+      <Dialog open={confirmReplaceOpen} onOpenChange={setConfirmReplaceOpen}>
+        <DialogContent>
+          <DialogHeader className="text-left">
+            <DialogTitle>Start a new live split?</DialogTitle>
+            <DialogDescription className="mt-1">
+              This will replace your current live split invite on this device. Guests in the old live split may be disconnected and will need the new invite link.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2 flex-row gap-3">
+            <DialogClose asChild>
+              <Button variant="outline" className="h-12 flex-1 rounded-2xl text-base" disabled={isCreatingLive}>Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" className="h-12 flex-1 rounded-2xl text-base" disabled={isCreatingLive} onClick={() => void startLiveSplit(true)}>
+              Start New Split
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.main>
   );
 }

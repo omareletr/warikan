@@ -21,8 +21,11 @@ import { cn } from "@/lib/utils";
 import {
   subscribeToRoom,
   sendRoomAction,
+  sendRoomJoinAction,
   getLocalRoomPersonId,
+  getLocalRoomIdentity,
   setLocalRoomPersonId,
+  setLocalRoomIdentity,
   clearLocalRoomPersonId,
 } from "@/lib/room-client";
 import type { RoomState, LineItem } from "@/lib/types";
@@ -33,8 +36,8 @@ type PageState =
   | { phase: "loading" }
   | { phase: "error"; message: string; retryable: boolean }
   | { phase: "pick_name"; room: RoomState }
-  | { phase: "assigning"; room: RoomState; myPersonId: string }
-  | { phase: "done"; myPersonId: string | null; myPersonName: string | null; roomClosed: boolean; payUrl?: string };
+  | { phase: "assigning"; room: RoomState; myPersonId: string; participantToken: string }
+  | { phase: "done"; myPersonId: string | null; myPersonName: string | null; participantToken: string | null; roomClosed: boolean; payUrl?: string };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -126,6 +129,7 @@ function ErrorScreen({ message, retryable, onRetry }: ErrorScreenProps) {
 interface DoneScreenProps {
   myPersonId: string | null;
   myPersonName: string | null;
+  participantToken: string | null;
   roomClosed: boolean;
   payUrl?: string;
   onEdit: () => Promise<void>;
@@ -320,11 +324,22 @@ interface NamePickerProps {
   room: RoomState;
   myPersonId: string | null;
   onJoin: (personId: string) => void;
+  onSelfJoin: (name: string, guest: boolean) => void;
   onResume: (personId: string) => void;
   joining: boolean;
 }
 
-function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerProps) {
+function NamePicker({ room, myPersonId, onJoin, onSelfJoin, onResume, joining }: NamePickerProps) {
+  const [name, setName] = useState("");
+  const [showSelfEntry, setShowSelfEntry] = useState(room.entryMode === "self_serve" || room.people.length === 0);
+  const rosterFirst = room.entryMode !== "self_serve" && room.people.length > 0 && !showSelfEntry;
+
+  function submitName() {
+    const trimmed = name.trim();
+    if (!trimmed || joining) return;
+    onSelfJoin(trimmed, false);
+  }
+
   return (
     <main className="flex min-h-dvh flex-col pb-8">
       {/* Header */}
@@ -336,20 +351,21 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
           {room.restaurantName ?? "Who are you?"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Pick your name to start claiming your dishes
+          {rosterFirst ? "Pick your name to start claiming your dishes" : "Enter your name to claim your dishes"}
         </p>
       </div>
 
       {/* People list */}
-      <div className="flex flex-col gap-3 px-6">
-        {room.people.map((person, i) => {
+      {rosterFirst ? (
+        <div className="flex flex-col gap-3 px-6">
+          {room.people.map((person, i) => {
           const color = personColorByIndex(i, person.covered);
           const isClaimed = Boolean(room.claimedBy[person.id]);
           // This device already claimed this slot — let them tap back in
           const isMe = myPersonId === person.id;
           const isClaimedByOther = isClaimed && !isMe;
 
-          return (
+            return (
             <button
               key={person.id}
               onClick={() => {
@@ -410,9 +426,41 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
                 </motion.span>
               )}
             </button>
-          );
-        })}
-      </div>
+            );
+          })}
+
+          <Button
+            variant="outline"
+            className="mt-3 h-12 rounded-2xl"
+            disabled={joining}
+            onClick={() => setShowSelfEntry(true)}
+          >
+            Not listed? Enter your name
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 px-6">
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Enter") submitName(); }}
+            placeholder="Your name"
+            className="h-14 rounded-2xl border border-input bg-background px-4 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            autoFocus
+          />
+          <Button className="h-14 rounded-2xl text-base font-semibold" disabled={!name.trim() || joining} onClick={submitName}>
+            Join
+          </Button>
+          <Button variant="outline" className="h-12 rounded-2xl" disabled={joining} onClick={() => onSelfJoin("", true)}>
+            Join as Guest
+          </Button>
+          {room.entryMode !== "self_serve" && room.people.length > 0 && (
+            <Button variant="ghost" className="h-11 rounded-2xl text-muted-foreground" disabled={joining} onClick={() => setShowSelfEntry(false)}>
+              Back to names
+            </Button>
+          )}
+        </div>
+      )}
 
       {joining && (
         <div className="mt-6 flex justify-center">
@@ -428,12 +476,13 @@ function NamePicker({ room, myPersonId, onJoin, onResume, joining }: NamePickerP
 interface AssigningProps {
   room: RoomState;
   myPersonId: string;
+  participantToken: string;
   onBack: () => void;
   onDone: () => void;
   onRoomUpdate: (room: RoomState) => void;
 }
 
-function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: AssigningProps) {
+function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onRoomUpdate }: AssigningProps) {
   const [shakingItemId, setShakingItemId] = useState<string | null>(null);
   const [takenItemId, setTakenItemId] = useState<string | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
@@ -524,10 +573,11 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
 
     try {
       const updated = await sendRoomAction(room.roomId, {
-        type: actionType,
-        personId: myPersonId,
-        itemId: item.id,
-        portionIndex,
+          type: actionType,
+          personId: myPersonId,
+          participantToken,
+          itemId: item.id,
+          portionIndex,
       });
       onRoomUpdate(updated);
     } catch (err: unknown) {
@@ -551,6 +601,7 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
       const updated = await sendRoomAction(room.roomId, {
         type: "unclaim_item",
         personId: myPersonId,
+        participantToken,
         itemId: item.id,
         portionIndex,
       });
@@ -568,12 +619,29 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
       const updated = await sendRoomAction(room.roomId, {
         type: "claim_item",
         personId: myPersonId,
+        participantToken,
         itemId: item.id,
         portionIndex,
       });
       onRoomUpdate(updated);
     } catch {
       onRoomUpdate(room);
+    }
+  }
+
+  async function renameMe() {
+    const nextName = window.prompt("Rename yourself", myPerson?.name ?? "")?.trim();
+    if (!nextName) return;
+    try {
+      const updated = await sendRoomAction(room.roomId, {
+        type: "rename_person",
+        personId: myPersonId,
+        participantToken,
+        name: nextName,
+      });
+      onRoomUpdate(updated);
+    } catch {
+      // Ignore transient failures.
     }
   }
 
@@ -604,7 +672,9 @@ function AssigningView({ room, myPersonId, onBack, onDone, onRoomUpdate }: Assig
             <h1 className="text-xl font-bold leading-tight">
               {myPerson?.name ?? "You"}
             </h1>
-            <p className="text-xs text-muted-foreground">Assign your dishes</p>
+            <button className="text-left text-xs text-muted-foreground underline-offset-2 active:opacity-70" onClick={renameMe}>
+              Assign your dishes · Rename
+            </button>
           </div>
         </div>
 
@@ -1008,19 +1078,21 @@ export default function JoinPage() {
       const room = (await res.json()) as RoomState;
 
       // Check if we already have a claimed identity for this room
-      const existingPersonId = getLocalRoomPersonId(roomId);
-      if (existingPersonId && room.claimedBy[existingPersonId]) {
+      const existingIdentity = getLocalRoomIdentity(roomId);
+      const existingPersonId = existingIdentity?.personId ?? null;
+      const existingParticipantToken = existingIdentity?.participantToken ?? "";
+      if (existingPersonId && existingParticipantToken && room.claimedBy[existingPersonId]) {
         const existingPersonName = room.people.find((p) => p.id === existingPersonId)?.name ?? null;
         if (room.status === "done") {
-          setPageState({ phase: "done", myPersonId: existingPersonId, myPersonName: existingPersonName, roomClosed: true, payUrl: room.payUrl });
+          setPageState({ phase: "done", myPersonId: existingPersonId, myPersonName: existingPersonName, participantToken: existingParticipantToken, roomClosed: true, payUrl: room.payUrl });
         } else {
-          setPageState({ phase: "assigning", room, myPersonId: existingPersonId });
+          setPageState({ phase: "assigning", room, myPersonId: existingPersonId, participantToken: existingParticipantToken });
         }
         return;
       }
 
       if (room.status === "done") {
-        setPageState({ phase: "done", myPersonId: null, myPersonName: null, roomClosed: true, payUrl: room.payUrl });
+        setPageState({ phase: "done", myPersonId: null, myPersonName: null, participantToken: null, roomClosed: true, payUrl: room.payUrl });
         return;
       }
 
@@ -1042,7 +1114,7 @@ export default function JoinPage() {
   useEffect(() => {
     if (pageState.phase !== "assigning") return;
 
-    const { room, myPersonId } = pageState;
+    const { room, myPersonId, participantToken } = pageState;
 
     const unsubscribe = subscribeToRoom(
       roomId,
@@ -1050,7 +1122,12 @@ export default function JoinPage() {
       (updatedRoom) => {
         if (updatedRoom.status === "done") {
           const personName = updatedRoom.people.find((p) => p.id === myPersonId)?.name ?? null;
-          setPageState({ phase: "done", myPersonId, myPersonName: personName, roomClosed: true, payUrl: updatedRoom.payUrl });
+          setPageState({ phase: "done", myPersonId, myPersonName: personName, participantToken, roomClosed: true, payUrl: updatedRoom.payUrl });
+          return;
+        }
+        if (!updatedRoom.people.some((p) => p.id === myPersonId)) {
+          clearLocalRoomPersonId(roomId);
+          setPageState({ phase: "pick_name", room: updatedRoom });
           return;
         }
         setPageState((prev) => {
@@ -1082,9 +1159,10 @@ export default function JoinPage() {
       room.version,
       (updatedRoom) => {
         if (updatedRoom.status === "done") {
-          const pid = getLocalRoomPersonId(roomId);
+          const identity = getLocalRoomIdentity(roomId);
+          const pid = identity?.personId ?? null;
           const pName = pid ? (updatedRoom.people.find((p) => p.id === pid)?.name ?? null) : null;
-          setPageState({ phase: "done", myPersonId: pid, myPersonName: pName, roomClosed: true, payUrl: updatedRoom.payUrl });
+          setPageState({ phase: "done", myPersonId: pid, myPersonName: pName, participantToken: identity?.participantToken ?? null, roomClosed: true, payUrl: updatedRoom.payUrl });
           return;
         }
         setPageState((prev) => {
@@ -1167,30 +1245,66 @@ export default function JoinPage() {
     try {
       // If this device already holds a different identity for this room, release
       // it first so that slot becomes available for others to claim.
-      const previousPersonId = getLocalRoomPersonId(roomId);
+      const previousIdentity = getLocalRoomIdentity(roomId);
+      const previousPersonId = previousIdentity?.personId ?? null;
       if (previousPersonId && previousPersonId !== personId) {
         clearLocalRoomPersonId(roomId);
         // Fire-and-forget: we don't block on this — if it fails the slot stays
         // locked until the 30-min TTL expires, which is acceptable.
-        sendRoomAction(roomId, { type: "leave", personId: previousPersonId }).catch(() => {});
+        if (previousIdentity?.participantToken) {
+          sendRoomAction(roomId, { type: "leave", personId: previousPersonId, participantToken: previousIdentity.participantToken }).catch(() => {});
+        }
       }
 
-      const updatedRoom = await sendRoomAction(roomId, {
+      const result = await sendRoomJoinAction(roomId, {
         type: "join",
         personId,
       });
-      setLocalRoomPersonId(roomId, personId);
+      const updatedRoom = result.room;
+      setLocalRoomIdentity(roomId, { personId: result.personId, participantToken: result.participantToken });
       setJoining(false);
 
       if (updatedRoom.status === "done") {
-        const personName = updatedRoom.people.find((p) => p.id === personId)?.name ?? null;
-        setPageState({ phase: "done", myPersonId: personId, myPersonName: personName, roomClosed: true, payUrl: updatedRoom.payUrl });
+        const personName = updatedRoom.people.find((p) => p.id === result.personId)?.name ?? null;
+        setPageState({ phase: "done", myPersonId: result.personId, myPersonName: personName, participantToken: result.participantToken, roomClosed: true, payUrl: updatedRoom.payUrl });
       } else {
-        setPageState({ phase: "assigning", room: updatedRoom, myPersonId: personId });
+        setPageState({ phase: "assigning", room: updatedRoom, myPersonId: result.personId, participantToken: result.participantToken });
       }
     } catch {
       setJoining(false);
       // Could show inline error but don't disrupt picker
+    }
+  }
+
+  async function handleSelfJoin(name: string, guest: boolean) {
+    if (pageState.phase !== "pick_name") return;
+    setJoining(true);
+    try {
+      const previousIdentity = getLocalRoomIdentity(roomId);
+      if (previousIdentity?.personId && previousIdentity.participantToken) {
+        clearLocalRoomPersonId(roomId);
+        sendRoomAction(roomId, {
+          type: "leave",
+          personId: previousIdentity.personId,
+          participantToken: previousIdentity.participantToken,
+        }).catch(() => {});
+      }
+
+      const result = await sendRoomJoinAction(roomId, {
+        type: "add_person",
+        name,
+        guest,
+      });
+      setLocalRoomIdentity(roomId, { personId: result.personId, participantToken: result.participantToken });
+      setJoining(false);
+      if (result.room.status === "done") {
+        const personName = result.room.people.find((p) => p.id === result.personId)?.name ?? null;
+        setPageState({ phase: "done", myPersonId: result.personId, myPersonName: personName, participantToken: result.participantToken, roomClosed: true, payUrl: result.room.payUrl });
+      } else {
+        setPageState({ phase: "assigning", room: result.room, myPersonId: result.personId, participantToken: result.participantToken });
+      }
+    } catch {
+      setJoining(false);
     }
   }
 
@@ -1203,7 +1317,9 @@ export default function JoinPage() {
   function handleResume(personId: string) {
     if (pageState.phase !== "pick_name") return;
     const { room } = pageState;
-    setPageState({ phase: "assigning", room, myPersonId: personId });
+    const identity = getLocalRoomIdentity(roomId);
+    if (!identity?.participantToken) return;
+    setPageState({ phase: "assigning", room, myPersonId: personId, participantToken: identity.participantToken });
   }
 
   function handleRoomUpdate(updatedRoom: RoomState) {
@@ -1214,14 +1330,16 @@ export default function JoinPage() {
   }
 
   async function handleEditFromDone() {
-    if (pageState.phase !== "done" || !pageState.myPersonId) return;
+    if (pageState.phase !== "done" || !pageState.myPersonId || !pageState.participantToken) return;
     const personId = pageState.myPersonId;
+    const participantToken = pageState.participantToken;
     try {
       const updatedRoom = await sendRoomAction(roomId, {
         type: "guest_back",
         personId,
+        participantToken,
       });
-      setPageState({ phase: "assigning", room: updatedRoom, myPersonId: personId });
+      setPageState({ phase: "assigning", room: updatedRoom, myPersonId: personId, participantToken });
     } catch (err: unknown) {
       const apiErr = err as { code?: string };
       if (apiErr?.code === "room_closed") {
@@ -1260,6 +1378,7 @@ export default function JoinPage() {
             room={pageState.room}
             myPersonId={getLocalRoomPersonId(roomId)}
             onJoin={handleJoin}
+            onSelfJoin={handleSelfJoin}
             onResume={handleResume}
             joining={joining}
           />
@@ -1271,12 +1390,14 @@ export default function JoinPage() {
           <AssigningView
             room={pageState.room}
             myPersonId={pageState.myPersonId}
+            participantToken={pageState.participantToken}
             onBack={handleBackToNamePicker}
             onDone={() => {
               const donePersonId = pageState.myPersonId;
+              const participantToken = pageState.participantToken;
               const donePersonName = pageState.room.people.find((p) => p.id === donePersonId)?.name ?? null;
-              sendRoomAction(roomId, { type: "guest_done", personId: donePersonId }).catch(() => {});
-              setPageState({ phase: "done", myPersonId: donePersonId, myPersonName: donePersonName, roomClosed: false });
+              sendRoomAction(roomId, { type: "guest_done", personId: donePersonId, participantToken }).catch(() => {});
+              setPageState({ phase: "done", myPersonId: donePersonId, myPersonName: donePersonName, participantToken, roomClosed: false });
             }}
             onRoomUpdate={handleRoomUpdate}
           />
@@ -1288,6 +1409,7 @@ export default function JoinPage() {
           <DoneScreen
             myPersonId={pageState.myPersonId}
             myPersonName={pageState.myPersonName}
+            participantToken={pageState.participantToken}
             roomClosed={pageState.roomClosed}
             payUrl={pageState.payUrl}
             onEdit={handleEditFromDone}

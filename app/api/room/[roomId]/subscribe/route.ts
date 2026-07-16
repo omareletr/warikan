@@ -56,6 +56,16 @@ function sseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${payload}\n\n`;
 }
 
+interface PrivateRoomState extends RoomState {
+  hostTokenHash?: string;
+  participantTokenHashes?: Record<string, string>;
+}
+
+function sanitizeRoomState(state: PrivateRoomState): RoomState {
+  const { hostTokenHash: _hostTokenHash, participantTokenHashes: _participantTokenHashes, ...publicState } = state;
+  return publicState;
+}
+
 // ─── Route params ─────────────────────────────────────────────────────────
 
 interface RouteContext {
@@ -145,9 +155,9 @@ export async function GET(
       }
 
       // Check if room exists at all before starting listeners
-      let initialState: RoomState | null = null;
+      let initialState: PrivateRoomState | null = null;
       try {
-        initialState = await redis!.get<RoomState>(roomKey);
+        initialState = await redis!.get<PrivateRoomState>(roomKey);
       } catch (err) {
         console.error("[subscribe] Redis error on initial fetch:", err);
         send(sseEvent("not_found", {}));
@@ -168,7 +178,7 @@ export async function GET(
       // This ensures any missed events are caught up immediately on (re)connect
       // rather than waiting up to FALLBACK_POLL_INTERVAL_MS.
       if (since === -1 || initialState.version > since) {
-        if (!send(sseEvent("state", initialState))) {
+        if (!send(sseEvent("state", sanitizeRoomState(initialState)))) {
           closeAll();
           return;
         }
@@ -187,10 +197,10 @@ export async function GET(
       }, PING_INTERVAL_MS);
 
       // ── Helper: push a state object to the client if it's newer ────────────
-      function pushState(state: RoomState): void {
+      function pushState(state: PrivateRoomState | RoomState): void {
         if (closed) return;
         if (state.version <= since) return;
-        if (!send(sseEvent("state", state))) {
+        if (!send(sseEvent("state", sanitizeRoomState(state as PrivateRoomState)))) {
           closeAll();
           return;
         }
@@ -200,9 +210,9 @@ export async function GET(
       // ── Helper: fetch from Redis and push (fallback path only) ───────────
       async function fetchAndPush(): Promise<void> {
         if (closed) return;
-        let state: RoomState | null = null;
+        let state: PrivateRoomState | null = null;
         try {
-          state = await redis!.get<RoomState>(roomKey);
+          state = await redis!.get<PrivateRoomState>(roomKey);
         } catch (err) {
           console.error("[subscribe] Redis error during fetch:", err);
           return; // transient — try again next time

@@ -51,6 +51,7 @@ export interface PersonTotal {
 
 export interface RoomState {
   roomId: string;
+  entryMode?: "roster" | "self_serve";
   restaurantName?: string;
   lineItems: LineItem[];         // full item list from host
   people: Person[];              // full people list from host
@@ -67,8 +68,12 @@ export interface RoomState {
 
 export type RoomActionType =
   | "create"
+  | "add_person"
   | "join"
   | "leave"
+  | "rename_person"
+  | "remove_person"
+  | "update_person"
   | "claim_item"
   | "unclaim_item"
   | "host_assign"         // host assigns a single item (override)
@@ -80,11 +85,17 @@ export type RoomActionType =
 
 export interface RoomAction {
   type: RoomActionType;
+  hostToken?: string;
+  participantToken?: string;
   personId?: string;
+  name?: string;
+  guest?: boolean;
+  covered?: boolean;
   itemId?: string;
   // For "create" — host sends the full snapshot
   lineItems?: LineItem[];
   people?: Person[];
+  entryMode?: "roster" | "self_serve";
   restaurantName?: string;
   // For "host_assign" — host sends the full resulting assignment array for one item
   assignedToIds?: string[];
@@ -94,4 +105,15 @@ export interface RoomAction {
   portionAssignments?: Record<string, string[][]>;
   // For "finalize_payment" — host sends the shareable /pay#<encoded> URL
   payUrl?: string;
+}
+
+export interface RoomIdentity {
+  personId: string;
+  participantToken: string;
+}
+
+export interface RoomJoinResult {
+  room: RoomState;
+  personId: string;
+  participantToken: string;
 }

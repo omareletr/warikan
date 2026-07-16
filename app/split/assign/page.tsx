@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
-import { ArrowLeft, Gift, UserPlus } from "lucide-react";
+import { ArrowLeft, Gift, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,15 +37,21 @@ import {
   getRoomJoinUrl,
   createRoom,
   fetchRoom,
+  generateRoomToken,
   sendRoomAction,
+  sendRoomJoinAction,
   subscribeToRoom,
+  setLocalRoomIdentity,
+  ROOM_AUTO_INVITE_KEY,
+  ROOM_HOST_PERSON_KEY,
+  ROOM_HOST_TOKEN_KEY,
   ROOM_SESSION_KEY,
 } from "@/lib/room-client";
 import type { LineItem, RoomState } from "@/lib/types";
 
 export default function AssignPage() {
   const router = useRouter();
-  const { state, loaded, updateLineItems } = useSplitFlow();
+  const { state, loaded, updateLineItems, setPeople } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
@@ -59,6 +65,15 @@ export default function AssignPage() {
     return sessionStorage.getItem(ROOM_SESSION_KEY);
   });
   const [roomState, setRoomState] = useState<RoomState | null>(null);
+  const [hostToken, setHostToken] = useState<string>(() => {
+    if (typeof sessionStorage === "undefined") return "";
+    return sessionStorage.getItem(ROOM_HOST_TOKEN_KEY) ?? "";
+  });
+  const [hostPersonId, setHostPersonId] = useState<string>(() => {
+    if (typeof sessionStorage === "undefined") return "";
+    return sessionStorage.getItem(ROOM_HOST_PERSON_KEY) ?? "";
+  });
+  const [hostName, setHostName] = useState("");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
 
@@ -94,6 +109,18 @@ export default function AssignPage() {
     if (loaded && state.lineItems.length === 0) router.replace("/");
   }, [loaded, state.lineItems.length, router]);
 
+  useEffect(() => {
+    if (selectedPersonId || state.people.length === 0) return;
+    setSelectedPersonId(state.people[0].id);
+  }, [selectedPersonId, state.people]);
+
+  useEffect(() => {
+    if (typeof sessionStorage === "undefined") return;
+    if (sessionStorage.getItem(ROOM_AUTO_INVITE_KEY) !== "1") return;
+    sessionStorage.removeItem(ROOM_AUTO_INVITE_KEY);
+    setShowInvite(true);
+  }, []);
+
   // If roomId was restored from sessionStorage on mount, fetch the current
   // room state from Redis so the UI (invite drawer, QR code, guest count) is
   // populated immediately without waiting for the first SSE push.
@@ -102,6 +129,7 @@ export default function AssignPage() {
     fetchRoom(roomId).then((existing) => {
       if (existing) {
         setRoomState(existing);
+        setPeople(existing.people);
       } else {
         // Room expired on the server — discard the stale ID.
         setRoomId(null);
@@ -128,6 +156,7 @@ export default function AssignPage() {
       since,
       (updatedRoom) => {
         setRoomState(updatedRoom);
+        setPeople(updatedRoom.people);
 
         // Guard: don't apply server assignments until the context has finished
         // loading line items from localStorage. Until then, lineItemsRef.current
@@ -191,12 +220,12 @@ export default function AssignPage() {
       if (typeof navigator === "undefined" || !navigator.sendBeacon) return;
       navigator.sendBeacon(
         `/api/room/${roomId}`,
-        new Blob([JSON.stringify({ type: "close" })], { type: "application/json" }),
+        new Blob([JSON.stringify({ type: "close", hostToken })], { type: "application/json" }),
       );
     }
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [roomId]);
+  }, [roomId, hostToken]);
 
   async function handleInvite() {
     if (roomId) {
@@ -206,16 +235,21 @@ export default function AssignPage() {
     setIsCreatingRoom(true);
     try {
       const newRoomId = generateRoomId();
+      const newHostToken = hostToken || generateRoomToken();
       const room = await createRoom(newRoomId, {
         type: "create",
+        hostToken: newHostToken,
+        entryMode: state.people.length > 0 ? "roster" : "self_serve",
         lineItems: state.lineItems,
         people: state.people,
         restaurantName: state.restaurantName || undefined,
       });
       setRoomId(newRoomId);
       setRoomState(room);
+      setHostToken(newHostToken);
       if (typeof sessionStorage !== "undefined") {
         sessionStorage.setItem(ROOM_SESSION_KEY, newRoomId);
+        sessionStorage.setItem(ROOM_HOST_TOKEN_KEY, newHostToken);
       }
       setShowInvite(true);
     } catch {
@@ -246,6 +280,7 @@ export default function AssignPage() {
     pendingAssignmentsRef.current = assignments;
     sendRoomAction(roomId, {
       type: "host_bulk_assign",
+      hostToken,
       assignments,
       portionAssignments,
     }).catch(() => {
@@ -421,7 +456,96 @@ export default function AssignPage() {
     sendBulkAssign(updatedItems);
   }
 
+  async function addHostParticipant() {
+    if (!roomId || !hostToken) return;
+    const trimmed = hostName.trim();
+    if (!trimmed) return;
+    try {
+      const result = await sendRoomJoinAction(roomId, {
+        type: "add_person",
+        hostToken,
+        name: trimmed,
+      });
+      setRoomState(result.room);
+      setPeople(result.room.people);
+      setSelectedPersonId(result.personId);
+      setHostPersonId(result.personId);
+      setHostName("");
+      setLocalRoomIdentity(roomId, { personId: result.personId, participantToken: result.participantToken });
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem(ROOM_HOST_PERSON_KEY, result.personId);
+      }
+    } catch {
+      // Keep host in current state; room TTL handles stale sessions.
+    }
+  }
+
+  async function toggleSelectedCovered() {
+    if (!roomId || !hostToken || !selectedPersonId) return;
+    const person = state.people.find((p) => p.id === selectedPersonId);
+    if (!person) return;
+    try {
+      const updated = await sendRoomAction(roomId, {
+        type: "update_person",
+        hostToken,
+        personId: selectedPersonId,
+        covered: !person.covered,
+      });
+      setRoomState(updated);
+      setPeople(updated.people);
+    } catch {
+      // Invalid covered states are blocked server-side.
+    }
+  }
+
+  async function renameSelectedPerson() {
+    if (!roomId || !hostToken || !selectedPersonId) return;
+    const person = state.people.find((p) => p.id === selectedPersonId);
+    if (!person) return;
+    const nextName = window.prompt("Rename participant", person.name)?.trim();
+    if (!nextName) return;
+    try {
+      const updated = await sendRoomAction(roomId, {
+        type: "rename_person",
+        hostToken,
+        personId: selectedPersonId,
+        name: nextName,
+      });
+      setRoomState(updated);
+      setPeople(updated.people);
+    } catch {
+      // Ignore transient failures.
+    }
+  }
+
+  async function removeSelectedPerson() {
+    if (!roomId || !hostToken || !selectedPersonId) return;
+    const person = state.people.find((p) => p.id === selectedPersonId);
+    if (!person) return;
+    if (!window.confirm(`Remove ${person.name} from this split? Their dish claims will be unassigned.`)) return;
+    try {
+      const updated = await sendRoomAction(roomId, {
+        type: "remove_person",
+        hostToken,
+        personId: selectedPersonId,
+      });
+      setRoomState(updated);
+      setPeople(updated.people);
+      const nextSelected = updated.people[0]?.id ?? "";
+      setSelectedPersonId(nextSelected);
+      if (selectedPersonId === hostPersonId) {
+        setHostPersonId("");
+        if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(ROOM_HOST_PERSON_KEY);
+      }
+      const updatedItems = applyPortionAssignments(lineItemsRef.current, updated.portionAssignments ?? {});
+      setLineItems(updatedItems);
+    } catch {
+      // Ignore transient failures.
+    }
+  }
+
   async function handleContinue() {
+    if (state.people.filter((person) => !person.covered).length < 2) return;
     if (roomId) {
       // Close the room so guests immediately receive a "status: done" push and
       // transition to the "You're all set!" screen — stopping further claiming.
@@ -429,7 +553,7 @@ export default function AssignPage() {
       // Payment page still needs it to send finalize_payment (which stores payUrl
       // on the already-closed room and triggers the guest redirect).
       // The payment page's finalizeAndCloseRoom() removes the key when done.
-      sendRoomAction(roomId, { type: "close" }).catch(() => {});
+      sendRoomAction(roomId, { type: "close", hostToken }).catch(() => {});
     }
     router.push("/split/summary");
   }
@@ -440,6 +564,8 @@ export default function AssignPage() {
   const allAssigned = state.lineItems.every((item) => {
     return isLineItemFullyAssigned(item);
   });
+  const nonCoveredPayerCount = state.people.filter((person) => !person.covered).length;
+  const canContinue = allAssigned && nonCoveredPayerCount >= 2;
 
   // Admin override is only allowed when the selected person is NOT actively
   // connected (never joined, or has tapped "I'm done"). While they are online
@@ -467,11 +593,13 @@ export default function AssignPage() {
             <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400 whitespace-nowrap">
-                {roomState.connectedPeople.length} of {state.people.length} joined
+                {roomState.entryMode === "self_serve"
+                  ? `${state.people.length} joined`
+                  : `${roomState.connectedPeople.length} of ${state.people.length} joined`}
               </span>
             </div>
           )}
-          {loaded && state.people.length >= 2 && (
+          {loaded && (state.people.length >= 2 || roomId) && (
             <Button
               variant="outline"
               size="sm"
@@ -488,30 +616,56 @@ export default function AssignPage() {
 
         {loaded && (
           <div className="mt-4 -mx-3 rounded-3xl border border-border/30 bg-card/80 shadow-md shadow-black/10">
-            <div
-              className="flex gap-5 overflow-x-auto px-6 py-4"
-              style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
-            >
-              {state.people.map((person, i) => (
-                <PersonAvatar
-                  key={person.id}
-                  person={person}
-                  selected={person.id === selectedPersonId}
-                  runningTotal={runningTotal(person.id)}
-                  onClick={() => setSelectedPersonId(person.id)}
-                  colorIndex={i}
-                  online={roomState?.connectedPeople.includes(person.id)}
-                  done={roomState?.donePeople?.includes(person.id)}
-                />
-              ))}
-            </div>
+            {state.people.length > 0 ? (
+              <div
+                className="flex gap-5 overflow-x-auto px-6 py-4"
+                style={{ maskImage: "linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent)" }}
+              >
+                {state.people.map((person, i) => (
+                  <PersonAvatar
+                    key={person.id}
+                    person={person}
+                    selected={person.id === selectedPersonId}
+                    runningTotal={runningTotal(person.id)}
+                    onClick={() => setSelectedPersonId(person.id)}
+                    colorIndex={i}
+                    online={roomState?.connectedPeople.includes(person.id)}
+                    done={roomState?.donePeople?.includes(person.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="px-6 py-5 text-center">
+                <p className="text-base font-semibold">Invite your table to join</p>
+                <p className="mt-1 text-sm text-muted-foreground">Guests can type their names or join as Guest.</p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       <div className="px-6">
+        {roomId && !hostPersonId && (
+          <div className="mt-6 rounded-3xl border border-border/40 bg-card/70 p-4">
+            <p className="text-base font-semibold">Eating too?</p>
+            <p className="mt-1 text-sm text-muted-foreground">Add yourself without scanning the invite link.</p>
+            <div className="mt-4 flex gap-3">
+              <input
+                value={hostName}
+                onChange={(event) => setHostName(event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter") void addHostParticipant(); }}
+                placeholder="Your name"
+                className="flex h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <Button className="h-11 rounded-xl" disabled={!hostName.trim()} onClick={addHostParticipant}>Add me</Button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-3 mt-6 flex items-center justify-between gap-3">
-          {selectedPersonIsOnline ? (
+          {state.people.length === 0 ? (
+            <p className="text-base font-semibold text-muted-foreground">Waiting for people to join</p>
+          ) : selectedPersonIsOnline ? (
             <div className="flex items-center gap-2 min-w-0">
               <div className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400 animate-pulse" />
               <p className="text-base font-semibold text-muted-foreground truncate">
@@ -524,6 +678,31 @@ export default function AssignPage() {
                 {loaded ? `Assigning to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
               </p>
               <div className="flex items-center gap-2 shrink-0">
+                {roomId && selectedPersonId && (
+                  <>
+                    <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium" onClick={renameSelectedPerson}>
+                      Rename
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 rounded-full px-3 text-xs font-medium border-amber-500/40 text-amber-400 hover:bg-amber-500/10 hover:text-amber-400"
+                      onClick={toggleSelectedCovered}
+                    >
+                      <Gift className="mr-1 h-3 w-3" />
+                      {state.people.find((p) => p.id === selectedPersonId)?.covered ? "Covered" : "Cover"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 rounded-full px-2 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Remove selected participant"
+                      onClick={removeSelectedPerson}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
                 {hasAnyAssigned && (
                   <Dialog>
                     <DialogTrigger asChild>
@@ -809,11 +988,17 @@ export default function AssignPage() {
               Loading...
             </Button>
           </div>
-        ) : allAssigned ? (
+        ) : canContinue ? (
           <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
             <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={handleContinue}>
               Continue
             </Button>
+          </div>
+        ) : allAssigned ? (
+          <div className="flex justify-center pb-1">
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-amber-400">
+              Need at least 2 payers
+            </span>
           </div>
         ) : (
           <div className="flex justify-center pb-1">
@@ -833,6 +1018,7 @@ export default function AssignPage() {
           joinUrl={getRoomJoinUrl(roomId)}
           peopleCount={state.people.length}
           connectedCount={roomState?.connectedPeople.length ?? 0}
+          selfServe={roomState?.entryMode === "self_serve"}
         />
       )}
     </motion.main>

@@ -5,13 +5,21 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Gift, X } from "lucide-react";
+import { ArrowLeft, Gift, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { initials } from "@/lib/calculate";
+import {
+  createRoom,
+  generateRoomId,
+  generateRoomToken,
+  ROOM_AUTO_INVITE_KEY,
+  ROOM_HOST_TOKEN_KEY,
+  ROOM_SESSION_KEY,
+} from "@/lib/room-client";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import type { Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -23,6 +31,7 @@ export default function PeoplePage() {
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [animatingId, setAnimatingId] = useState<string | null>(null);
+  const [isCreatingLive, setIsCreatingLive] = useState(false);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
 
   useEffect(() => {
@@ -73,8 +82,33 @@ export default function PeoplePage() {
     setEditingId(null);
   }
 
+  async function startLiveSplit() {
+    if (!loaded || isCreatingLive || state.lineItems.length === 0) return;
+    setIsCreatingLive(true);
+    try {
+      const roomId = generateRoomId();
+      const hostToken = generateRoomToken();
+      await createRoom(roomId, {
+        type: "create",
+        hostToken,
+        entryMode: state.people.length > 0 ? "roster" : "self_serve",
+        lineItems: state.lineItems,
+        people: state.people,
+        restaurantName: state.restaurantName || undefined,
+      });
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem(ROOM_SESSION_KEY, roomId);
+        sessionStorage.setItem(ROOM_HOST_TOKEN_KEY, hostToken);
+        if (state.people.length === 0) sessionStorage.setItem(ROOM_AUTO_INVITE_KEY, "1");
+      }
+      router.push("/split/assign");
+    } catch {
+      setIsCreatingLive(false);
+    }
+  }
+
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
+    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -161,7 +195,16 @@ export default function PeoplePage() {
       )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="flex flex-col gap-3 rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+          <Button
+            variant="outline"
+            className="h-12 w-full gap-2 rounded-2xl text-base font-semibold border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
+            disabled={!loaded || isCreatingLive}
+            onClick={startLiveSplit}
+          >
+            <UserPlus className="h-4 w-4" />
+            {isCreatingLive ? "Starting live split..." : "Start Live Split"}
+          </Button>
           <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || state.people.length < 2} onClick={() => router.push("/split/assign")}>
             {!loaded ? "Loading..." : state.people.length < 2 ? "Add at least 2 people" : `Continue with ${state.people.length} people`}
           </Button>

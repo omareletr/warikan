@@ -6,7 +6,7 @@
  */
 
 import { APP_URL } from "@/lib/platform";
-import type { RoomAction, RoomState } from "@/lib/types";
+import type { RoomAction, RoomIdentity, RoomJoinResult, RoomState } from "@/lib/types";
 
 // ─── ID / URL helpers ─────────────────────────────────────────────────────────
 
@@ -83,6 +83,14 @@ export async function createRoom(roomId: string, action: RoomAction): Promise<Ro
  */
 export async function sendRoomAction(roomId: string, action: RoomAction): Promise<RoomState> {
   return postRoomAction(roomId, action);
+}
+
+export async function sendRoomJoinAction(roomId: string, action: RoomAction): Promise<RoomJoinResult> {
+  const result = await postRoomAction(roomId, action) as unknown;
+  if (result && typeof result === "object" && "room" in result) {
+    return result as RoomJoinResult;
+  }
+  throw new Error("Join action did not return an identity token");
 }
 
 /**
@@ -200,6 +208,15 @@ export function subscribeToRoom(
  * coupling to that module.
  */
 export const ROOM_SESSION_KEY = "warikan_assign_room_id";
+export const ROOM_HOST_TOKEN_KEY = "warikan_assign_host_token";
+export const ROOM_HOST_PERSON_KEY = "warikan_assign_host_person";
+export const ROOM_AUTO_INVITE_KEY = "warikan_assign_auto_invite";
+
+export function generateRoomToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
 
 /**
  * Reads the active room ID from sessionStorage. If one exists, fires a
@@ -214,7 +231,11 @@ export function closeRoomIfActive(): void {
   if (!roomId) return;
   // Key removed optimistically — on failure the room TTL handles eventual cleanup.
   sessionStorage.removeItem(ROOM_SESSION_KEY);
-  postRoomAction(roomId, { type: "close" }).catch(() => {});
+  const hostToken = sessionStorage.getItem(ROOM_HOST_TOKEN_KEY) ?? undefined;
+  sessionStorage.removeItem(ROOM_HOST_TOKEN_KEY);
+  sessionStorage.removeItem(ROOM_HOST_PERSON_KEY);
+  sessionStorage.removeItem(ROOM_AUTO_INVITE_KEY);
+  postRoomAction(roomId, { type: "close", hostToken }).catch(() => {});
 }
 
 // ─── Per-device identity persistence ─────────────────────────────────────────
@@ -225,16 +246,33 @@ const storageKey = (roomId: string) => `warikan_room_person_${roomId}`;
  * Returns the personId this device has claimed for the given room, or null.
  */
 export function getLocalRoomPersonId(roomId: string): string | null {
+  return getLocalRoomIdentity(roomId)?.personId ?? null;
+}
+
+export function getLocalRoomIdentity(roomId: string): RoomIdentity | null {
   if (typeof localStorage === "undefined") return null;
-  return localStorage.getItem(storageKey(roomId));
+  const raw = localStorage.getItem(storageKey(roomId));
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as RoomIdentity;
+    if (parsed.personId && parsed.participantToken) return parsed;
+  } catch {
+    // Older builds stored only the person id. Treat it as non-tokened legacy data.
+    return { personId: raw, participantToken: "" };
+  }
+  return null;
 }
 
 /**
  * Persists the personId claimed by this device for the given room.
  */
 export function setLocalRoomPersonId(roomId: string, personId: string): void {
+  setLocalRoomIdentity(roomId, { personId, participantToken: "" });
+}
+
+export function setLocalRoomIdentity(roomId: string, identity: RoomIdentity): void {
   if (typeof localStorage === "undefined") return;
-  localStorage.setItem(storageKey(roomId), personId);
+  localStorage.setItem(storageKey(roomId), JSON.stringify(identity));
 }
 
 /**

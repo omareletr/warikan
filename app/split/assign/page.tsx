@@ -317,7 +317,7 @@ export default function AssignPage() {
   }
 
   function toggleQuickPortionAssignment(itemId: string) {
-    if (selectedPersonIsOnline) return;
+    if (selectedPersonIsRemoteControlled) return;
     void hapticTap();
     let changed = false;
     const updatedItems = state.lineItems.map((item) => {
@@ -567,10 +567,12 @@ export default function AssignPage() {
   const nonCoveredPayerCount = state.people.filter((person) => !person.covered).length;
   const canContinue = allAssigned && nonCoveredPayerCount >= 2;
 
-  // Admin override is only allowed when the selected person is NOT actively
-  // connected (never joined, or has tapped "I'm done"). While they are online
-  // (green dot) the host cannot assign OR unassign on their behalf.
-  const selectedPersonIsOnline = roomState?.connectedPeople.includes(selectedPersonId) ?? false;
+  // Admin override is only blocked when the selected person is controlled by a
+  // remote guest session. The host can add themselves as a participant from this
+  // page, which also marks that person as connected; don't treat that local host
+  // identity as a remote guest or the host can't claim their own dishes.
+  const selectedPersonIsRemoteControlled = selectedPersonId !== hostPersonId
+    && (roomState?.connectedPeople.includes(selectedPersonId) ?? false);
 
   const hasUnclaimed = state.lineItems.some((item) => {
     return !isLineItemFullyAssigned(item);
@@ -665,7 +667,7 @@ export default function AssignPage() {
         <div className="mb-3 mt-6 flex items-center justify-between gap-3">
           {state.people.length === 0 ? (
             <p className="text-base font-semibold text-muted-foreground">Waiting for people to join</p>
-          ) : selectedPersonIsOnline ? (
+          ) : selectedPersonIsRemoteControlled ? (
             <div className="flex items-center gap-2 min-w-0">
               <div className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400 animate-pulse" />
               <p className="text-base font-semibold text-muted-foreground truncate">
@@ -750,14 +752,14 @@ export default function AssignPage() {
               const claimEntries = Object.entries(claimsByPerson);
               const hasRemovableChips = portions.some((portion) => (
                 portion.assignedToIds.some((pid) => !roomState?.connectedPeople.includes(pid))
-              )) && !selectedPersonIsOnline;
+              )) && !selectedPersonIsRemoteControlled;
 
               return (
                 <div
                   key={item.id}
                   className={cn(
                     "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
-                    selectedPersonIsOnline
+                    selectedPersonIsRemoteControlled
                       ? "border-transparent opacity-60 cursor-default"
                       : isAssignedToMe
                       ? "border-primary/40 bg-primary/5"
@@ -766,10 +768,10 @@ export default function AssignPage() {
                 >
                   <div
                     role="button"
-                    tabIndex={selectedPersonIsOnline ? -1 : 0}
+                    tabIndex={selectedPersonIsRemoteControlled ? -1 : 0}
                     className={cn(
                       "flex flex-col gap-3 text-left",
-                      selectedPersonIsOnline ? "cursor-default" : "cursor-pointer active:opacity-75"
+                      selectedPersonIsRemoteControlled ? "cursor-default" : "cursor-pointer active:opacity-75"
                     )}
                     onClick={() => toggleQuickPortionAssignment(item.id)}
                     onKeyDown={(event) => {
@@ -820,7 +822,7 @@ export default function AssignPage() {
                           })}
                         </div>
                       )}
-                      {assignedPortions > 0 && !selectedPersonIsOnline && (
+                      {assignedPortions > 0 && !selectedPersonIsRemoteControlled && (
                         <button
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
@@ -854,18 +856,18 @@ export default function AssignPage() {
                               <div
                                 key={portion.id}
                                 role="button"
-                                tabIndex={selectedPersonIsOnline ? -1 : 0}
-                                onClick={() => !selectedPersonIsOnline && togglePortionAssignment(item.id, portionIndex)}
+                                tabIndex={selectedPersonIsRemoteControlled ? -1 : 0}
+                                onClick={() => !selectedPersonIsRemoteControlled && togglePortionAssignment(item.id, portionIndex)}
                                 onKeyDown={(event) => {
                                   if (event.key === "Enter" || event.key === " ") {
                                     event.preventDefault();
-                                    if (!selectedPersonIsOnline) togglePortionAssignment(item.id, portionIndex);
+                                    if (!selectedPersonIsRemoteControlled) togglePortionAssignment(item.id, portionIndex);
                                   }
                                 }}
                                 className={cn(
                                   "flex min-h-12 items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
                                   selected ? "bg-primary/10" : "bg-secondary/50",
-                                  selectedPersonIsOnline ? "cursor-default opacity-70" : "cursor-pointer active:opacity-75"
+                                  selectedPersonIsRemoteControlled ? "cursor-default opacity-70" : "cursor-pointer active:opacity-75"
                                 )}
                               >
                                 <div className="min-w-0">
@@ -877,7 +879,7 @@ export default function AssignPage() {
                                       const person = state.people.find((p) => p.id === pid);
                                       if (!person) return null;
                                       const color = personColor(pid);
-                                      const removable = !roomState?.connectedPeople.includes(pid) && !selectedPersonIsOnline;
+                                      const removable = !roomState?.connectedPeople.includes(pid) && !selectedPersonIsRemoteControlled;
                                       const chipClassName = cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text);
                                       if (!removable) {
                                         return (
@@ -919,16 +921,17 @@ export default function AssignPage() {
             const isAssignedToMe = singleAssignedIds.includes(selectedPersonId);
             const claimedByOthers = singleAssignedIds.length > 0 && !isAssignedToMe;
             // In collab mode the host can override only when the selected person is not
-            // actively online. If they are connected (green dot), block all changes.
-            const effectivelyClaimedByOthers = (roomId && !selectedPersonIsOnline) ? false : claimedByOthers;
+            // actively controlled by a remote guest. The host's own added participant
+            // remains editable from the host page.
+            const effectivelyClaimedByOthers = (roomId && !selectedPersonIsRemoteControlled) ? false : claimedByOthers;
 
             return (
               <button
                 key={item.id}
-                onClick={() => !selectedPersonIsOnline && !effectivelyClaimedByOthers && toggleAssignment(item.id)}
+                onClick={() => !selectedPersonIsRemoteControlled && !effectivelyClaimedByOthers && toggleAssignment(item.id)}
                 className={cn(
                   "flex items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
-                  selectedPersonIsOnline
+                  selectedPersonIsRemoteControlled
                     ? "cursor-default border-transparent opacity-60"
                     : isAssignedToMe
                     ? "border-primary/40 bg-primary/5 active:opacity-75"

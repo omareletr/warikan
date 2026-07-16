@@ -4,18 +4,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
-import { ArrowLeft, Gift, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeft, Gift, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { InviteDrawer } from "@/components/split/invite-drawer";
 import { useSplitFlow } from "@/lib/split-flow-context";
@@ -76,6 +73,7 @@ export default function AssignPage() {
   const [hostName, setHostName] = useState("");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
 
   // Keep a ref to the latest lineItems so the SSE callback never reads a stale closure.
   // Two-part strategy:
@@ -519,10 +517,10 @@ export default function AssignPage() {
   }
 
   async function removeSelectedPerson() {
-    if (!roomId || !hostToken || !selectedPersonId) return;
+    if (!roomId || !hostToken || !selectedPersonId) return false;
     const person = state.people.find((p) => p.id === selectedPersonId);
-    if (!person) return;
-    if (!window.confirm(`Remove ${person.name} from this split? Their dish claims will be unassigned.`)) return;
+    if (!person) return false;
+    if (!window.confirm(`Remove ${person.name} from this split? Their dish claims will be unassigned.`)) return false;
     try {
       const updated = await sendRoomAction(roomId, {
         type: "remove_person",
@@ -539,9 +537,31 @@ export default function AssignPage() {
       }
       const updatedItems = applyPortionAssignments(lineItemsRef.current, updated.portionAssignments ?? {});
       setLineItems(updatedItems);
+      return true;
     } catch {
       // Ignore transient failures.
+      return false;
     }
+  }
+
+  async function renameSelectedPersonFromManage() {
+    setManageOpen(false);
+    await renameSelectedPerson();
+  }
+
+  async function toggleSelectedCoveredFromManage() {
+    await toggleSelectedCovered();
+    setManageOpen(false);
+  }
+
+  async function removeSelectedPersonFromManage() {
+    if (await removeSelectedPerson()) setManageOpen(false);
+  }
+
+  function clearAllAssignmentsFromManage() {
+    if (!window.confirm("Clear all assignments? You'll need to start over.")) return;
+    clearAllAssignments();
+    setManageOpen(false);
   }
 
   async function handleContinue() {
@@ -566,6 +586,7 @@ export default function AssignPage() {
   });
   const nonCoveredPayerCount = state.people.filter((person) => !person.covered).length;
   const canContinue = allAssigned && nonCoveredPayerCount >= 2;
+  const selectedPerson = state.people.find((person) => person.id === selectedPersonId);
 
   // Admin override is only blocked when the selected person is controlled by a
   // remote guest session. The host can add themselves as a participant from this
@@ -664,75 +685,36 @@ export default function AssignPage() {
           </div>
         )}
 
-        <div className="mb-3 mt-6 flex items-center justify-between gap-3">
+        <div className="mb-3 mt-6 flex flex-col gap-2">
           {state.people.length === 0 ? (
             <p className="text-base font-semibold text-muted-foreground">Waiting for people to join</p>
           ) : selectedPersonIsRemoteControlled ? (
             <div className="flex items-center gap-2 min-w-0">
               <div className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400 animate-pulse" />
               <p className="text-base font-semibold text-muted-foreground truncate">
-                {state.people.find((p) => p.id === selectedPersonId)?.name ?? ""} is claiming dishes…
+                {selectedPerson?.name ?? ""} is claiming dishes…
               </p>
             </div>
           ) : (
             <>
-              <p className="text-base font-semibold text-muted-foreground truncate min-w-0">
-                {loaded ? `Assigning to ${state.people.find((p) => p.id === selectedPersonId)?.name ?? ""}` : ""}
+              <p className="min-w-0 text-base font-semibold text-muted-foreground truncate">
+                {loaded ? `Assigning to ${selectedPerson?.name ?? ""}` : ""}
               </p>
-              <div className="flex items-center gap-2 shrink-0">
-                {roomId && selectedPersonId && (
-                  <>
-                    <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium" onClick={renameSelectedPerson}>
-                      Rename
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 rounded-full px-3 text-xs font-medium border-amber-500/40 text-amber-400 hover:bg-amber-500/10 hover:text-amber-400"
-                      onClick={toggleSelectedCovered}
-                    >
-                      <Gift className="mr-1 h-3 w-3" />
-                      {state.people.find((p) => p.id === selectedPersonId)?.covered ? "Covered" : "Cover"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 rounded-full px-2 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      aria-label="Remove selected participant"
-                      onClick={removeSelectedPerson}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </>
-                )}
-                {hasAnyAssigned && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive animate-in fade-in slide-in-from-right-2 duration-200">
-                        Clear all
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader className="text-left">
-                        <DialogTitle>Clear all assignments?</DialogTitle>
-                        <DialogDescription className="mt-1">
-                          All dish assignments will be removed. You&apos;ll need to start over.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <DialogFooter className="mt-2 flex-row gap-3">
-                        <DialogClose asChild>
-                          <Button variant="outline" className="h-12 flex-1 rounded-2xl text-base">Cancel</Button>
-                        </DialogClose>
-                        <DialogClose asChild>
-                          <Button variant="destructive" className="h-12 flex-1 rounded-2xl text-base" onClick={clearAllAssignments}>Clear all</Button>
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 {hasUnclaimed && (
                   <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs font-medium border-primary/40 text-primary hover:bg-primary/10 hover:text-primary" onClick={assignRestToSelected}>
-                    Assign rest
+                    Assign remaining
+                  </Button>
+                )}
+                {roomId && selectedPersonId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 rounded-full px-3 text-xs font-medium"
+                    onClick={() => setManageOpen(true)}
+                  >
+                    <MoreHorizontal className="mr-1 h-3.5 w-3.5" />
+                    Manage
                   </Button>
                 )}
               </div>
@@ -1012,6 +994,55 @@ export default function AssignPage() {
           </div>
         )}
       </div>
+
+      {roomId && (
+        <Sheet open={manageOpen} onOpenChange={setManageOpen}>
+          <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8 pt-6">
+            <SheetHeader className="text-left">
+              <SheetTitle>Manage {selectedPerson?.name ?? "participant"}</SheetTitle>
+              <SheetDescription>Update this participant or reset assignments.</SheetDescription>
+            </SheetHeader>
+            <div className="mt-6 flex flex-col gap-3">
+              <Button
+                variant="outline"
+                className="h-12 justify-start rounded-2xl text-base"
+                disabled={!hostToken || !selectedPersonId}
+                onClick={renameSelectedPersonFromManage}
+              >
+                Rename
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 justify-start rounded-2xl border-amber-500/40 text-base text-amber-400 hover:bg-amber-500/10 hover:text-amber-400"
+                disabled={!hostToken || !selectedPersonId}
+                onClick={toggleSelectedCoveredFromManage}
+              >
+                <Gift className="mr-2 h-4 w-4" />
+                {selectedPerson?.covered ? "Remove covered status" : "Mark as covered"}
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 justify-start rounded-2xl border-destructive/40 text-base text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={!hostToken || !selectedPersonId}
+                onClick={removeSelectedPersonFromManage}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Remove participant
+              </Button>
+              {hasAnyAssigned && (
+                <Button
+                  variant="destructive"
+                  className="mt-3 h-12 justify-start rounded-2xl text-base"
+                  disabled={!hostToken || !selectedPersonId}
+                  onClick={clearAllAssignmentsFromManage}
+                >
+                  Clear all assignments
+                </Button>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {roomId && (
         <InviteDrawer

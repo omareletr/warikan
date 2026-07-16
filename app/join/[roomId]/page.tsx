@@ -668,13 +668,20 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-col">
             <h1 className="text-xl font-bold leading-tight">
               {myPerson?.name ?? "You"}
             </h1>
-            <button className="text-left text-xs text-muted-foreground underline-offset-2 active:opacity-70" onClick={renameMe}>
-              Assign your dishes · Rename
-            </button>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Assign your dishes</span>
+              <button
+                aria-label="Rename yourself"
+                className="inline-flex min-h-8 items-center rounded-full border border-border/50 bg-secondary/70 px-3 text-xs font-medium text-foreground/90 transition active:scale-[0.98] active:opacity-80"
+                onClick={renameMe}
+              >
+                Rename
+              </button>
+            </div>
           </div>
         </div>
 
@@ -973,14 +980,41 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
           {!allClaimed && (
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Wifi className="h-4 w-4 text-muted-foreground" />
+                <motion.span
+                  aria-hidden="true"
+                  animate={shouldReduceMotion ? undefined : { scale: [1, 1.08, 1], opacity: [0.78, 1, 0.78] }}
+                  transition={shouldReduceMotion ? undefined : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                  className="inline-flex"
+                >
+                  <Wifi className="h-4 w-4 text-primary/80" />
+                </motion.span>
                 <span className="text-sm font-medium text-muted-foreground">
-                  Waiting for others…
+                  <span>Waiting for others</span>
+                  {shouldReduceMotion ? (
+                    <span>...</span>
+                  ) : (
+                    <span aria-hidden="true" className="inline-flex w-4 justify-start text-primary/80">
+                      {[0, 1, 2].map((dotIndex) => (
+                        <motion.span
+                          key={dotIndex}
+                          animate={{ opacity: [0.25, 1, 0.25] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: dotIndex * 0.18 }}
+                        >
+                          .
+                        </motion.span>
+                      ))}
+                    </span>
+                  )}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
-                <span className="text-xs tabular-nums text-muted-foreground">
+                <motion.div
+                  aria-hidden="true"
+                  animate={shouldReduceMotion ? undefined : { scale: [1, 1.35, 1], opacity: [0.75, 1, 0.75] }}
+                  transition={shouldReduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                  className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(52,211,153,0.55)]"
+                />
+                <span className="text-xs tabular-nums text-primary">
                   {room.connectedPeople.length} online
                 </span>
               </div>
@@ -997,8 +1031,8 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                <span className="text-xs tabular-nums text-muted-foreground">
+                <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
+                <span className="text-xs tabular-nums text-primary">
                   {room.connectedPeople.length} online
                 </span>
               </div>

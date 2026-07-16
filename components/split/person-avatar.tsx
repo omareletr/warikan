@@ -32,10 +32,18 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
       !selected && !person.covered && runningTotal !== undefined && runningTotal === 0 && "opacity-50"
     )}>
       <div className={cn(
-        "relative flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-shadow duration-200",
+        "relative flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-colors duration-200",
         selected ? `${color.activeBg} ${color.selectedText}` : `${color.bg} ${color.text}`,
-        selected && `ring-2 ${color.ring} ring-offset-2 ring-offset-background`,
       )}>
+        {selected && (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "pointer-events-none absolute inset-0 rounded-full outline outline-2 outline-offset-2",
+              color.outline
+            )}
+          />
+        )}
         {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
         {done ? (
           <span className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-400 ring-2 ring-background">

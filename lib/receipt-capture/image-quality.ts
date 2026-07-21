@@ -6,10 +6,10 @@ export const AUTO_CAPTURE_COOLDOWN_MS = 1800;
 
 const EDGE_DENSITY_MIN = 0.055;
 const EDGE_DENSITY_MAX = 0.38;
-const RECEIPT_CANDIDATE_EDGE_MIN = 0.095;
+const RECEIPT_CANDIDATE_EDGE_MIN = 0.075;
 const RECEIPT_CANDIDATE_EDGE_MAX = 0.3;
-const RECEIPT_CANDIDATE_SHARPNESS_MIN = 0.42;
-const READY_SCORE = 0.72;
+const RECEIPT_CANDIDATE_SHARPNESS_MIN = 0.34;
+const READY_SCORE = 0.64;
 const HOLD_STEADY_SCORE = 0.58;
 
 export type QualityStatus =
@@ -145,7 +145,7 @@ export function analyzeImageQuality(imageData: ImageData, previousGray?: Uint8Ar
   } else if (sharpness < 0.34) {
     status = "blurry";
     reasons.push("Hold still");
-  } else if (score >= READY_SCORE && stability > 0.58) {
+  } else if (score >= READY_SCORE && stability > 0.5) {
     status = "ready";
     reasons.push("Ready");
   } else if (score >= HOLD_STEADY_SCORE) {

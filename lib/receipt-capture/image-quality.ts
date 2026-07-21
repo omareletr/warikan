@@ -9,6 +9,7 @@ const EDGE_DENSITY_MAX = 0.38;
 const RECEIPT_CANDIDATE_EDGE_MIN = 0.075;
 const RECEIPT_CANDIDATE_EDGE_MAX = 0.3;
 const RECEIPT_CANDIDATE_SHARPNESS_MIN = 0.34;
+const PAPER_PIXEL_RATIO_MIN = 0.08;
 const READY_SCORE = 0.64;
 const HOLD_STEADY_SCORE = 0.58;
 
@@ -31,6 +32,7 @@ export interface ImageQualityResult {
   brightness: number;
   darkPixelRatio: number;
   glarePixelRatio: number;
+  paperPixelRatio: number;
   sharpness: number;
   stability: number;
   gray: Uint8Array;
@@ -109,17 +111,27 @@ export function analyzeImageQuality(imageData: ImageData, previousGray?: Uint8Ar
   let brightnessSum = 0;
   let darkPixels = 0;
   let glarePixels = 0;
+  let paperPixels = 0;
 
   for (let i = 0; i < gray.length; i += 1) {
     const value = gray[i];
+    const pixel = i * 4;
+    const red = data[pixel];
+    const green = data[pixel + 1];
+    const blue = data[pixel + 2];
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    const saturation = max === 0 ? 0 : (max - min) / max;
     brightnessSum += value;
     if (value < 48) darkPixels += 1;
     if (value > 238) glarePixels += 1;
+    if (value > 145 && saturation < 0.32) paperPixels += 1;
   }
 
   const brightness = brightnessSum / gray.length / 255;
   const darkPixelRatio = darkPixels / gray.length;
   const glarePixelRatio = glarePixels / gray.length;
+  const paperPixelRatio = paperPixels / gray.length;
   const exposureScore = scoreRange(brightness, 0.2, 0.36, 0.72, 0.9);
   const darkScore = clamp01(1 - darkPixelRatio / 0.42);
   const glareScore = clamp01(1 - glarePixelRatio / 0.18);
@@ -127,6 +139,7 @@ export function analyzeImageQuality(imageData: ImageData, previousGray?: Uint8Ar
   const score = clamp01(edgeScore * 0.28 + sharpness * 0.24 + exposureScore * 0.2 + stability * 0.16 + darkScore * 0.07 + glareScore * 0.05);
   const hasReceiptCandidate =
     barcodeFound ||
+    (paperPixelRatio >= PAPER_PIXEL_RATIO_MIN && density >= 0.035 && density <= RECEIPT_CANDIDATE_EDGE_MAX) ||
     (density >= RECEIPT_CANDIDATE_EDGE_MIN &&
       density <= RECEIPT_CANDIDATE_EDGE_MAX &&
       sharpness >= RECEIPT_CANDIDATE_SHARPNESS_MIN);
@@ -142,7 +155,7 @@ export function analyzeImageQuality(imageData: ImageData, previousGray?: Uint8Ar
   } else if (!hasReceiptCandidate) {
     status = density >= EDGE_DENSITY_MIN ? "searching" : "too_far";
     reasons.push(density >= EDGE_DENSITY_MIN ? "Find the receipt" : "Move closer");
-  } else if (sharpness < 0.34) {
+  } else if (sharpness < 0.26) {
     status = "blurry";
     reasons.push("Hold still");
   } else if (score >= READY_SCORE && stability > 0.5) {
@@ -155,7 +168,7 @@ export function analyzeImageQuality(imageData: ImageData, previousGray?: Uint8Ar
     reasons.push("Find the receipt");
   }
 
-  return { score, status, reasons, edgeDensity: density, brightness, darkPixelRatio, glarePixelRatio, sharpness, stability, gray };
+  return { score, status, reasons, edgeDensity: density, brightness, darkPixelRatio, glarePixelRatio, paperPixelRatio, sharpness, stability, gray };
 }
 
 export function isQualityReady(result: ImageQualityResult) {

@@ -27,7 +27,7 @@ export function ScanOverlay({ status, quality, permissionDenied }: ScanOverlayPr
         <div className="absolute right-0 bg-black/55" style={{ top: frameTop, height: SCAN_FRAME.height, left: frameLeft }} />
       </div>
 
-      <motion.div
+      <div
         className="absolute left-1/2 top-1/2"
         style={{
           width: SCAN_FRAME.width,
@@ -35,25 +35,30 @@ export function ScanOverlay({ status, quality, permissionDenied }: ScanOverlayPr
           borderRadius: SCAN_FRAME.radius,
           transform: `translate(-50%, calc(-50% + ${SCAN_FRAME.topOffset}px))`,
         }}
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.22 }}
       >
-        <div className="absolute left-0 right-0 top-5 flex justify-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={status}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}
-            >
-              <QualityHints quality={quality} status={status} />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        <div className={`h-full w-full rounded-[28px] border transition-colors duration-200 ${isReady ? "border-white/85" : "border-white/35"}`} />
-      </motion.div>
+        <motion.div
+          className="relative h-full w-full"
+          style={{ borderRadius: SCAN_FRAME.radius }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.22 }}
+        >
+          <div className="absolute left-0 right-0 top-5 flex justify-center">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={status}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18 }}
+              >
+                <QualityHints quality={quality} status={status} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div className={`h-full w-full rounded-[28px] border transition-colors duration-200 ${isReady ? "border-white/85" : "border-white/35"}`} />
+        </motion.div>
+      </div>
 
       <AnimatePresence>
         {status === "capturing" && (

@@ -6,6 +6,9 @@ export const AUTO_CAPTURE_COOLDOWN_MS = 1800;
 
 const EDGE_DENSITY_MIN = 0.055;
 const EDGE_DENSITY_MAX = 0.38;
+const RECEIPT_CANDIDATE_EDGE_MIN = 0.095;
+const RECEIPT_CANDIDATE_EDGE_MAX = 0.3;
+const RECEIPT_CANDIDATE_SHARPNESS_MIN = 0.42;
 const READY_SCORE = 0.72;
 const HOLD_STEADY_SCORE = 0.58;
 
@@ -122,6 +125,11 @@ export function analyzeImageQuality(imageData: ImageData, previousGray?: Uint8Ar
   const glareScore = clamp01(1 - glarePixelRatio / 0.18);
   const edgeScore = barcodeFound ? 1 : scoreRange(density, 0.025, EDGE_DENSITY_MIN, 0.26, EDGE_DENSITY_MAX);
   const score = clamp01(edgeScore * 0.28 + sharpness * 0.24 + exposureScore * 0.2 + stability * 0.16 + darkScore * 0.07 + glareScore * 0.05);
+  const hasReceiptCandidate =
+    barcodeFound ||
+    (density >= RECEIPT_CANDIDATE_EDGE_MIN &&
+      density <= RECEIPT_CANDIDATE_EDGE_MAX &&
+      sharpness >= RECEIPT_CANDIDATE_SHARPNESS_MIN);
   const reasons: string[] = [];
   let status: QualityStatus = "searching";
 
@@ -131,12 +139,12 @@ export function analyzeImageQuality(imageData: ImageData, previousGray?: Uint8Ar
   } else if (brightness > 0.86 || glarePixelRatio > 0.2) {
     status = "too_bright";
     reasons.push("Reduce glare");
+  } else if (!hasReceiptCandidate) {
+    status = density >= EDGE_DENSITY_MIN ? "searching" : "too_far";
+    reasons.push(density >= EDGE_DENSITY_MIN ? "Find the receipt" : "Move closer");
   } else if (sharpness < 0.34) {
     status = "blurry";
     reasons.push("Hold still");
-  } else if (density < EDGE_DENSITY_MIN && !barcodeFound) {
-    status = "too_far";
-    reasons.push("Move closer");
   } else if (score >= READY_SCORE && stability > 0.58) {
     status = "ready";
     reasons.push("Ready");

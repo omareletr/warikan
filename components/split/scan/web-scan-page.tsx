@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Camera, ImagePlus } from "lucide-react";
+import { ArrowLeft, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CapturePreview } from "@/components/split/scan/capture-preview";
 import { ScanOverlay } from "@/components/split/scan/scan-overlay";
@@ -165,15 +165,10 @@ export function WebScanPage({ setImage }: WebScanPageProps) {
         )}
       </AnimatePresence>
 
-      <div className="absolute left-0 right-0 top-0 flex items-center justify-between px-4 pb-4 pt-12">
+      <div className="absolute left-0 right-0 top-0 flex items-center px-4 pb-4 pt-12">
         <button aria-label="Go back" className="flex h-11 w-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-xl transition-transform active:scale-95" onClick={() => router.push("/")}>
           <ArrowLeft className="h-5 w-5" />
         </button>
-        {!permissionDenied && (
-          <button aria-label="Upload photo" className="flex h-11 w-11 items-center justify-center rounded-full bg-black/35 text-white/85 backdrop-blur-xl transition-transform active:scale-95" onClick={() => uploadInputRef.current?.click()}>
-            <ImagePlus className="h-4 w-4" />
-          </button>
-        )}
       </div>
 
       {!permissionDenied && (
@@ -192,9 +187,7 @@ export function WebScanPage({ setImage }: WebScanPageProps) {
             >
               <span className="h-12 w-12 rounded-full bg-white" />
             </motion.button>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white/60" aria-hidden="true">
-              <Camera className="h-5 w-5" />
-            </div>
+            <div className="h-12 w-12" aria-hidden="true" />
           </div>
         </div>
       )}

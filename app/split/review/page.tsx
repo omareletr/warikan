@@ -5,7 +5,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Camera, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +18,13 @@ import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
 import { normalizeLineItem, normalizeLineItems } from "@/lib/line-items";
 import type { Fee, LineItem } from "@/lib/types";
+
+type ParseErrorCode = "timeout" | "network_error" | "rate_limited" | "image_too_large" | "parse_failed";
+
+interface ParseMetadata {
+  confidence: "high" | "medium" | "low";
+  warnings: string[];
+}
 
 // Inline-editable fee row
 
@@ -109,7 +116,8 @@ export default function ReviewPage() {
   const { state, loaded, setReceiptData, updateLineItems, updateFees, updateRestaurantName, updateTax, updateTip } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ParseErrorCode | null>(null);
+  const [parseMetadata, setParseMetadata] = useState<ParseMetadata | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [itemsRef] = useAutoAnimate<HTMLDivElement>();
   const [feesRef] = useAutoAnimate<HTMLDivElement>();
@@ -123,6 +131,7 @@ export default function ReviewPage() {
     async function parseReceipt() {
       setLoading(true);
       setError(null);
+      setParseMetadata(null);
       try {
         const res = await fetch("/api/parse-receipt", {
           method: "POST",
@@ -134,9 +143,13 @@ export default function ReviewPage() {
           const err = await res.json().catch(() => ({}));
           const code = (err as { error?: string }).error;
           if (code === "timeout") throw new Error("timeout");
+          if (code === "network_error" || code === "upstream_error") throw new Error("network_error");
+          if (code === "rate_limited") throw new Error("rate_limited");
+          if (code === "image_too_large") throw new Error("image_too_large");
           throw new Error("parse_failed");
         }
         const data = await res.json();
+        setParseMetadata({ confidence: data.confidence ?? "high", warnings: data.warnings ?? [] });
         setReceiptData({
           restaurantName: data.restaurantName ?? "",
           lineItems: normalizeLineItems((data.lineItems ?? []).map(
@@ -152,7 +165,11 @@ export default function ReviewPage() {
         });
       } catch (e) {
         const msg = e instanceof Error ? e.message : "";
-        setError(msg === "timeout" ? "timeout" : "parse_failed");
+        setError(
+          msg === "timeout" || msg === "network_error" || msg === "rate_limited" || msg === "image_too_large"
+            ? msg
+            : "parse_failed"
+        );
       } finally {
         setLoading(false);
       }
@@ -206,6 +223,21 @@ export default function ReviewPage() {
     router.push("/split/people");
   }
 
+  function getErrorCopy(code: ParseErrorCode) {
+    switch (code) {
+      case "timeout":
+        return { title: "Receipt parsing timed out.", body: "The request took too long. Retry, retake the photo, or add items manually." };
+      case "network_error":
+        return { title: "Parser connection failed.", body: "Check your connection and try again, or add items manually." };
+      case "rate_limited":
+        return { title: "Too many scan attempts.", body: "Wait a bit before retrying, or add this receipt manually." };
+      case "image_too_large":
+        return { title: "Photo is too large.", body: "Retake or upload a smaller photo, or add items manually." };
+      default:
+        return { title: "We couldn't read this receipt.", body: "Use a clearer photo with more light, upload an existing photo, or add items manually." };
+    }
+  }
+
   const subtotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const totalFees = state.fees.reduce((s, f) => s + f.amount, 0);
 
@@ -224,17 +256,15 @@ export default function ReviewPage() {
 
       {error && (
         <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-5">
-          <p className="text-base font-medium text-destructive">
-            {error === "timeout" ? "Receipt parsing timed out." : "We couldn't read this receipt."}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {error === "timeout"
-              ? "The request took too long. Try again or add items manually."
-              : "Try a clearer photo with better lighting, or add items manually below."}
-          </p>
-          <div className="mt-4 flex gap-3">
+          <p className="text-base font-medium text-destructive">{getErrorCopy(error).title}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{getErrorCopy(error).body}</p>
+          <div className="mt-4 flex flex-wrap gap-3">
             <Button variant="outline" size="sm" onClick={() => { setError(null); setRetryKey((k) => k + 1); }}>
               Try again
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => router.push("/split/scan")}>
+              <Camera className="mr-1.5 h-4 w-4" />
+              Retake Photo
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setError(null)}>
               Add items manually
@@ -245,6 +275,22 @@ export default function ReviewPage() {
 
       {loaded && !loading && (
         <div className="mt-8 flex flex-col gap-8">
+          {parseMetadata && (parseMetadata.confidence !== "high" || parseMetadata.warnings.length > 0) && (
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-4">
+              <div className="flex gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-300" />
+                <div>
+                  <p className="text-sm font-medium text-amber-100">
+                    {parseMetadata.confidence === "low" ? "Low confidence scan" : "Review scan carefully"}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {parseMetadata.warnings[0] ?? "Some fields may need correction before splitting."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <section>
             <label className="mb-2 block text-base font-semibold text-muted-foreground">Restaurant</label>
             <Input

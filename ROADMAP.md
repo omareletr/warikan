@@ -42,7 +42,8 @@ Currently everything is local — splits live in `localStorage` on one device.
 
 ## Receipt Parsing Improvements
 
-- [ ] **Retry / manual correction flow** — If Gemini misreads the receipt badly, currently the user edits item by item. A "re-scan" button that re-submits the image (or lets you crop/rotate) would help.
+- [x] **Retry / manual correction flow** — Review now offers retry, retake photo, and manual entry recovery. Parser responses include confidence warnings for suspicious results.
+- [ ] **Crop / rotate repair tools** — Let users crop or rotate a captured receipt before re-submitting it when Gemini misreads the image.
 - [ ] **Multi-page receipts** — Long receipts sometimes need two photos. Allow uploading multiple images for a single parse pass.
 - [ ] **Receipt language support** — Gemini handles non-English receipts reasonably well already, but the UI strings are English-only. Internationalisation is a longer project.
 
@@ -63,7 +64,7 @@ Currently everything is local — splits live in `localStorage` on one device.
 - [ ] **End-to-end tests** — Playwright tests covering the core split flow (scan → review → people → assign → summary → payment).
 - [ ] **Rate limiting tuning** — Current limit is 10 requests/hour per IP via Upstash. Monitor usage and adjust.
 - [ ] **Error tracking** — Add Sentry (or similar) to catch runtime errors in production, both web and native.
-- [ ] **README update** — Update project structure section to reflect the Capacitor migration (`/lib/platform/`, `/app/split/detail/`, `ios/`, `android/`).
+- [x] **README update** — Project structure has been refreshed for receipt capture/parsing modules.
 - [ ] **Concurrent claim revert race (known, low risk)** — `handleItemTap`, `handleUnclaim`, and `handleShare` in `app/join/[roomId]/page.tsx` all close over the `room` prop at render time. If an SSE update arrives between the optimistic update and the API response, the `catch` revert calls `onRoomUpdate(room)` with a slightly stale snapshot (missing the SSE delta). In practice this is rare and self-correcting (the next SSE push restores truth), but a clean fix would be to revert via a functional state updater or re-fetch the room on error rather than reverting to the closed-over snapshot.
 
 ---

@@ -10,8 +10,8 @@ A mobile web app for splitting restaurant receipts fairly. Photograph a receipt,
 
 ## How It Works
 
-1. **Scan** — Take a photo or upload an image of your receipt
-2. **Review** — AI extracts line items; correct any mistakes and set tax & tip
+1. **Scan** — Take a photo or upload an image of your receipt, with assisted auto-capture and preview confirmation
+2. **Review** — AI extracts line items with confidence warnings; correct any mistakes and set tax & tip
 3. **People** — Add the names of everyone splitting the bill
 4. **Assign** — Tap a person, tap their dishes or split individual quantity portions
 5. **Summary** — See each person's itemized total
@@ -37,7 +37,8 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 
 ## Features
 
-- **AI receipt parsing** — Receipt photo sent directly to Gemini Flash; returns structured line items with no separate OCR step
+- **Reliable receipt capture** — Camera auto-capture uses image quality checks for light, glare, blur, text edges, and stability before showing a preview
+- **AI receipt parsing** — Receipt photo sent directly to Gemini Flash; returns structured line items with no separate OCR step, plus parser confidence and warnings
 - **Flexible tip & tax** — Quick-select tip percentages (15/18/20/25%) or enter a custom amount; tax and tip are prorated proportionally
 - **Fees support** — Extra line fees (service charge, delivery fee, etc.) split proportionally
 - **Per-portion quantity sharing** — Multi-quantity dishes can be split portion by portion, so one portion can be shared while another is assigned whole
@@ -55,7 +56,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 /app
   /page.tsx                    — Home (recent splits list)
   /join/[roomId]/page.tsx      — Guest live split session
-  /split/scan/page.tsx         — Camera / photo upload
+  /split/scan/page.tsx         — Camera / photo upload route shell
   /split/review/page.tsx       — Edit line items, set tax & tip
   /split/people/page.tsx       — Add people, toggle birthday mode
   /split/assign/page.tsx       — Assign dishes to people
@@ -68,11 +69,13 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 /components
   /ui/                         — shadcn/ui components
   /split/                      — App-specific components
+  /split/scan/                 — Scan UI, quality hints, and capture preview
 /lib
-  /gemini.ts                   — Gemini API client + receipt parsing prompt
   /calculate.ts                — Split calculation logic (pure functions)
   /line-items.ts               — Line item quantity/portion normalization helpers
   /payment-apps.ts             — Venmo / Cash App / PayPal deep link builders
+  /receipt-capture/            — Camera frame capture, quality scoring, image preprocessing
+  /receipt-parsing/            — Gemini parser service, schemas, confidence validation
   /split-flow-context.tsx      — React Context for split flow state
   /splits.ts                   — localStorage read/write for splits
   /types.ts                    — TypeScript interfaces

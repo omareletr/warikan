@@ -2,7 +2,7 @@ import { ReceiptParseError, ReceiptSchema, type ParsedReceipt, type ReceiptParse
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-const BASE_PROMPT = `Analyze this receipt image and extract receipt data as JSON only.
+const BASE_PROMPT = `Extract receipt data as JSON only.
 
 Schema:
 {
@@ -30,6 +30,19 @@ Rules:
 - totalAmount is the visible final receipt total when shown, otherwise null.
 - Add warnings for unreadable rows, uncertain prices, partial receipts, glare, blur, or totals that do not appear to reconcile.`;
 
+const IMAGE_PROMPT = `Analyze this receipt image.\n\n${BASE_PROMPT}`;
+
+const TEXT_PROMPT = `${BASE_PROMPT}
+
+Input source: Apple Vision OCR recognized text from a receipt.
+
+OCR-specific rules:
+- The text may contain OCR mistakes, wrapped lines, duplicated page headers/footers, and missing decimal separators.
+- Infer obvious price formats conservatively, but add warnings for uncertain rows.
+- Preserve item names as clean menu/product names, not OCR artifacts.
+- Exclude merchant address, phone number, server, table, order number, timestamps, payment card lines, and suggested tip blocks from lineItems.
+- If multiple pages are present, parse them as one receipt in page order.`;
+
 function cleanJsonText(rawText: string) {
   return rawText.replace(/```json\n?|```\n?/g, "").trim();
 }
@@ -53,11 +66,12 @@ export class GeminiReceiptParser implements ReceiptParser {
   }
 
   async parse(input: ReceiptParseInput): Promise<ParsedReceipt> {
-    return this.parseWithPrompt(input, BASE_PROMPT);
+    return this.parseWithPrompt(input, input.kind === "text" ? TEXT_PROMPT : IMAGE_PROMPT);
   }
 
   async repair(input: ReceiptParseInput, previousRawText?: string): Promise<ParsedReceipt> {
-    const repairPrompt = `${BASE_PROMPT}\n\nRepair pass: the previous extraction was malformed or suspicious. Re-read the receipt carefully and return a corrected JSON object. Previous raw response excerpt: ${previousRawText?.slice(0, 1000) ?? "none"}`;
+    const basePrompt = input.kind === "text" ? TEXT_PROMPT : IMAGE_PROMPT;
+    const repairPrompt = `${basePrompt}\n\nRepair pass: the previous extraction was malformed or suspicious. Re-read the receipt carefully and return a corrected JSON object. Previous raw response excerpt: ${previousRawText?.slice(0, 1000) ?? "none"}`;
     return this.parseWithPrompt(input, repairPrompt);
   }
 
@@ -73,7 +87,7 @@ export class GeminiReceiptParser implements ReceiptParser {
         signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ inlineData: { mimeType: input.mimeType, data: input.image } }, { text: prompt }] }],
+          contents: [{ parts: this.buildParts(input, prompt) }],
           generationConfig: { responseMimeType: "application/json", temperature: 0 },
         }),
       });
@@ -107,5 +121,12 @@ export class GeminiReceiptParser implements ReceiptParser {
       console.error("[parse-receipt] JSON.parse failure. finishReason:", finishReason, "rawText:", rawText.slice(0, 500));
       throw new ReceiptParseError("parse_error", "json_parse_failed", { rawText });
     }
+  }
+
+  private buildParts(input: ReceiptParseInput, prompt: string) {
+    if (input.kind === "text") {
+      return [{ text: `${prompt}\n\nRecognized receipt text:\n${input.text}` }];
+    }
+    return [{ inlineData: { mimeType: input.mimeType, data: input.image } }, { text: prompt }];
   }
 }

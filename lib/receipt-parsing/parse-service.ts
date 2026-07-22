@@ -23,5 +23,5 @@ export async function parseReceipt(input: ReceiptParseInput): Promise<ReceiptPar
   }
 
   const { confidence, warnings } = validateReceipt(receipt);
-  return { ...receipt, confidence, warnings, source: "gemini" };
+  return { ...receipt, confidence, warnings, source: input.kind === "text" ? "apple_ocr_gemini" : "gemini" };
 }

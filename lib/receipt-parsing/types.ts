@@ -28,12 +28,11 @@ export const ReceiptSchema = z.object({
 
 export type ParsedReceipt = z.infer<typeof ReceiptSchema>;
 export type ParseConfidence = "high" | "medium" | "low";
-export type ReceiptParserSource = "gemini";
+export type ReceiptParserSource = "gemini" | "apple_ocr_gemini";
 
-export interface ReceiptParseInput {
-  image: string;
-  mimeType: string;
-}
+export type ReceiptParseInput =
+  | { kind: "image"; image: string; mimeType: string }
+  | { kind: "text"; text: string; source: "apple_ocr" };
 
 export interface ReceiptParseResult extends ParsedReceipt {
   confidence: ParseConfidence;

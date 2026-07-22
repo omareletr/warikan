@@ -10,7 +10,7 @@ A mobile web app for splitting restaurant receipts fairly. Photograph a receipt,
 
 ## How It Works
 
-1. **Scan** — Take a photo or upload an image of your receipt, with assisted auto-capture and preview confirmation
+1. **Scan** — Take a photo or upload an image of your receipt; the iOS app uses Apple's native document scanner and on-device OCR
 2. **Review** — AI extracts line items with confidence warnings; correct any mistakes and set tax & tip
 3. **People** — Add the names of everyone splitting the bill
 4. **Assign** — Tap a person, tap their dishes or split individual quantity portions
@@ -30,7 +30,8 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 | Styling | Tailwind CSS |
 | Components | shadcn/ui (Radix UI primitives) |
 | Animations | Framer Motion |
-| Receipt Parsing | Google Gemini Flash (multimodal) |
+| Receipt Parsing | Apple VisionKit/Vision OCR on iOS + Google Gemini Flash for structured parsing |
+| Native App | Capacitor |
 | Deployment | Netlify |
 
 ---
@@ -38,6 +39,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 ## Features
 
 - **Reliable receipt capture** — Camera auto-capture uses image quality checks for light, glare, blur, text edges, and stability before showing a preview
+- **Native iOS receipt scanning** — Capacitor iOS uses Apple VisionKit's document scanner and Vision OCR, then sends recognized text to the backend for structured receipt parsing
 - **AI receipt parsing** — Receipt photo sent directly to Gemini Flash; returns structured line items with no separate OCR step, plus parser confidence and warnings
 - **Flexible tip & tax** — Quick-select tip percentages (15/18/20/25%) or enter a custom amount; tax and tip are prorated proportionally
 - **Fees support** — Extra line fees (service charge, delivery fee, etc.) split proportionally
@@ -79,7 +81,23 @@ Everything runs in the browser. No account required. Splits are saved to `localS
   /split-flow-context.tsx      — React Context for split flow state
   /splits.ts                   — localStorage read/write for splits
   /types.ts                    — TypeScript interfaces
+/ios/App/App
+  /ReceiptOCRPlugin.swift      — Capacitor plugin for Apple VisionKit/Vision receipt OCR
+  /MainViewController.swift    — Capacitor bridge controller registering app-local native plugins
 ```
+
+---
+
+## Native iOS
+
+The Capacitor iOS app uses Apple-native receipt capture on the scan screen:
+
+- `VNDocumentCameraViewController` provides Apple's document scanner UI, edge detection, and crop flow.
+- `VNRecognizeTextRequest` performs on-device OCR over captured receipt pages.
+- The app sends recognized text, not the raw scan image, to `/api/parse-receipt` so Gemini can convert OCR text into line items, tax, fees, and tip.
+- Photo-library fallback still uses the image-based parser.
+
+Capacitor 8 requires Node.js `>=22.0.0` for `npm run cap:sync:ios`.
 
 ---
 

@@ -5,6 +5,7 @@ import { parseReceipt } from "@/lib/receipt-parsing/parse-service";
 import { ReceiptParseError } from "@/lib/receipt-parsing/types";
 
 const MAX_BASE64_LENGTH = 13_400_000;
+const MAX_OCR_TEXT_LENGTH = 50_000;
 
 const ALLOWED_ORIGINS = [
   "https://warikan0.netlify.app",
@@ -45,20 +46,26 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  let body: { image?: string; mimeType?: string };
+  let body: { image?: string; mimeType?: string; text?: string; source?: string };
   try {
-    body = (await request.json()) as { image?: string; mimeType?: string };
+    body = (await request.json()) as { image?: string; mimeType?: string; text?: string; source?: string };
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const { image, mimeType } = body;
-  if (!image || !mimeType) return NextResponse.json({ error: "image and mimeType are required" }, { status: 400 });
-  if (!ALLOWED_MIME_TYPES.has(mimeType)) return NextResponse.json({ error: "unsupported_media_type" }, { status: 415 });
-  if (image.length > MAX_BASE64_LENGTH) return NextResponse.json({ error: "image_too_large" }, { status: 413 });
+  const { image, mimeType, text, source } = body;
+  const hasText = typeof text === "string" && text.trim().length > 0;
+  if (hasText) {
+    if (source !== "apple_ocr") return NextResponse.json({ error: "unsupported_text_source" }, { status: 400 });
+    if (text.length > MAX_OCR_TEXT_LENGTH) return NextResponse.json({ error: "text_too_large" }, { status: 413 });
+  } else {
+    if (!image || !mimeType) return NextResponse.json({ error: "image and mimeType are required" }, { status: 400 });
+    if (!ALLOWED_MIME_TYPES.has(mimeType)) return NextResponse.json({ error: "unsupported_media_type" }, { status: 415 });
+    if (image.length > MAX_BASE64_LENGTH) return NextResponse.json({ error: "image_too_large" }, { status: 413 });
+  }
 
   try {
-    const result = await parseReceipt({ image, mimeType });
+    const result = await parseReceipt(hasText ? { kind: "text", text: text.trim(), source: "apple_ocr" } : { kind: "image", image: image!, mimeType: mimeType! });
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof ReceiptParseError) {

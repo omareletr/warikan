@@ -9,6 +9,8 @@ const FLOW_KEY = "warikan_flow";
 interface SplitFlowState {
   image: string | null;
   imageMimeType: string | null;
+  ocrText: string | null;
+  ocrSource: "apple_ocr" | null;
   restaurantName: string;
   lineItems: LineItem[];
   fees: Fee[];
@@ -21,6 +23,8 @@ interface SplitFlowState {
 const initialState: SplitFlowState = {
   image: null,
   imageMimeType: null,
+  ocrText: null,
+  ocrSource: null,
   restaurantName: "",
   lineItems: [],
   fees: [],
@@ -46,6 +50,7 @@ interface SplitFlowContextValue {
   state: SplitFlowState;
   loaded: boolean;
   setImage: (image: string, mimeType: string) => void;
+  setReceiptText: (text: string, source: "apple_ocr") => void;
   setReceiptData: (data: {
     restaurantName?: string;
     lineItems: LineItem[];
@@ -77,13 +82,17 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loaded) return;
-    // Exclude raw image data — it can be up to 10 MB and contains PII.
-    const { image: _img, imageMimeType: _mime, ...persistable } = state;
+    // Exclude raw receipt capture data — it can contain PII.
+    const { image: _img, imageMimeType: _mime, ocrText: _ocrText, ocrSource: _ocrSource, ...persistable } = state;
     try { localStorage.setItem(FLOW_KEY, JSON.stringify(persistable)); } catch (e) { console.error("Failed to save session state:", e); }
   }, [state, loaded]);
 
   const setImage = useCallback((image: string, mimeType: string) => {
-    setState((prev) => ({ ...prev, image, imageMimeType: mimeType }));
+    setState((prev) => ({ ...prev, image, imageMimeType: mimeType, ocrText: null, ocrSource: null }));
+  }, []);
+
+  const setReceiptText = useCallback((text: string, source: "apple_ocr") => {
+    setState((prev) => ({ ...prev, image: null, imageMimeType: null, ocrText: text, ocrSource: source }));
   }, []);
 
   const setReceiptData = useCallback(
@@ -134,6 +143,8 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
     setState({
       image: null,
       imageMimeType: null,
+      ocrText: null,
+      ocrSource: null,
       restaurantName: split.restaurantName ?? "",
       lineItems: normalizeLineItems(split.lineItems),
       fees: split.fees,
@@ -155,6 +166,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
         state,
         loaded,
         setImage,
+        setReceiptText,
         setReceiptData,
         setPeople,
         updateLineItems,

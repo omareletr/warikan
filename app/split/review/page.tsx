@@ -17,9 +17,11 @@ import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
 import { normalizeLineItem, normalizeLineItems } from "@/lib/line-items";
+import { apiUrl } from "@/lib/platform";
+import { createId } from "@/lib/id";
 import type { Fee, LineItem } from "@/lib/types";
 
-type ParseErrorCode = "timeout" | "network_error" | "rate_limited" | "image_too_large" | "parse_failed";
+type ParseErrorCode = "timeout" | "network_error" | "rate_limited" | "image_too_large" | "text_too_large" | "parse_failed";
 
 interface ParseMetadata {
   confidence: "high" | "medium" | "low";
@@ -123,20 +125,23 @@ export default function ReviewPage() {
   const [feesRef] = useAutoAnimate<HTMLDivElement>();
 
   useEffect(() => {
-    if (loaded && !state.image && state.lineItems.length === 0) router.replace("/");
-  }, [loaded, state.image, state.lineItems.length, router]);
+    if (loaded && !state.image && !state.ocrText && state.lineItems.length === 0) router.replace("/");
+  }, [loaded, state.image, state.ocrText, state.lineItems.length, router]);
 
   useEffect(() => {
-    if (!state.image || state.lineItems.length > 0) return;
+    if ((!state.image && !state.ocrText) || state.lineItems.length > 0) return;
     async function parseReceipt() {
       setLoading(true);
       setError(null);
       setParseMetadata(null);
       try {
-        const res = await fetch("/api/parse-receipt", {
+        const payload = state.ocrText
+          ? { text: state.ocrText, source: state.ocrSource }
+          : { image: state.image, mimeType: state.imageMimeType };
+        const res = await fetch(apiUrl("/api/parse-receipt"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: state.image, mimeType: state.imageMimeType }),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) {
           if (res.status === 504 || res.status === 524) throw new Error("timeout");
@@ -146,6 +151,7 @@ export default function ReviewPage() {
           if (code === "network_error" || code === "upstream_error") throw new Error("network_error");
           if (code === "rate_limited") throw new Error("rate_limited");
           if (code === "image_too_large") throw new Error("image_too_large");
+          if (code === "text_too_large") throw new Error("text_too_large");
           throw new Error("parse_failed");
         }
         const data = await res.json();
@@ -154,11 +160,11 @@ export default function ReviewPage() {
           restaurantName: data.restaurantName ?? "",
           lineItems: normalizeLineItems((data.lineItems ?? []).map(
             (item: { name: string; quantity?: number; price: number }) => ({
-              id: crypto.randomUUID(), name: item.name, quantity: item.quantity ?? 1, price: item.price, assignedToIds: [],
+              id: createId(), name: item.name, quantity: item.quantity ?? 1, price: item.price, assignedToIds: [],
             })
           )),
           fees: (data.fees ?? []).map(
-            (fee: { name: string; amount: number }) => ({ id: crypto.randomUUID(), name: fee.name, amount: fee.amount })
+            (fee: { name: string; amount: number }) => ({ id: createId(), name: fee.name, amount: fee.amount })
           ),
           taxAmount: data.taxAmount ?? 0,
           tipAmount: data.tipAmount ?? 0,
@@ -167,6 +173,7 @@ export default function ReviewPage() {
         const msg = e instanceof Error ? e.message : "";
         setError(
           msg === "timeout" || msg === "network_error" || msg === "rate_limited" || msg === "image_too_large"
+            || msg === "text_too_large"
             ? msg
             : "parse_failed"
         );
@@ -175,10 +182,10 @@ export default function ReviewPage() {
       }
     }
     parseReceipt();
-  }, [state.image, state.imageMimeType, state.lineItems.length, setReceiptData, retryKey]);
+  }, [state.image, state.imageMimeType, state.ocrText, state.ocrSource, state.lineItems.length, setReceiptData, retryKey]);
 
   function addItem() {
-    const newItem: LineItem = normalizeLineItem({ id: crypto.randomUUID(), name: "", quantity: 1, price: 0, assignedToIds: [] });
+    const newItem: LineItem = normalizeLineItem({ id: createId(), name: "", quantity: 1, price: 0, assignedToIds: [] });
     updateLineItems([...state.lineItems, newItem]);
   }
 
@@ -191,7 +198,7 @@ export default function ReviewPage() {
   }
 
   function addFee() {
-    const newFee: Fee = { id: crypto.randomUUID(), name: "", amount: 0 };
+    const newFee: Fee = { id: createId(), name: "", amount: 0 };
     updateFees([...state.fees, newFee]);
   }
 
@@ -233,6 +240,8 @@ export default function ReviewPage() {
         return { title: "Too many scan attempts.", body: "Wait a bit before retrying, or add this receipt manually." };
       case "image_too_large":
         return { title: "Photo is too large.", body: "Retake or upload a smaller photo, or add items manually." };
+      case "text_too_large":
+        return { title: "Receipt text is too long.", body: "Retake a clearer single receipt, use a photo instead, or add items manually." };
       default:
         return { title: "We couldn't read this receipt.", body: "Use a clearer photo with more light, upload an existing photo, or add items manually." };
     }

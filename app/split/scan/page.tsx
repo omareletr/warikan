@@ -8,11 +8,11 @@ import { isNative } from "@/lib/platform";
 import { closeRoomIfActive } from "@/lib/room-client";
 
 export default function ScanPage() {
-  const { setImage, reset } = useSplitFlow();
+  const { setImage, setReceiptText, reset } = useSplitFlow();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { closeRoomIfActive(); reset(); }, []);
 
-  if (isNative()) return <NativeScanPage setImage={setImage} />;
+  if (isNative()) return <NativeScanPage setImage={setImage} setReceiptText={setReceiptText} />;
   return <WebScanPage setImage={setImage} />;
 }

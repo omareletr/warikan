@@ -13,12 +13,16 @@ interface ReceiptOCRPlugin {
 
 const ReceiptOCR = registerPlugin<ReceiptOCRPlugin>("ReceiptOCR");
 
-export function isAppleOCRAvailable(): boolean {
+export function isIOSNativePlatform(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 }
 
+export function isAppleOCRAvailable(): boolean {
+  return isIOSNativePlatform();
+}
+
 export async function scanReceiptWithAppleOCR(): Promise<AppleReceiptOCRResult> {
-  if (!isAppleOCRAvailable()) {
+  if (!isIOSNativePlatform()) {
     throw new Error("Apple receipt scanning is only available on iOS.");
   }
   return ReceiptOCR.scanReceipt();

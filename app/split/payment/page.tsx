@@ -23,6 +23,7 @@ import {
 } from "@/lib/payment-apps";
 import type { PaymentAppId } from "@/lib/payment-apps";
 import { APP_URL } from "@/lib/platform";
+import { createId } from "@/lib/id";
 import { ROOM_HOST_PERSON_KEY, ROOM_HOST_TOKEN_KEY, ROOM_SESSION_KEY, sendRoomAction } from "@/lib/room-client";
 
 /* ── Payment app logo SVGs ────────────────────────────────────────────────── */
@@ -206,7 +207,7 @@ export default function PaymentPage() {
     setSaving(true);
     setSaveError(null);
     const split: Split = {
-      id: state.editingSplitId ?? crypto.randomUUID(),
+      id: state.editingSplitId ?? createId(),
       date: new Date().toISOString(),
       restaurantName: state.restaurantName || undefined,
       lineItems: state.lineItems,

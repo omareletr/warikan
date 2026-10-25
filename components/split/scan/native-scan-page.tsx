@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, ImagePlus, Loader2, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isAppleOCRAvailable, pickNativePhoto, scanReceiptWithAppleOCR, takeNativePhoto } from "@/lib/platform";
+import { isIOSNativePlatform, pickNativePhoto, scanReceiptWithAppleOCR, takeNativePhoto } from "@/lib/platform";
 import { preprocessBase64Photo } from "@/lib/receipt-capture/image-preprocess";
 
 interface NativeScanPageProps {
@@ -14,17 +14,17 @@ interface NativeScanPageProps {
 
 export function NativeScanPage({ setImage, setReceiptText }: NativeScanPageProps) {
   const router = useRouter();
-  const appleOCRAvailable = isAppleOCRAvailable();
+  const isIOSNative = isIOSNativePlatform();
   const [loading, setLoading] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState("Scanning receipt...");
   const [error, setError] = useState<string | null>(null);
 
   async function handleScanReceipt() {
     setError(null);
-    setLoadingLabel(appleOCRAvailable ? "Scanning receipt..." : "Preparing photo...");
+    setLoadingLabel(isIOSNative ? "Scanning receipt..." : "Preparing photo...");
     setLoading(true);
     try {
-      if (!appleOCRAvailable) {
+      if (!isIOSNative) {
         const photo = await takeNativePhoto();
         const processed = await preprocessBase64Photo(photo);
         setImage(processed.base64, processed.mimeType);
@@ -43,9 +43,16 @@ export function NativeScanPage({ setImage, setReceiptText }: NativeScanPageProps
         setLoading(false);
         return;
       }
-      setError(msg);
+      setError(isIOSNative ? appleOCRErrorMessage(msg) : msg);
       setLoading(false);
     }
+  }
+
+  function appleOCRErrorMessage(message: string): string {
+    if (/no readable receipt text|ocr_empty/i.test(message)) {
+      return "No readable receipt text was found. Choose from Library instead.";
+    }
+    return "Apple document scanning is unavailable. Choose from Library instead.";
   }
 
   async function handlePhotoLibrary() {
@@ -80,14 +87,14 @@ export function NativeScanPage({ setImage, setReceiptText }: NativeScanPageProps
           <Receipt className="h-10 w-10 text-primary" />
         </div>
         <h1 className="text-2xl font-semibold">Scan Receipt</h1>
-        <p className="text-base text-muted-foreground">{appleOCRAvailable ? "Use Apple document scanning or choose a photo" : "Use your camera or photo library"}</p>
+        <p className="text-base text-muted-foreground">{isIOSNative ? "Use Apple document scanning or choose a photo" : "Use your camera or photo library"}</p>
       </div>
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="flex flex-col gap-3 rounded-3xl border border-border/30 bg-card/80 p-5 shadow-lg shadow-black/20 backdrop-blur-xl">
           {error && <p className="text-center text-sm text-destructive">{error}</p>}
           <Button className="h-14 w-full gap-3 rounded-2xl text-base font-semibold" disabled={loading} onClick={handleScanReceipt}>
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-            {loading ? loadingLabel : appleOCRAvailable ? "Scan Receipt" : "Take Photo"}
+            {loading ? loadingLabel : isIOSNative ? "Scan Receipt" : "Take Photo"}
           </Button>
           <Button variant="outline" className="h-14 w-full gap-3 rounded-2xl text-base font-semibold" disabled={loading} onClick={handlePhotoLibrary}>
             <ImagePlus className="h-5 w-5" />

@@ -1,7 +1,8 @@
 import type { LineItem, LineItemPortion } from "./types";
+import { createId } from "@/lib/id";
 
 function makePortion(assignedToIds: string[] = []): LineItemPortion {
-  return { id: crypto.randomUUID(), assignedToIds };
+  return { id: createId(), assignedToIds };
 }
 
 export function normalizeLineItem(item: LineItem): LineItem {
@@ -11,7 +12,7 @@ export function normalizeLineItem(item: LineItem): LineItem {
 
   if (item.portions?.length) {
     portions = item.portions.map((portion) => ({
-      id: portion.id || crypto.randomUUID(),
+      id: portion.id || createId(),
       assignedToIds: portion.assignedToIds ?? [],
     }));
   } else if (quantity <= 1) {

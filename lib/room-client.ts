@@ -5,7 +5,7 @@
  * real-time receipt-splitting feature.
  */
 
-import { APP_URL } from "@/lib/platform";
+import { APP_URL, apiUrl, isNative } from "@/lib/platform";
 import type { RoomAction, RoomIdentity, RoomJoinResult, RoomState } from "@/lib/types";
 
 // ─── ID / URL helpers ─────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ export function generateRoomId(): string {
  */
 export function getRoomJoinUrl(roomId: string): string {
   const base =
-    typeof window !== "undefined" && window.location.hostname === "localhost"
+    typeof window !== "undefined" && window.location.hostname === "localhost" && !isNative()
       ? window.location.origin
       : APP_URL;
   return `${base}/join/${roomId}`;
@@ -51,7 +51,7 @@ function buildApiError(code: string, message: string): ApiError {
 }
 
 async function postRoomAction(roomId: string, action: RoomAction): Promise<RoomState> {
-  const res = await fetch(`/api/room/${roomId}`, {
+  const res = await fetch(apiUrl(`/api/room/${roomId}`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(action),
@@ -99,7 +99,7 @@ export async function sendRoomJoinAction(roomId: string, action: RoomAction): Pr
  */
 export async function fetchRoom(roomId: string): Promise<RoomState | null> {
   try {
-    const res = await fetch(`/api/room/${roomId}`);
+    const res = await fetch(apiUrl(`/api/room/${roomId}`));
     if (res.status === 404) return null;
     if (!res.ok) return null;
     return (await res.json()) as RoomState;
@@ -145,7 +145,7 @@ export function subscribeToRoom(
   function connect(version: number) {
     if (destroyed) return;
 
-    const url = `/api/room/${roomId}/subscribe?since=${version}`;
+    const url = apiUrl(`/api/room/${roomId}/subscribe?since=${version}`);
     const source = new EventSource(url);
     es = source;
 

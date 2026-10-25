@@ -15,6 +15,16 @@ export interface CapturedPhoto {
   mimeType: string;
 }
 
+function imageMimeType(format: string | undefined): string {
+  const normalized = (format ?? "jpeg").toLowerCase();
+  if (normalized === "jpg" || normalized === "jpeg") return "image/jpeg";
+  if (normalized === "png") return "image/png";
+  if (normalized === "webp") return "image/webp";
+  if (normalized === "heic") return "image/heic";
+  if (normalized === "heif") return "image/heif";
+  return `image/${normalized}`;
+}
+
 /**
  * Read a browser File object as base64. Used on web for both the
  * camera-permission-denied fallback and the upload path.
@@ -50,7 +60,7 @@ export async function takeNativePhoto(): Promise<CapturedPhoto> {
   });
   return {
     base64: photo.base64String!,
-    mimeType: `image/${photo.format}`,
+    mimeType: imageMimeType(photo.format),
   };
 }
 
@@ -70,6 +80,6 @@ export async function pickNativePhoto(): Promise<CapturedPhoto> {
   });
   return {
     base64: photo.base64String!,
-    mimeType: `image/${photo.format}`,
+    mimeType: imageMimeType(photo.format),
   };
 }

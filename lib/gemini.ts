@@ -1,3 +1,5 @@
+import { apiUrl } from "@/lib/platform";
+
 export interface ParsedReceipt {
   restaurantName: string | null;
   lineItems: { name: string; quantity: number; price: number }[];
@@ -10,7 +12,7 @@ export async function parseReceiptImage(
   base64Image: string,
   mimeType: string
 ): Promise<ParsedReceipt> {
-  const response = await fetch("/api/parse-receipt", {
+  const response = await fetch(apiUrl("/api/parse-receipt"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image: base64Image, mimeType }),

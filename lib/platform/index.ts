@@ -9,5 +9,5 @@ export { APP_URL, apiUrl, isNative } from "./config";
 export { readFileAsBase64, takeNativePhoto, pickNativePhoto } from "./camera";
 export type { CapturedPhoto } from "./camera";
 export { hapticTap } from "./haptics";
-export { isAppleOCRAvailable, scanReceiptWithAppleOCR } from "./receipt-ocr";
+export { isAppleOCRAvailable, isIOSNativePlatform, scanReceiptWithAppleOCR } from "./receipt-ocr";
 export type { AppleReceiptOCRResult } from "./receipt-ocr";

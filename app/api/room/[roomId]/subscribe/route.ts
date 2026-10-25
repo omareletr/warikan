@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { Redis } from "@upstash/redis";
 import type { RoomState } from "@/lib/types";
+import { corsHeaders as sharedCorsHeaders } from "@/lib/cors";
 
 // SSE streams are always dynamic — never cache or statically render.
 export const dynamic = "force-dynamic";
@@ -26,27 +27,8 @@ const ROOM_ID_RE = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
 
 // ─── CORS ─────────────────────────────────────────────────────────────────
 
-const ALLOWED_ORIGINS = [
-  "https://warikan0.netlify.app",
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "capacitor://localhost",
-  "http://localhost",
-];
-
-function isAllowedOrigin(value: string): boolean {
-  if (ALLOWED_ORIGINS.some((o) => value.startsWith(o))) return true;
-  return /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app/.test(value);
-}
-
 function corsHeaders(origin: string): Record<string, string> {
-  const allowed = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    Vary: "Origin",
-  };
+  return sharedCorsHeaders(origin, "GET, OPTIONS");
 }
 
 // ─── SSE helpers ──────────────────────────────────────────────────────────

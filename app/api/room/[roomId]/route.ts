@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import type { RoomState, RoomAction, LineItem, Person } from "@/lib/types";
 import {
   applyPortionAssignments,
@@ -85,9 +85,12 @@ function sanitizeRoomState(state: PrivateRoomState): RoomState {
   return publicState;
 }
 
+// Deny by default: a room without a stored host key can't be administered.
 function isValidHostToken(state: PrivateRoomState, token?: string): boolean {
-  if (!state.hostTokenHash) return true;
-  return Boolean(token && hashToken(token) === state.hostTokenHash);
+  if (!state.hostTokenHash || !token) return false;
+  const given = Buffer.from(hashToken(token));
+  const stored = Buffer.from(state.hostTokenHash);
+  return given.length === stored.length && timingSafeEqual(given, stored);
 }
 
 function isValidParticipantToken(state: PrivateRoomState, personId?: string, token?: string): boolean {

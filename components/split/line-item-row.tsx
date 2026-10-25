@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { LineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculate";
-import { normalizeLineItem } from "@/lib/line-items";
+import { MAX_ITEM_QUANTITY, normalizeLineItem } from "@/lib/line-items";
 import { cn } from "@/lib/utils";
 
 interface LineItemRowProps {
@@ -27,7 +27,7 @@ export function LineItemRow({ item, onUpdate, onRemove }: LineItemRowProps) {
     onUpdate(normalizeLineItem({
       ...item,
       name: name.trim() || item.name,
-      quantity: Math.max(1, parseInt(quantity) || 1),
+      quantity: Math.min(MAX_ITEM_QUANTITY, Math.max(1, parseInt(quantity) || 1)),
       price: Math.max(0, parseFloat(price) || 0),
     }));
     setEditing(false);

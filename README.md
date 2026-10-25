@@ -68,6 +68,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
   /pay/page.tsx                — QR pay landing page
   /api/parse-receipt/route.ts  — Gemini API endpoint (server-side)
   /api/room/[roomId]/route.ts  — Live split room API
+  /manifest.ts                 — Web app manifest (name, icons)
 /components
   /ui/                         — shadcn/ui components
   /split/                      — App-specific components
@@ -81,6 +82,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
   /split-flow-context.tsx      — React Context for split flow state
   /splits.ts                   — localStorage read/write for splits
   /types.ts                    — TypeScript interfaces
+/scripts                       — Native build helper and app icon generation scripts (Recraft)
 /ios/App/App
   /ReceiptOCRPlugin.swift      — Capacitor plugin for Apple VisionKit/Vision receipt OCR
   /MainViewController.swift    — Capacitor bridge controller registering app-local native plugins
@@ -97,7 +99,7 @@ The Capacitor iOS app uses Apple-native receipt capture on the scan screen:
 - The app sends recognized text, not the raw scan image, to `/api/parse-receipt` so Gemini can convert OCR text into line items, tax, fees, and tip.
 - Photo-library fallback still uses the image-based parser.
 
-Capacitor 8 requires Node.js `>=22.0.0` for `npm run cap:sync:ios`.
+Capacitor 8 requires Node.js `>=22.0.0` for `npm run cap:sync:ios`. If `pod install` fails with an encoding error, run with `LANG=en_US.UTF-8`.
 
 ---
 

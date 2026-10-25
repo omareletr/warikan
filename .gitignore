@@ -32,3 +32,10 @@ next-env.d.ts
 
 # Local-only assets (not part of the web app)
 Anything ios May 2026/
+
+# Branding generation working dir (intermediate Recraft output; only chosen
+# assets get promoted to public/ and ios/)
+branding/
+
+# ShipStudio metadata
+.shipstudio/

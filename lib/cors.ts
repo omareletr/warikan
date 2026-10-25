@@ -7,14 +7,20 @@
  * return Access-Control-Allow-Origin for it.
  */
 
-const ALLOWED_ORIGINS = [
+// capacitor://localhost is kept for iOS builds made before the app hostname
+// changed to warikan.local.
+const PRODUCTION_ORIGINS = [
   "https://warikan0.netlify.app",
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost",
   "capacitor://warikan.local",
   "capacitor://localhost",
 ];
+
+// Only trusted when running locally, so a page served from someone's own
+// machine can't spend the hosted Gemini quota.
+const DEV_ORIGINS = ["http://localhost:3000", "http://localhost:3001", "http://localhost"];
+
+const ALLOWED_ORIGINS =
+  process.env.NODE_ENV === "production" ? PRODUCTION_ORIGINS : [...PRODUCTION_ORIGINS, ...DEV_ORIGINS];
 
 // Netlify deploy previews and branch deploys, e.g. https://staging--warikan0.netlify.app
 const NETLIFY_BRANCH_ORIGIN_RE = /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app(\/|$)/;

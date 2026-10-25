@@ -101,6 +101,8 @@ The Capacitor iOS app uses Apple-native receipt capture on the scan screen:
 
 Capacitor 8 requires Node.js `>=22.0.0` for `npm run cap:sync:ios`. If `pod install` fails with an encoding error, run with `LANG=en_US.UTF-8`.
 
+`npm run testflight` builds the iOS app and uploads it to TestFlight using the Apple account signed in to Xcode.
+
 ---
 
 ## Split Calculation

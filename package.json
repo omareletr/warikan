@@ -9,6 +9,7 @@
     "cap:sync:ios": "npm run build:native && cap sync ios",
     "cap:open:ios": "cap open ios",
     "cap:doctor": "cap doctor",
+    "testflight": "node scripts/testflight.mjs",
     "start": "next start",
     "lint": "next lint"
   },

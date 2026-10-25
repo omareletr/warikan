@@ -9,6 +9,7 @@ import {
   normalizeLineItems,
   portionAssignmentsToLegacy,
 } from "@/lib/line-items";
+import { corsHeaders as sharedCorsHeaders } from "@/lib/cors";
 
 // Room actions mutate Redis state — always dynamic.
 export const dynamic = "force-dynamic";
@@ -52,27 +53,8 @@ const VALID_ACTION_TYPES = new Set<RoomAction["type"]>([
 
 // ─── CORS ─────────────────────────────────────────────────────────────────
 
-const ALLOWED_ORIGINS = [
-  "https://warikan0.netlify.app",
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "capacitor://localhost",
-  "http://localhost",
-];
-
-function isAllowedOrigin(value: string): boolean {
-  if (ALLOWED_ORIGINS.some((o) => value.startsWith(o))) return true;
-  return /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app/.test(value);
-}
-
 function corsHeaders(origin: string): Record<string, string> {
-  const allowed = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    Vary: "Origin",
-  };
+  return sharedCorsHeaders(origin, "GET, POST, OPTIONS");
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────

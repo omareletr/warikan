@@ -1,12 +1,16 @@
 import type { LineItem, LineItemPortion } from "./types";
 import { createId } from "@/lib/id";
 
+// Each unit becomes a portion, so an unbounded quantity (e.g. from a crafted
+// room-create request) would allocate without limit.
+export const MAX_ITEM_QUANTITY = 99;
+
 function makePortion(assignedToIds: string[] = []): LineItemPortion {
   return { id: createId(), assignedToIds };
 }
 
 export function normalizeLineItem(item: LineItem): LineItem {
-  const quantity = Math.max(1, Math.floor(item.quantity || 1));
+  const quantity = Math.min(MAX_ITEM_QUANTITY, Math.max(1, Math.floor(Number(item.quantity) || 1)));
   const legacyIds = item.assignedToIds ?? [];
   let portions: LineItemPortion[];
 

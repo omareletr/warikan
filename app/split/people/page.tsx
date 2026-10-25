@@ -34,6 +34,7 @@ import {
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 import type { Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { createId } from "@/lib/id";
 
 export default function PeoplePage() {
   const router = useRouter();
@@ -70,7 +71,7 @@ export default function PeoplePage() {
       while (existing.includes(`${trimmed} (${n})`)) n++;
       finalName = `${trimmed} (${n})`;
     }
-    setPeople([...state.people, { id: crypto.randomUUID(), name: finalName }]);
+    setPeople([...state.people, { id: createId(), name: finalName }]);
     setName("");
   }
 
@@ -165,7 +166,7 @@ export default function PeoplePage() {
       </div>
 
       {loaded && (
-        <div className="mt-8 flex gap-3">
+        <div className="mt-16 flex gap-3">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a name" onKeyDown={(e) => e.key === "Enter" && addPerson()} />
           <Button onClick={addPerson} disabled={!name.trim()}>Add</Button>
         </div>

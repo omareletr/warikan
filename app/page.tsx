@@ -12,22 +12,25 @@ import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { closeRoomIfActive } from "@/lib/room-client";
 import { getSplits } from "@/lib/splits";
+import { createId } from "@/lib/id";
 
-const DEMO_RECEIPT = {
-  restaurantName: "Helmand Palace",
-  lineItems: [
-    { id: crypto.randomUUID(), name: "Qabelee", quantity: 1, price: 19.99, assignedToIds: [] },
-    { id: crypto.randomUUID(), name: "Mourgh Kabab", quantity: 2, price: 16.99, assignedToIds: [] },
-    { id: crypto.randomUUID(), name: "Banjan", quantity: 3, price: 8.99, assignedToIds: [] },
-    { id: crypto.randomUUID(), name: "Kofta Kabab", quantity: 1, price: 17.99, assignedToIds: [] },
-    { id: crypto.randomUUID(), name: "Kaddo", quantity: 1, price: 8.99, assignedToIds: [] },
-    { id: crypto.randomUUID(), name: "Bread", quantity: 1, price: 3.99, assignedToIds: [] },
-    { id: crypto.randomUUID(), name: "Rice Pudding", quantity: 4, price: 6.99, assignedToIds: [] },
-  ],
-  fees: [] as { id: string; name: string; amount: number }[],
-  taxAmount: 12.07,
-  tipAmount: 25.18,
-};
+function createDemoReceipt() {
+  return {
+    restaurantName: "Helmand Palace",
+    lineItems: [
+      { id: createId(), name: "Qabelee", quantity: 1, price: 19.99, assignedToIds: [] },
+      { id: createId(), name: "Mourgh Kabab", quantity: 2, price: 16.99, assignedToIds: [] },
+      { id: createId(), name: "Banjan", quantity: 3, price: 8.99, assignedToIds: [] },
+      { id: createId(), name: "Kofta Kabab", quantity: 1, price: 17.99, assignedToIds: [] },
+      { id: createId(), name: "Kaddo", quantity: 1, price: 8.99, assignedToIds: [] },
+      { id: createId(), name: "Bread", quantity: 1, price: 3.99, assignedToIds: [] },
+      { id: createId(), name: "Rice Pudding", quantity: 4, price: 6.99, assignedToIds: [] },
+    ],
+    fees: [] as { id: string; name: string; amount: number }[],
+    taxAmount: 12.07,
+    tipAmount: 25.18,
+  };
+}
 
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -101,7 +104,7 @@ export default function HomePage() {
     >
       {/* Top bar */}
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-start">
           {splitCount > 0 && (
             <Button
               variant="ghost"
@@ -146,7 +149,7 @@ export default function HomePage() {
           onClick={() => {
             closeRoomIfActive();
             reset();
-            setReceiptData(DEMO_RECEIPT);
+            setReceiptData(createDemoReceipt());
             router.push("/split/review");
           }}
         >

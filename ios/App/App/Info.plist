@@ -62,5 +62,7 @@
 	<string>Warikan needs camera access to scan receipts.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Warikan needs photo library access to upload receipt photos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Warikan needs permission to save or prepare receipt photos for scanning.</string>
 </dict>
 </plist>

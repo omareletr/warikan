@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion"
 import type { PanInfo } from "framer-motion";
 import { Send, Copy, QrCode, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { isNative } from "@/lib/platform";
 
 interface ShareSheetProps {
   open: boolean;
@@ -36,6 +37,15 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
 
   async function handleShare() {
     onClose();
+    if (isNative()) {
+      try {
+        const { Share } = await import("@capacitor/share");
+        await Share.share({ url, title });
+        return;
+      } catch {
+        // Fall through to the web clipboard fallback.
+      }
+    }
     if (navigator.share) {
       try { await navigator.share({ url, title }); } catch { /* cancelled */ }
     } else {

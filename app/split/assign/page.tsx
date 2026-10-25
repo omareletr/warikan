@@ -28,7 +28,8 @@ import {
   normalizeLineItem,
 } from "@/lib/line-items";
 import { cn } from "@/lib/utils";
-import { hapticTap } from "@/lib/platform";
+import { apiUrl, hapticTap } from "@/lib/platform";
+import { createId } from "@/lib/id";
 import {
   generateRoomId,
   getRoomJoinUrl,
@@ -217,7 +218,7 @@ export default function AssignPage() {
     function handleBeforeUnload() {
       if (typeof navigator === "undefined" || !navigator.sendBeacon) return;
       navigator.sendBeacon(
-        `/api/room/${roomId}`,
+        apiUrl(`/api/room/${roomId}`),
         new Blob([JSON.stringify({ type: "close", hostToken })], { type: "application/json" }),
       );
     }
@@ -296,7 +297,7 @@ export default function AssignPage() {
       if (normalized.quantity <= 1) {
         const assigned = (normalized.portions?.[0]?.assignedToIds ?? []).includes(selectedPersonId);
         const portions = [{
-          ...(normalized.portions?.[0] ?? { id: crypto.randomUUID() }),
+          ...(normalized.portions?.[0] ?? { id: createId() }),
           assignedToIds: assigned
             ? (normalized.portions?.[0]?.assignedToIds ?? []).filter((id) => id !== selectedPersonId)
             : [...(normalized.portions?.[0]?.assignedToIds ?? []), selectedPersonId],
@@ -629,7 +630,7 @@ export default function AssignPage() {
               aria-label="Start a live split session"
               disabled={isCreatingRoom}
               onClick={handleInvite}
-              className="ml-auto h-8 gap-1.5 rounded-full border-emerald-500/40 px-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
+              className="h-8 gap-1.5 rounded-full border-emerald-500/40 px-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
             >
               <UserPlus className="h-3.5 w-3.5" />
               Live Split

@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { EASE_OUT } from "@/lib/motion";
 import { Camera, ImagePlus, FlaskConical, History } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -99,7 +100,7 @@ export default function HomePage() {
     <motion.main
       initial={fromPop ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
+      transition={{ duration: 0.2 }}
       className="flex min-h-dvh flex-col px-6 pb-10"
     >
       {/* Top bar */}
@@ -130,7 +131,7 @@ export default function HomePage() {
           <motion.div
             className="mt-6 flex w-full max-w-[220px] flex-col gap-3"
             animate={{ opacity: heroReady ? 1 : 0, y: heroReady ? 0 : 10 }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
+            transition={{ duration: 0.25, ease: EASE_OUT }}
           >
             {actionButtons}
           </motion.div>
@@ -141,7 +142,7 @@ export default function HomePage() {
       <motion.div
         className="flex justify-center"
         animate={{ opacity: heroReady ? 1 : 0 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
+        transition={{ duration: 0.25, delay: 0.1 }}
       >
         <Button
           variant="ghost"

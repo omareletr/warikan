@@ -743,7 +743,7 @@ export default function AssignPage() {
                 <div
                   key={item.id}
                   className={cn(
-                    "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
+                    "flex flex-col gap-2 rounded-xl border p-4 transition-[border-color,background-color,opacity] duration-150 select-none",
                     selectedPersonIsRemoteControlled
                       ? "border-transparent opacity-60 cursor-default"
                       : isAssignedToMe
@@ -915,7 +915,7 @@ export default function AssignPage() {
                 key={item.id}
                 onClick={() => !selectedPersonIsRemoteControlled && !effectivelyClaimedByOthers && toggleAssignment(item.id)}
                 className={cn(
-                  "flex items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
+                  "flex items-center justify-between rounded-xl border p-4 text-left transition-[transform,border-color,background-color,opacity] duration-150 ease-out-strong",
                   selectedPersonIsRemoteControlled
                     ? "cursor-default border-transparent opacity-60"
                     : isAssignedToMe

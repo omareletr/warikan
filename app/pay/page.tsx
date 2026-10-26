@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { popIn } from "@/lib/motion";
+import { popIn, staggerDelay } from "@/lib/motion";
 import { Check, Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { consumePopFlag } from "@/lib/nav-flag";
@@ -142,11 +142,11 @@ export default function PayPage() {
                   ref={isHighlighted ? (el) => { highlightedCardRef.current = el; } : undefined}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
+                  transition={{ delay: staggerDelay(i) }}
                 >
                   {hasHandle ? (
                     <Card
-                      className={`flex cursor-pointer items-center gap-4 p-5 transition-all duration-150 active:scale-[0.98] ${isHighlighted ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                      className={`flex cursor-pointer items-center gap-4 p-5 transition-[transform,box-shadow] duration-150 ease-out-strong active:scale-[0.98] ${isHighlighted ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                       onClick={() => openPayApp(person.amount)}
                     >
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">

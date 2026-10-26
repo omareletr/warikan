@@ -5,16 +5,7 @@ import { motion } from "framer-motion";
 function SkeletonBlock({ className }: { className?: string }) {
   return (
     <div className={`relative overflow-hidden rounded-lg bg-muted/40 ${className}`}>
-      <motion.div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)",
-          backgroundSize: "200% 100%",
-        }}
-        animate={{ backgroundPosition: ["200% 0%", "-200% 0%"] }}
-        transition={{ repeat: Infinity, duration: 1.6, ease: "linear" }}
-      />
+      <div className="skeleton-shimmer absolute inset-0" />
     </div>
   );
 }

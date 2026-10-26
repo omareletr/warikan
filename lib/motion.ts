@@ -5,6 +5,11 @@ import { useReducedMotion, type MotionProps } from "framer-motion";
 // Strong ease-out for UI entering the screen
 export const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
+// List entrances: 40ms apart, capped so long lists don't keep you waiting
+export function staggerDelay(index: number) {
+  return Math.min(index, 6) * 0.04;
+}
+
 // Small confirmations (checkmarks, badges): grow from 0.6, never from nothing
 export const popIn = {
   initial: { scale: 0.6, opacity: 0 },

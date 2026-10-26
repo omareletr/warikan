@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { popIn, usePageEnter } from "@/lib/motion";
+import { popIn, usePageEnter, EASE_OUT } from "@/lib/motion";
 import { ArrowLeft, CheckCircle, ExternalLink, PartyPopper, RefreshCw, Wifi, WifiOff, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
@@ -689,9 +689,10 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
         <div className="mt-4 flex items-center gap-3">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
             <motion.div
-              className="h-full rounded-full bg-primary"
-              animate={{ width: totalCount > 0 ? `${(claimedCount / totalCount) * 100}%` : "0%" }}
-              transition={{ duration: 0.3 }}
+              className="h-full w-full rounded-full bg-primary"
+              initial={false}
+              animate={{ transform: `translateX(-${totalCount > 0 ? 100 - (claimedCount / totalCount) * 100 : 100}%)` }}
+              transition={{ duration: 0.3, ease: EASE_OUT }}
             />
           </div>
           <span className="flex-shrink-0 text-xs tabular-nums text-muted-foreground">
@@ -725,7 +726,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                 <ShakeItem key={item.id} shaking={isShaking}>
                   <div
                     className={cn(
-                      "flex flex-col gap-2 rounded-xl border p-4 transition-all duration-150 select-none",
+                      "flex flex-col gap-2 rounded-xl border p-4 transition-[border-color,background-color,opacity] duration-150 select-none",
                       isClaimedByMe
                         ? "border-primary/40 bg-primary/5"
                         : "border-transparent"
@@ -896,7 +897,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                 <button
                   onClick={() => !claimedByOther && handleItemTap(item, 0)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-all duration-150",
+                    "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-[transform,border-color,background-color,opacity] duration-150 ease-out-strong",
                     isClaimedByMe
                       ? "border-primary/40 bg-primary/5 active:opacity-75"
                       : claimedByOther

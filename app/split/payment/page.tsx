@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { popIn, usePageEnter } from "@/lib/motion";
+import { popIn, usePageEnter, staggerDelay } from "@/lib/motion";
 import confetti from "canvas-confetti";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Gift, QrCode, Send } from "lucide-react";
@@ -319,7 +319,7 @@ export default function PaymentPage() {
               key={pt.person.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: staggerDelay(i) }}
             >
               <Card className={`p-5 ${pt.person.covered ? "opacity-50" : ""}`}>
                 <div className="flex items-center gap-4">

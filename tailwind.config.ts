@@ -57,6 +57,8 @@ const config: Config = {
       transitionTimingFunction: {
         // iOS-like sheet curve; tailwindcss-animate reuses it for animations
         drawer: "cubic-bezier(0.32, 0.72, 0, 1)",
+        // Strong ease-out for press feedback; matches EASE_OUT in lib/motion.ts
+        "out-strong": "cubic-bezier(0.23, 1, 0.32, 1)",
       },
     },
   },

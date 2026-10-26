@@ -111,6 +111,16 @@
     pointer-events: none;
   }
 
+  /* Loading skeleton: a light band sweeps left to right (transform only, off the JS thread) */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.06) 50%, transparent 100%);
+    animation: skeleton-shimmer 1.6s linear infinite;
+  }
+  @keyframes skeleton-shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+
   /* Scan frame: conic gradient rotation for processing state */
   @keyframes scan-conic-rotate {
     to { --scan-angle: 360deg; }
@@ -148,6 +158,10 @@
     --tw-exit-rotate: initial !important;
     --tw-exit-translate-x: initial !important;
     --tw-exit-translate-y: initial !important;
+  }
+  /* Skeleton: pulse in place instead of sweeping */
+  .skeleton-shimmer {
+    animation: receipt-total-pulse 1.6s ease-in-out infinite;
   }
   /* Processing ring: gentle glow instead of a spinning sweep */
   .scan-processing-ring {

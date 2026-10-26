@@ -1,19 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, JetBrains_Mono } from "next/font/google";
+// Fonts are bundled rather than fetched from Google Fonts at build time:
+// next/font/google crashes when Google serves font URLs without an extension,
+// which failed production builds on Netlify.
+import "@fontsource-variable/manrope";
+import "@fontsource-variable/jetbrains-mono";
 import { Providers } from "@/components/providers";
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-syne",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-space-mono",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://warikan0.netlify.app"),
@@ -43,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${manrope.variable} ${jetbrainsMono.variable}`}>
-      <body className={`${manrope.className} min-h-dvh`} suppressHydrationWarning>
+    <html lang="en" className="dark">
+      <body className="font-sans min-h-dvh" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

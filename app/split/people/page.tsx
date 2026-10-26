@@ -228,7 +228,6 @@ export default function PeoplePage() {
                     },
                   }}
                   transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                  whileTap={!cannotCover ? { scale: 0.85 } : undefined}
                   onAnimationComplete={() => {
                     if (animatingId === person.id) setAnimatingId(null);
                   }}

@@ -17,6 +17,15 @@ export const popIn = {
   transition: { type: "spring", duration: 0.3, bounce: 0.2 },
 } as const;
 
+// One control replacing another in the same spot (use with AnimatePresence
+// mode="popLayout"): the new one grows in from the bottom, the old one fades.
+export const swapIn = {
+  initial: { opacity: 0, scale: 0.96 },
+  animate: { opacity: 1, scale: 1, transition: { duration: 0.2, ease: EASE_OUT } },
+  exit: { opacity: 0, transition: { duration: 0.12 } },
+  style: { originY: 1 },
+} as const;
+
 type PageEnter = Pick<MotionProps, "initial" | "animate" | "transition">;
 
 // Forward navigation: short slide + fade. A full transform string runs on the

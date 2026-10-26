@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { motion } from "framer-motion";
-import { usePageEnter } from "@/lib/motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { EASE_OUT, popIn, usePageEnter } from "@/lib/motion";
 import { ArrowLeft, Gift, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,15 +183,27 @@ export default function PeoplePage() {
               // Row add/remove is animated by auto-animate on listRef
               return (<div key={person.id}
                 className={cn(
-                  "flex items-center gap-4 rounded-2xl border p-4",
+                  "flex items-center gap-4 rounded-2xl border p-4 transition-colors duration-200",
                   person.covered ? "border-amber-500/40 bg-amber-500/5" : "border-border/30 bg-card/40"
                 )}
               >
                 <div className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold",
+                  "grid h-12 w-12 place-items-center rounded-full text-base font-semibold transition-colors duration-200",
                   person.covered ? "bg-amber-500/15 text-amber-400" : `${AVATAR_COLORS[i % AVATAR_COLORS.length].bg} ${AVATAR_COLORS[i % AVATAR_COLORS.length].text}`
                 )}>
-                  {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
+                  {/* Initials and gift share one grid cell so they crossfade in place */}
+                  <AnimatePresence initial={false}>
+                    <motion.span
+                      key={person.covered ? "gift" : "initials"}
+                      className="col-start-1 row-start-1"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.15, ease: EASE_OUT }}
+                    >
+                      {person.covered ? <Gift className="h-5 w-5" /> : initials(person.name)}
+                    </motion.span>
+                  </AnimatePresence>
                 </div>
                 <div className="flex flex-1 items-center gap-2">
                   {editingId === person.id ? (
@@ -209,12 +221,16 @@ export default function PeoplePage() {
                   ) : (
                     <button
                       onClick={() => startEditing(person)}
-                      className={cn("flex-1 text-left text-base font-medium", person.covered && "text-muted-foreground")}
+                      className={cn("flex-1 text-left text-base font-medium transition-colors duration-200", person.covered && "text-muted-foreground")}
                     >
                       {person.name}
                     </button>
                   )}
-                  {person.covered && !editingId && <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>}
+                  {person.covered && !editingId && (
+                    <motion.span {...popIn}>
+                      <Badge variant="secondary" className="bg-amber-500/15 text-amber-400 text-xs">Covered</Badge>
+                    </motion.span>
+                  )}
                 </div>
                 <motion.div
                   animate={animatingId === person.id ? "pop" : "idle"}

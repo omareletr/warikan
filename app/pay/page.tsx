@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { popIn } from "@/lib/motion";
 import { Check, Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { consumePopFlag } from "@/lib/nav-flag";
@@ -192,9 +193,7 @@ export default function PayPage() {
                       >
                         {copiedIdx === i ? (
                           <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                            {...popIn}
                           >
                             <Check className="h-3.5 w-3.5 text-primary" />
                           </motion.span>

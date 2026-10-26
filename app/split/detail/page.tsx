@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 as SuspenseLoader } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
+import { usePageEnter } from "@/lib/motion";
 import { ArrowLeft, ChevronDown, Gift, Trash2, Pencil, CreditCard, Users, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -47,6 +48,7 @@ function SplitDetailContent() {
   const { loadSplit } = useSplitFlow();
   const { user } = useAuth();
   const [fromPop] = useState(() => consumePopFlag());
+  const pageEnter = usePageEnter(fromPop);
   const [split, setSplit] = useState<Split | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -128,7 +130,7 @@ function SplitDetailContent() {
 
   return (
     <>
-      <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-48">
+      <motion.main {...pageEnter} className="flex min-h-dvh flex-col px-6 pb-48">
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="-ml-3" asChild aria-label="Go back">

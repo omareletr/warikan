@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
+import { popIn } from "@/lib/motion";
 import type { PanInfo } from "framer-motion";
 import { Copy, Check, X, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -207,9 +208,7 @@ function InviteDrawerContent({
             {copied ? (
               <>
                 <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  {...popIn}
                 >
                   <Check className="h-4 w-4 text-primary" />
                 </motion.span>

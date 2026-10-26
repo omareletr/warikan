@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
+import { popIn, usePageEnter } from "@/lib/motion";
 import { ArrowLeft, ChevronDown, Copy, Check, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +19,7 @@ export default function SummaryPage() {
   const router = useRouter();
   const { state, loaded } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
+  const pageEnter = usePageEnter(fromPop);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -29,7 +31,7 @@ export default function SummaryPage() {
   const grandTotal = state.lineItems.reduce((s, i) => s + i.price * i.quantity, 0) + state.taxAmount + state.tipAmount + state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col px-6 pb-40">
+    <motion.main {...pageEnter} className="flex min-h-dvh flex-col px-6 pb-40">
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/assign"><ArrowLeft className="h-5 w-5" /></Link></Button>
@@ -115,7 +117,7 @@ export default function SummaryPage() {
                 // clipboard unavailable — silently ignore, no false feedback
               }
             }}>
-              {copied ? <><motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 20 }}><Check className="h-4 w-4 text-primary" /></motion.span>Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
+              {copied ? <><motion.span {...popIn}><Check className="h-4 w-4 text-primary" /></motion.span>Copied</> : <><Copy className="h-4 w-4" />Copy All</>}
             </Button>
             <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" onClick={() => router.push("/split/payment")}>Payment</Button>
           </div>

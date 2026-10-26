@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { popIn, usePageEnter } from "@/lib/motion";
 import { ArrowLeft, CheckCircle, ExternalLink, PartyPopper, RefreshCw, Wifi, WifiOff, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
@@ -214,8 +215,8 @@ function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: Do
         )}
         {/* Existing icon circle — unchanged */}
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
           className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15"
         >
@@ -408,8 +409,7 @@ function NamePicker({ room, myPersonId, onJoin, onSelfJoin, onResume, joining }:
               {/* Badge */}
               {isMe && (
                 <motion.span
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
+                  {...popIn}
                   className="flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary"
                 >
                   <CheckCircle className="h-3.5 w-3.5" />
@@ -418,8 +418,7 @@ function NamePicker({ room, myPersonId, onJoin, onSelfJoin, onResume, joining }:
               )}
               {isClaimedByOther && (
                 <motion.span
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
+                  {...popIn}
                   className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400"
                 >
                   <CheckCircle className="h-3.5 w-3.5" />
@@ -920,13 +919,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                             return (
                               <motion.span
                                 key={`${pid}-${aidx}`}
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{
-                                  type: "spring",
-                                  stiffness: 400,
-                                  damping: 20,
-                                }}
+                                {...popIn}
                                 className={cn(
                                   "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
                                   color.bg,
@@ -1086,6 +1079,7 @@ function applyOptimisticUpdate(
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function JoinPage() {
+  const pageEnter = usePageEnter(false);
   const { roomId } = useParams<{ roomId: string }>();
   const [pageState, setPageState] = useState<PageState>({ phase: "loading" });
 
@@ -1408,7 +1402,7 @@ export default function JoinPage() {
       )}
 
       {pageState.phase === "pick_name" && (
-        <motion.div key="pick_name" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, y: -8 }}>
+        <motion.div key="pick_name" {...pageEnter} exit={{ opacity: 0, y: -8 }}>
           <NamePicker
             room={pageState.room}
             myPersonId={getLocalRoomPersonId(roomId)}
@@ -1421,7 +1415,7 @@ export default function JoinPage() {
       )}
 
       {pageState.phase === "assigning" && (
-        <motion.div key="assigning" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+        <motion.div key="assigning" {...pageEnter} exit={{ opacity: 0 }}>
           <AssigningView
             room={pageState.room}
             myPersonId={pageState.myPersonId}

@@ -5,6 +5,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { usePageEnter } from "@/lib/motion";
 import { AlertTriangle, ArrowLeft, Camera, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,6 +118,7 @@ export default function ReviewPage() {
   const router = useRouter();
   const { state, loaded, setReceiptData, updateLineItems, updateFees, updateRestaurantName, updateTax, updateTip } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
+  const pageEnter = usePageEnter(fromPop);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ParseErrorCode | null>(null);
   const [parseMetadata, setParseMetadata] = useState<ParseMetadata | null>(null);
@@ -251,7 +253,7 @@ export default function ReviewPage() {
   const totalFees = state.fees.reduce((s, f) => s + f.amount, 0);
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={`flex min-h-dvh flex-col px-6 ${totalFees > 0 ? "pb-80" : "pb-72"}`}>
+    <motion.main {...pageEnter} className={`flex min-h-dvh flex-col px-6 ${totalFees > 0 ? "pb-80" : "pb-72"}`}>
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">

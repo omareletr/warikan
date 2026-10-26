@@ -98,7 +98,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        exit={{ opacity: 0, transition: { duration: 0.2 } }}
         className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       />
@@ -110,7 +110,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
         onDragEnd={handleDragEnd}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        exit={{ y: "100%" }}
+        exit={{ y: "100%", transition: { duration: 0.25, ease: [0.32, 0.72, 0, 1] } }} // close faster than open
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
         className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-border/30 bg-card px-5 pt-3 pb-12 touch-none"
       >
@@ -123,7 +123,7 @@ function ShareSheetContent({ onClose, url, title, onShowQR }: ShareSheetProps) {
                 key={option.id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 + 0.08, type: "spring", damping: 22, stiffness: 300 }}
+                transition={{ delay: i * 0.04 + 0.05, type: "spring", damping: 22, stiffness: 300 }}
               >
                 {i > 0 && <Separator />}
                 <button

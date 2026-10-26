@@ -49,7 +49,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        exit={{ opacity: 0, transition: { duration: 0.2 } }}
         className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       />
@@ -61,7 +61,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
         onDragEnd={handleDragEnd}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        exit={{ y: "100%" }}
+        exit={{ y: "100%", transition: { duration: 0.25, ease: [0.32, 0.72, 0, 1] } }} // close faster than open
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
         role="dialog"
         aria-labelledby="qr-drawer-title"
@@ -72,7 +72,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08, type: "spring", damping: 22, stiffness: 300 }}
+          transition={{ delay: 0.05, type: "spring", damping: 22, stiffness: 300 }}
         >
           <p id="qr-drawer-title" className="text-xl font-bold">Scan to pay</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -83,7 +83,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.14, type: "spring", damping: 22, stiffness: 300 }}
+          transition={{ delay: 0.09, type: "spring", damping: 22, stiffness: 300 }}
           className="mt-6 flex flex-col items-center gap-3"
         >
           <div className="rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/8">
@@ -103,7 +103,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.20, type: "spring", damping: 22, stiffness: 300 }}
+          transition={{ delay: 0.13, type: "spring", damping: 22, stiffness: 300 }}
           className="mt-6"
         >
           <Separator className="mb-5" />

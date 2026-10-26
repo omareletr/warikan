@@ -54,6 +54,10 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      transitionTimingFunction: {
+        // iOS-like sheet curve; tailwindcss-animate reuses it for animations
+        drawer: "cubic-bezier(0.32, 0.72, 0, 1)",
+      },
     },
   },
   plugins: [animate],

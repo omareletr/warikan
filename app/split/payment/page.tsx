@@ -74,6 +74,7 @@ export default function PaymentPage() {
   const [showQR, setShowQR] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [venmoFailed, setVenmoFailed] = useState(false);
 
@@ -230,9 +231,14 @@ export default function PaymentPage() {
         spread: 70,
         origin: { y: 0.7 },
         colors: ["#10B981", "#34D399", "#ffffff", "#6EE7B7"],
+        disableForReducedMotion: true,
       });
-      reset();
-      router.push("/");
+      // Hold on the checkmark briefly so the save registers before leaving
+      setSaved(true);
+      setTimeout(() => {
+        reset();
+        router.push("/");
+      }, 350);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Could not save split.");
       setSaving(false);
@@ -407,11 +413,18 @@ export default function PaymentPage() {
               Share
             </Button>
             <Button
-              className="h-14 flex-1 rounded-2xl text-base font-semibold"
+              className={`h-14 flex-1 rounded-2xl text-base font-semibold ${saved ? "disabled:opacity-100" : ""}`}
               disabled={!loaded || saving}
               onClick={handleDone}
             >
-              {!loaded ? "Loading..." : saving ? "Saving..." : "All Done"}
+              {!loaded ? "Loading..." : saved ? (
+                <>
+                  <motion.span {...popIn}>
+                    <Check className="h-5 w-5" />
+                  </motion.span>
+                  Saved
+                </>
+              ) : saving ? "Saving..." : "All Done"}
             </Button>
           </div>
         </div>

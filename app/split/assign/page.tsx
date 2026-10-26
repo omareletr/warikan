@@ -909,13 +909,27 @@ export default function AssignPage() {
             // actively controlled by a remote guest. The host's own added participant
             // remains editable from the host page.
             const effectivelyClaimedByOthers = (roomId && !selectedPersonIsRemoteControlled) ? false : claimedByOthers;
+            const toggleRow = () => {
+              if (!selectedPersonIsRemoteControlled && !effectivelyClaimedByOthers) toggleAssignment(item.id);
+            };
 
+            // A div, not a <button>, because the row contains a Share button and
+            // nested buttons are invalid HTML (iOS Safari can mis-route the tap).
             return (
-              <button
+              <div
                 key={item.id}
-                onClick={() => !selectedPersonIsRemoteControlled && !effectivelyClaimedByOthers && toggleAssignment(item.id)}
+                role="button"
+                tabIndex={0}
+                onClick={toggleRow}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleRow();
+                  }
+                }}
                 className={cn(
-                  "flex items-center justify-between rounded-xl border p-4 text-left transition-[transform,border-color,background-color,opacity] duration-150 ease-out-strong",
+                  "flex cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-[transform,border-color,background-color,opacity] duration-150 ease-out-strong",
                   selectedPersonIsRemoteControlled
                     ? "cursor-default border-transparent opacity-60"
                     : isAssignedToMe
@@ -963,7 +977,7 @@ export default function AssignPage() {
                     )}
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

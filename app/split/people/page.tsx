@@ -178,7 +178,8 @@ export default function PeoplePage() {
           <div ref={listRef} className="flex flex-col gap-3">
             {state.people.map((person, i) => {
               const cannotCover = !person.covered && state.people.filter(p => !p.covered).length <= 2;
-              return (<motion.div key={person.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+              // Row add/remove is animated by auto-animate on listRef
+              return (<div key={person.id}
                 className={cn(
                   "flex items-center gap-4 rounded-2xl border p-4",
                   person.covered ? "border-amber-500/40 bg-amber-500/5" : "border-border/30 bg-card/40"
@@ -217,9 +218,11 @@ export default function PeoplePage() {
                   animate={animatingId === person.id ? "pop" : "idle"}
                   variants={{
                     idle: { scale: 1, rotate: 0 },
+                    // Tween, not spring: springs only support two keyframes
                     pop: {
-                      scale: [1, 1.6, 1],
-                      rotate: [0, -15, 10, 0],
+                      scale: [1, 1.25, 1],
+                      rotate: [0, -10, 6, 0],
+                      transition: { duration: 0.3, ease: [0.23, 1, 0.32, 1] },
                     },
                   }}
                   transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -235,7 +238,7 @@ export default function PeoplePage() {
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" aria-label={`Remove ${person.name}`} onClick={() => removePerson(person.id)}>
                   <X className="h-4 w-4" />
                 </Button>
-              </motion.div>);
+              </div>);
             })}
           </div>
         </div>

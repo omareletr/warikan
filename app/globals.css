@@ -134,3 +134,23 @@
   initial-value: 0deg;
   inherits: false;
 }
+
+/* Reduce Motion: keep fades, drop movement */
+@media (prefers-reduced-motion: reduce) {
+  /* Sheets & dialogs (tailwindcss-animate): fade only, no slide or zoom */
+  .animate-in,
+  .animate-out {
+    --tw-enter-scale: initial !important;
+    --tw-enter-rotate: initial !important;
+    --tw-enter-translate-x: initial !important;
+    --tw-enter-translate-y: initial !important;
+    --tw-exit-scale: initial !important;
+    --tw-exit-rotate: initial !important;
+    --tw-exit-translate-x: initial !important;
+    --tw-exit-translate-y: initial !important;
+  }
+  /* Processing ring: gentle glow instead of a spinning sweep */
+  .scan-processing-ring {
+    animation: receipt-total-pulse 1.6s ease-in-out infinite;
+  }
+}

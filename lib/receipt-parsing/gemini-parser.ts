@@ -1,6 +1,8 @@
 import { ReceiptParseError, ReceiptSchema, type ParsedReceipt, type ReceiptParseInput, type ReceiptParser } from "@/lib/receipt-parsing/types";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
+const RETRYABLE_STATUSES = new Set([500, 503]);
+const RETRY_DELAYS_MS = [600, 1500];
 
 const BASE_PROMPT = `Extract receipt data as JSON only.
 
@@ -77,25 +79,19 @@ export class GeminiReceiptParser implements ReceiptParser {
 
   private async parseWithPrompt(input: ReceiptParseInput, prompt: string): Promise<ParsedReceipt> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${this.apiKey}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    let response: Response;
+    const body = JSON.stringify({
+      contents: [{ parts: this.buildParts(input, prompt) }],
+      generationConfig: { responseMimeType: "application/json", temperature: 0 },
+    });
 
-    try {
-      response = await fetch(url, {
-        method: "POST",
-        signal: controller.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: this.buildParts(input, prompt) }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0 },
-        }),
-      });
-    } catch (error) {
-      clearTimeout(timeout);
-      throw new ReceiptParseError(error instanceof Error && error.name === "AbortError" ? "timeout" : "network_error");
-    } finally {
-      clearTimeout(timeout);
+    // Gemini answers 503 ("model overloaded") in short bursts. It fails fast,
+    // so a couple of quick retries usually succeed instead of showing an error.
+    let response = await this.request(url, body);
+    for (const delay of RETRY_DELAYS_MS) {
+      if (!RETRYABLE_STATUSES.has(response.status)) break;
+      console.warn("[parse-receipt] Gemini", response.status, `— retrying in ${delay}ms`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      response = await this.request(url, body);
     }
 
     if (!response.ok) {
@@ -120,6 +116,18 @@ export class GeminiReceiptParser implements ReceiptParser {
       if (error instanceof ReceiptParseError) throw error;
       console.error("[parse-receipt] JSON.parse failure. finishReason:", finishReason, "rawText:", rawText.slice(0, 500));
       throw new ReceiptParseError("parse_error", "json_parse_failed", { rawText });
+    }
+  }
+
+  private async request(url: string, body: string): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      return await fetch(url, { method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" }, body });
+    } catch (error) {
+      throw new ReceiptParseError(error instanceof Error && error.name === "AbortError" ? "timeout" : "network_error");
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

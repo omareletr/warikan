@@ -14,6 +14,7 @@ import { LineItemRow } from "@/components/split/line-item-row";
 import { TipSelector } from "@/components/split/tip-selector";
 import { SummaryBar } from "@/components/split/summary-bar";
 import { ReceiptSkeleton } from "@/components/split/receipt-skeleton";
+import { RevealSection } from "@/components/split/reveal-section";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
@@ -123,6 +124,7 @@ export default function ReviewPage() {
   const [error, setError] = useState<ParseErrorCode | null>(null);
   const [parseMetadata, setParseMetadata] = useState<ParseMetadata | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [justParsed, setJustParsed] = useState(false);
   const [itemsRef] = useAutoAnimate<HTMLDivElement>();
   const [feesRef] = useAutoAnimate<HTMLDivElement>();
 
@@ -171,6 +173,7 @@ export default function ReviewPage() {
           taxAmount: data.taxAmount ?? 0,
           tipAmount: data.tipAmount ?? 0,
         });
+        setJustParsed(true);
       } catch (e) {
         const msg = e instanceof Error ? e.message : "";
         setError(
@@ -287,78 +290,88 @@ export default function ReviewPage() {
       {loaded && !loading && (
         <div className="mt-8 flex flex-col gap-8">
           {parseMetadata && (parseMetadata.confidence !== "high" || parseMetadata.warnings.length > 0) && (
-            <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-4">
-              <div className="flex gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-300" />
-                <div>
-                  <p className="text-sm font-medium text-amber-100">
-                    {parseMetadata.confidence === "low" ? "Low confidence scan" : "Review scan carefully"}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {parseMetadata.warnings[0] ?? "Some fields may need correction before splitting."}
-                  </p>
+            <RevealSection index={0} play={justParsed}>
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-4">
+                <div className="flex gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-300" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-100">
+                      {parseMetadata.confidence === "low" ? "Low confidence scan" : "Review scan carefully"}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {parseMetadata.warnings[0] ?? "Some fields may need correction before splitting."}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </RevealSection>
           )}
 
-          <section>
-            <label className="mb-2 block text-base font-semibold text-muted-foreground">Restaurant</label>
-            <Input
-              value={state.restaurantName}
-              onChange={(e) => updateRestaurantName(e.target.value)}
-              placeholder="Restaurant name (optional)"
-            />
-          </section>
+          <RevealSection index={1} play={justParsed}>
+            <section>
+              <label className="mb-2 block text-base font-semibold text-muted-foreground">Restaurant</label>
+              <Input
+                value={state.restaurantName}
+                onChange={(e) => updateRestaurantName(e.target.value)}
+                placeholder="Restaurant name (optional)"
+              />
+            </section>
+          </RevealSection>
 
-          <section>
-            <p className="mb-3 text-base font-semibold text-muted-foreground">Items</p>
-            {state.lineItems.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">No items yet — tap Add Item to get started.</p>
-            )}
-            <div ref={itemsRef} className="divide-y divide-border/40">
-              {state.lineItems.map((item) => (
-                <LineItemRow key={item.id} item={item} onUpdate={updateItem} onRemove={() => removeItem(item.id)} />
-              ))}
-            </div>
-            <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={addItem}>
-              <Plus className="mr-1.5 h-4 w-4" />Add Item
-            </Button>
-          </section>
+          <RevealSection index={2} play={justParsed}>
+            <section>
+              <p className="mb-3 text-base font-semibold text-muted-foreground">Items</p>
+              {state.lineItems.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">No items yet — tap Add Item to get started.</p>
+              )}
+              <div ref={itemsRef} className="divide-y divide-border/40">
+                {state.lineItems.map((item) => (
+                  <LineItemRow key={item.id} item={item} onUpdate={updateItem} onRemove={() => removeItem(item.id)} />
+                ))}
+              </div>
+              <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={addItem}>
+                <Plus className="mr-1.5 h-4 w-4" />Add Item
+              </Button>
+            </section>
+          </RevealSection>
 
-          <section>
-            <p className="mb-3 text-base font-semibold text-muted-foreground">Fees</p>
+          <RevealSection index={3} play={justParsed}>
+            <section>
+              <p className="mb-3 text-base font-semibold text-muted-foreground">Fees</p>
 
-            <div ref={feesRef} className="divide-y divide-border/40">
-              {state.fees.map((fee) => (
-                <FeeRow key={fee.id} fee={fee} onUpdate={updateFee} onRemove={() => removeFee(fee.id)} />
-              ))}
-            </div>
-            <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={addFee}>
-              <Plus className="mr-1.5 h-4 w-4" />Add Fee
-            </Button>
-          </section>
+              <div ref={feesRef} className="divide-y divide-border/40">
+                {state.fees.map((fee) => (
+                  <FeeRow key={fee.id} fee={fee} onUpdate={updateFee} onRemove={() => removeFee(fee.id)} />
+                ))}
+              </div>
+              <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={addFee}>
+                <Plus className="mr-1.5 h-4 w-4" />Add Fee
+              </Button>
+            </section>
+          </RevealSection>
 
-          <section>
-            <p className="mb-4 text-base font-semibold text-muted-foreground">Tax & Tip</p>
-            <div className="flex flex-col gap-5">
-              <div>
-                <label className="mb-2 block text-base text-muted-foreground">Tax</label>
-                <div className="relative flex items-center">
-                  <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
-                  <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" className="h-11 pl-6" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
+          <RevealSection index={4} play={justParsed}>
+            <section>
+              <p className="mb-4 text-base font-semibold text-muted-foreground">Tax & Tip</p>
+              <div className="flex flex-col gap-5">
+                <div>
+                  <label className="mb-2 block text-base text-muted-foreground">Tax</label>
+                  <div className="relative flex items-center">
+                    <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
+                    <Input type="number" step="0.01" min="0" value={state.taxAmount || ""} placeholder="0.00" className="h-11 pl-6" onChange={(e) => updateTax(Math.max(0, parseFloat(e.target.value) || 0))} />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-2 block text-base text-muted-foreground">Tip</label>
+                  <TipSelector subtotal={subtotal} tipAmount={state.tipAmount} onTipChange={updateTip} />
+                  <div className="relative mt-3 flex items-center">
+                    <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
+                    <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="h-11 pl-6" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="mb-2 block text-base text-muted-foreground">Tip</label>
-                <TipSelector subtotal={subtotal} tipAmount={state.tipAmount} onTipChange={updateTip} />
-                <div className="relative mt-3 flex items-center">
-                  <span className="pointer-events-none absolute left-3 text-muted-foreground">$</span>
-                  <Input type="number" step="0.01" min="0" value={state.tipAmount || ""} placeholder="Custom amount" className="h-11 pl-6" onChange={(e) => updateTip(Math.max(0, parseFloat(e.target.value) || 0))} />
-                </div>
-              </div>
-            </div>
-          </section>
+            </section>
+          </RevealSection>
         </div>
       )}
 

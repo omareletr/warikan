@@ -12,6 +12,7 @@ A mobile web app for splitting restaurant receipts fairly. Photograph a receipt,
 
 1. **Scan** — Take a photo or upload an image of your receipt; the iOS app uses Apple's native document scanner and on-device OCR
 2. **Review** — AI extracts line items with confidence warnings; correct any mistakes and set tax & tip
+   - **Just my share** — Only need your own number? Tap the dishes you had (with quantity and "shared ÷N" options) and get your total with prorated tax & tip
 3. **People** — Add the names of everyone splitting the bill
 4. **Assign** — Tap a person, tap their dishes or split individual quantity portions
 5. **Summary** — See each person's itemized total
@@ -44,6 +45,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 - **Flexible tip & tax** — Quick-select tip percentages (15/18/20/25%) or enter a custom amount; tax and tip are prorated proportionally
 - **Fees support** — Extra line fees (service charge, delivery fee, etc.) split proportionally
 - **Per-portion quantity sharing** — Multi-quantity dishes can be split portion by portion, so one portion can be shared while another is assigned whole
+- **Just my share** — Solo mode: pick your own dishes from the receipt and get your exact share without entering anyone else
 - **Birthday / covered mode** — Mark someone as "covered" and their share is redistributed equally among the rest of the group
 - **Live split sessions** — Guests can join by QR/link and claim or share dishes, including individual portions of quantity-based items
 - **Multi-payment app support** — Deep links for Venmo, Cash App, and PayPal; shareable QR code encodes all amounts in the URL fragment (no server needed)
@@ -60,6 +62,8 @@ Everything runs in the browser. No account required. Splits are saved to `localS
   /join/[roomId]/page.tsx      — Guest live split session
   /split/scan/page.tsx         — Camera / photo upload route shell
   /split/review/page.tsx       — Edit line items, set tax & tip
+  /split/mine/page.tsx         — Pick your own dishes (solo mode)
+  /split/mine/total/page.tsx   — Your share breakdown
   /split/people/page.tsx       — Add people, toggle birthday mode
   /split/assign/page.tsx       — Assign dishes to people
   /split/summary/page.tsx      — Per-person itemized totals

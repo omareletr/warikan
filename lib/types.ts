@@ -47,6 +47,17 @@ export interface PersonTotal {
   items: { name: string; quantity: number; price: number; splitCount: number; mixedSplits?: boolean }[];
 }
 
+// ─── Solo Mode ("Just my share") ──────────────────────────────────────────
+
+export interface MyPick {
+  count: number; // how many of the item's units you had
+  ways: number;  // how many people shared those units (1 = just you)
+}
+
+export interface MyShare extends Omit<PersonTotal, "person" | "coveredExtra"> {
+  ratio: number; // your fraction of the food subtotal
+}
+
 // ─── Collaborative Room Types ─────────────────────────────────────────────
 
 export interface RoomState {

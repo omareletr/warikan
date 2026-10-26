@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import type { LineItem, Fee, Person, Split } from "./types";
+import type { LineItem, Fee, Person, Split, MyPick } from "./types";
 import { normalizeLineItems } from "./line-items";
 
 const FLOW_KEY = "warikan_flow";
@@ -17,6 +17,7 @@ interface SplitFlowState {
   taxAmount: number;
   tipAmount: number;
   people: Person[];
+  myPicks: Record<string, MyPick>; // solo mode: itemId → what you had
   editingSplitId: string | null;
 }
 
@@ -31,6 +32,7 @@ const initialState: SplitFlowState = {
   taxAmount: 0,
   tipAmount: 0,
   people: [],
+  myPicks: {},
   editingSplitId: null,
 };
 
@@ -59,6 +61,7 @@ interface SplitFlowContextValue {
     tipAmount: number;
   }) => void;
   setPeople: (people: Person[]) => void;
+  setMyPicks: (picks: Record<string, MyPick>) => void;
   updateLineItems: (lineItems: LineItem[]) => void;
   updateFees: (fees: Fee[]) => void;
   updateRestaurantName: (name: string) => void;
@@ -119,6 +122,10 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, people }));
   }, []);
 
+  const setMyPicks = useCallback((myPicks: Record<string, MyPick>) => {
+    setState((prev) => ({ ...prev, myPicks }));
+  }, []);
+
   const updateLineItems = useCallback((lineItems: LineItem[]) => {
     setState((prev) => ({ ...prev, lineItems: normalizeLineItems(lineItems) }));
   }, []);
@@ -151,6 +158,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
       taxAmount: split.taxAmount,
       tipAmount: split.tipAmount,
       people: split.people,
+      myPicks: {},
       editingSplitId: split.id,
     });
   }, []);
@@ -169,6 +177,7 @@ export function SplitFlowProvider({ children }: { children: React.ReactNode }) {
         setReceiptText,
         setReceiptData,
         setPeople,
+        setMyPicks,
         updateLineItems,
         updateFees,
         updateRestaurantName,

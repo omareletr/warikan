@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import { popIn, usePageEnter } from "@/lib/motion";
 import { ArrowLeft, Gift, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,7 @@ export default function AssignPage() {
   const router = useRouter();
   const { state, loaded, updateLineItems, setPeople } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
+  const pageEnter = usePageEnter(fromPop);
   const [selectedPersonId, setSelectedPersonId] = useState<string>(state.people[0]?.id ?? "");
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -608,7 +610,7 @@ export default function AssignPage() {
   const displaySlots = useTransform(springValue, (v) => Math.round(v));
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-dvh flex-col pb-40">
+    <motion.main {...pageEnter} className="flex min-h-dvh flex-col pb-40">
       <div className="sticky-header px-6 pt-10 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/people"><ArrowLeft className="h-5 w-5" /></Link></Button>
@@ -934,7 +936,7 @@ export default function AssignPage() {
                           if (!person) return null;
                           const color = personColor(pid);
                           return (
-                            <motion.span key={pid} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }} className={cn("inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text)}>
+                            <motion.span key={pid} {...popIn} className={cn("inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold", color.bg, color.text)}>
                               {inlineInitials(person.name)}
                             </motion.span>
                           );

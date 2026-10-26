@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { popIn, usePageEnter } from "@/lib/motion";
 import confetti from "canvas-confetti";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Gift, QrCode, Send } from "lucide-react";
@@ -66,6 +67,7 @@ export default function PaymentPage() {
   const router = useRouter();
   const { state, loaded, reset } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
+  const pageEnter = usePageEnter(fromPop);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<PaymentAppId>("venmo");
   const [handles, setHandles] = useState<Partial<Record<PaymentAppId, string>>>({});
@@ -240,8 +242,7 @@ export default function PaymentPage() {
   return (
     <>
       <motion.main
-        initial={fromPop ? false : { opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
+        {...pageEnter}
         className="flex min-h-dvh flex-col px-6 pb-40"
       >
         <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
@@ -353,9 +354,7 @@ export default function PaymentPage() {
                       {copiedId === pt.person.id ? (
                         <>
                           <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                            {...popIn}
                           >
                             <Check className="h-3.5 w-3.5 text-primary" />
                           </motion.span>

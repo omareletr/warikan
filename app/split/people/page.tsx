@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { motion } from "framer-motion";
+import { usePageEnter } from "@/lib/motion";
 import { ArrowLeft, Gift, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ export default function PeoplePage() {
   const router = useRouter();
   const { state, loaded, setPeople } = useSplitFlow();
   const [fromPop] = useState(() => consumePopFlag());
+  const pageEnter = usePageEnter(fromPop);
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [animatingId, setAnimatingId] = useState<string | null>(null);
@@ -155,7 +157,7 @@ export default function PeoplePage() {
   const hasExistingRoom = Boolean(existingRoomId);
 
   return (
-    <motion.main initial={fromPop ? false : { opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={cn("flex min-h-dvh flex-col px-6", hasExistingRoom ? "pb-64" : "pb-48")}>
+    <motion.main {...pageEnter} className={cn("flex min-h-dvh flex-col px-6", hasExistingRoom ? "pb-64" : "pb-48")}>
       <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">

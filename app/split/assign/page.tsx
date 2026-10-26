@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
-import { popIn, usePageEnter } from "@/lib/motion";
+import { popIn, swapIn, usePageEnter } from "@/lib/motion";
 import { ArrowLeft, Gift, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -970,32 +970,34 @@ export default function AssignPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        {!loaded ? (
-          <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-            <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled>
-              Loading...
-            </Button>
-          </div>
-        ) : canContinue ? (
-          <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
-            <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={handleContinue}>
-              Continue
-            </Button>
-          </div>
-        ) : allAssigned ? (
-          <div className="flex justify-center pb-1">
-            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-amber-400">
-              Need at least 2 payers
-            </span>
-          </div>
-        ) : (
-          <div className="flex justify-center pb-1">
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
-              <motion.span>{displaySlots}</motion.span>
-              {` of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`}
-            </span>
-          </div>
-        )}
+        <AnimatePresence mode="popLayout" initial={false}>
+          {!loaded ? (
+            <motion.div key="loading" {...swapIn} className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+              <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled>
+                Loading...
+              </Button>
+            </motion.div>
+          ) : canContinue ? (
+            <motion.div key="continue" {...swapIn} className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+              <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={handleContinue}>
+                Continue
+              </Button>
+            </motion.div>
+          ) : allAssigned ? (
+            <motion.div key="need-payers" {...swapIn} className="flex justify-center pb-1">
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-amber-400">
+                Need at least 2 payers
+              </span>
+            </motion.div>
+          ) : (
+            <motion.div key="progress" {...swapIn} className="flex justify-center pb-1">
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
+                <motion.span>{displaySlots}</motion.span>
+                {` of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {roomId && (

@@ -891,13 +891,27 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
             // Single-quantity item
             const claimedByOther =
               assigned.length > 0 && !assigned.includes(myPersonId);
+            const tapRow = () => {
+              if (!claimedByOther) handleItemTap(item, 0);
+            };
 
+            // A div, not a <button>, because the row contains a Share button and
+            // nested buttons are invalid HTML (iOS Safari can mis-route the tap).
             return (
               <ShakeItem key={item.id} shaking={isShaking}>
-                <button
-                  onClick={() => !claimedByOther && handleItemTap(item, 0)}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={tapRow}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      tapRow();
+                    }
+                  }}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-[transform,border-color,background-color,opacity] duration-150 ease-out-strong",
+                    "flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-[transform,border-color,background-color,opacity] duration-150 ease-out-strong",
                     isClaimedByMe
                       ? "border-primary/40 bg-primary/5 active:opacity-75"
                       : claimedByOther
@@ -961,7 +975,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                       )}
                     </div>
                   </div>
-                </button>
+                </div>
               </ShakeItem>
             );
           })}

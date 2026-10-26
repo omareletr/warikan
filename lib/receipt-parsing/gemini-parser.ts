@@ -1,8 +1,10 @@
 import { ReceiptParseError, ReceiptSchema, type ParsedReceipt, type ReceiptParseInput, type ReceiptParser } from "@/lib/receipt-parsing/types";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
-const RETRYABLE_STATUSES = new Set([500, 503]);
+// Retries are shared across parse() and repair() for one request, and only
+// start within the first few seconds, so one upload is at most 3 upstream calls.
 const RETRY_DELAYS_MS = [600, 1500];
+const RETRY_WINDOW_MS = 8000;
 
 const BASE_PROMPT = `Extract receipt data as JSON only.
 
@@ -62,6 +64,8 @@ function extractResponseText(geminiData: unknown) {
 
 export class GeminiReceiptParser implements ReceiptParser {
   private apiKey: string;
+  private retriesUsed = 0;
+  private readonly startedAt = Date.now();
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -85,11 +89,13 @@ export class GeminiReceiptParser implements ReceiptParser {
     });
 
     // Gemini answers 503 ("model overloaded") in short bursts. It fails fast,
-    // so a couple of quick retries usually succeed instead of showing an error.
+    // so a quick retry usually succeeds instead of showing an error. Other
+    // statuses (e.g. 500 on a payload it rejects) would just fail again.
     let response = await this.request(url, body);
-    for (const delay of RETRY_DELAYS_MS) {
-      if (!RETRYABLE_STATUSES.has(response.status)) break;
-      console.warn("[parse-receipt] Gemini", response.status, `— retrying in ${delay}ms`);
+    while (response.status === 503 && this.retriesUsed < RETRY_DELAYS_MS.length && Date.now() - this.startedAt < RETRY_WINDOW_MS) {
+      const delay = RETRY_DELAYS_MS[this.retriesUsed++];
+      console.warn("[parse-receipt] Gemini 503 — retrying in", delay, "ms");
+      await response.body?.cancel();
       await new Promise((resolve) => setTimeout(resolve, delay));
       response = await this.request(url, body);
     }

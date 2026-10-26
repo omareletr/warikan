@@ -1,4 +1,4 @@
-import type { LineItem, Fee, Person, PersonTotal } from "./types";
+import type { LineItem, Fee, Person, PersonTotal, MyPick, MyShare } from "./types";
 import { normalizeLineItems } from "./line-items";
 
 // Distributes `total` across `values` so that rounded shares sum exactly to `total`.
@@ -101,6 +101,40 @@ export function calculateSplit(
   totals.forEach((pt, i) => { pt.total = rounded[i]; });
 
   return totals;
+}
+
+function round2(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+// Solo mode: one person's share without knowing anyone else at the table.
+// Separate from calculateSplit, whose rounding forces totals to sum to the full bill.
+export function calculateMyShare(
+  lineItems: LineItem[],
+  picks: Record<string, MyPick>,
+  taxAmount: number,
+  tipAmount: number,
+  fees: Fee[]
+): MyShare {
+  const overallSubtotal = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalFees = fees.reduce((sum, fee) => sum + fee.amount, 0);
+
+  const items = lineItems.flatMap((item) => {
+    const pick = picks[item.id];
+    if (!pick || pick.count <= 0) return [];
+    const count = Math.min(pick.count, item.quantity);
+    return [{ name: item.name, quantity: count, price: round2((item.price * count) / pick.ways), splitCount: pick.ways }];
+  });
+
+  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+  const ratio = overallSubtotal > 0 ? subtotal / overallSubtotal : 0;
+  // Every line is rounded to the cent so the breakdown adds up to the total shown.
+  const taxShare = round2(taxAmount * ratio);
+  const tipShare = round2(tipAmount * ratio);
+  const feesShare = round2(totalFees * ratio);
+  const total = round2(subtotal + taxShare + tipShare + feesShare);
+
+  return { subtotal, taxShare, tipShare, feesShare, total, ratio, items };
 }
 
 export function formatCurrency(amount: number): string {

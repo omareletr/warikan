@@ -378,7 +378,14 @@ export default function ReviewPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           {state.lineItems.length > 0 && <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />}
-          <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
+          {state.editingSplitId ? (
+            <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
+          ) : (
+            <div className={`${state.lineItems.length > 0 ? "mt-4" : ""} flex gap-3`}>
+              <Button variant="outline" className="h-14 flex-1 rounded-2xl text-sm font-semibold" disabled={state.lineItems.length === 0} onClick={() => router.push("/split/mine")}>Just my share</Button>
+              <Button className="h-14 flex-1 rounded-2xl text-base font-semibold" disabled={state.lineItems.length === 0} onClick={handleContinue}>Split with group</Button>
+            </div>
+          )}
         </div>
       </div>
     </motion.main>

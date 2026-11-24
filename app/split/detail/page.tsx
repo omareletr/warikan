@@ -167,7 +167,7 @@ function SplitDetailContent() {
 
         <div className="mt-8 text-center">
           {split.restaurantName && <p className="text-xl font-semibold">{split.restaurantName}</p>}
-          <p className="mt-2 text-4xl font-bold tabular-nums text-primary">{formatCurrency(split.totalAmount)}</p>
+          <p className="mt-2 font-mono text-4xl font-bold tabular-nums text-gradient">{formatCurrency(split.totalAmount)}</p>
           <p className="mt-2 text-base text-muted-foreground">{date} &middot; {split.people.length} people</p>
         </div>
 
@@ -190,7 +190,7 @@ function SplitDetailContent() {
                       {pt.person.covered ? (
                         <span className="text-sm font-medium text-amber-400">Covered</span>
                       ) : pt.total > 0 ? (
-                        <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
+                        <span className="font-mono text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
                       ) : (
                         <span className="text-sm font-medium text-muted-foreground">Not splitting</span>
                       )}
@@ -205,17 +205,17 @@ function SplitDetailContent() {
                         {pt.items.map((item, j) => (
                           <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
                             <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.mixedSplits ? <span className="ml-1 text-sm text-muted-foreground/60">mixed splits</span> : item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground/60">split {item.splitCount} ways</span>}</span>
-                            <span className="tabular-nums">{formatCurrency(item.price)}</span>
+                            <span className="font-mono tabular-nums">{formatCurrency(item.price)}</span>
                           </div>
                         ))}
                         <Separator className="my-3" />
-                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tax</span><span className="tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
-                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tip</span><span className="tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
-                        {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
+                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tax</span><span className="font-mono tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
+                        <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tip</span><span className="font-mono tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
+                        {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="font-mono tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
                         {pt.coveredExtra > 0 && (
                           <div className="flex justify-between py-2 text-base text-amber-400">
                             <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}&apos;s share</span>
-                            <span className="tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
+                            <span className="font-mono tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
                           </div>
                         )}
                         </div>

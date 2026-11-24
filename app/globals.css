@@ -61,16 +61,18 @@
 }
 
 @layer utilities {
-  /* The floating bar that holds each page's main button. */
+  /* The frosted-glass floating bar that holds each page's main button. */
   .bottom-bar {
-    @apply rounded-3xl border border-border bg-card p-5 shadow-lg shadow-black/20;
+    @apply rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20;
   }
   .sticky-header {
     @apply sticky top-0 z-10;
   }
-  /* Homepage hero: primary button glow + pulsing receipt total */
   .glow-sm {
     box-shadow: 0 0 12px rgba(52, 211, 153, 0.15);
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent;
   }
   .receipt-total-pulse {
     animation: receipt-total-pulse 3s ease-in-out infinite;

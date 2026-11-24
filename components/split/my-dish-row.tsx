@@ -64,8 +64,8 @@ export function MyDishRow({ item, pick, onChange }: MyDishRowProps) {
           </span>
         </div>
         <div className="flex-shrink-0 text-right">
-          <span className="text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
-          {item.quantity > 1 && <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)} each</p>}
+          <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price * item.quantity)}</span>
+          {item.quantity > 1 && <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price)} each</p>}
         </div>
       </div>
 
@@ -101,7 +101,7 @@ export function MyDishRow({ item, pick, onChange }: MyDishRowProps) {
                 <Users className="h-4 w-4" />
                 {pick.ways > 1 ? `Shared ÷${pick.ways}` : "Shared?"}
               </button>
-              <span className="ml-auto text-sm font-semibold tabular-nums text-primary">{formatCurrency(myCost)}</span>
+              <span className="ml-auto font-mono text-sm font-semibold tabular-nums text-primary">{formatCurrency(myCost)}</span>
             </div>
           </motion.div>
         )}

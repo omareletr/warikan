@@ -111,7 +111,7 @@ export default function PayPage() {
             {data.restaurantName && (
               <p className="text-xl font-semibold">{data.restaurantName}</p>
             )}
-            <p className="mt-2 text-4xl font-bold tabular-nums text-primary">
+            <p className="mt-2 font-mono text-4xl font-bold tabular-nums text-gradient">
               {formatCurrency(total)}
             </p>
             {hasHandle && appConfig && (
@@ -161,7 +161,7 @@ export default function PayPage() {
                             </span>
                           )}
                         </p>
-                        <p className="text-2xl font-semibold tabular-nums text-primary">
+                        <p className="font-mono text-2xl font-semibold tabular-nums text-primary">
                           {formatCurrency(person.amount)}
                         </p>
                       </div>
@@ -181,7 +181,7 @@ export default function PayPage() {
                             </span>
                           )}
                         </p>
-                        <p className="text-2xl font-semibold tabular-nums text-primary">
+                        <p className="font-mono text-2xl font-semibold tabular-nums text-primary">
                           {formatCurrency(person.amount)}
                         </p>
                       </div>

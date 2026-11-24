@@ -98,6 +98,26 @@ function LoadingScreen() {
   );
 }
 
+const ENDED_MESSAGE = "This live split has ended or the link is wrong. Ask the host for a new invite link.";
+
+// What a guest should do when joining fails, keyed by the room API's error name.
+function joinErrorMessage(err: unknown): string {
+  switch ((err as { code?: string })?.code) {
+    case "room_full":
+      return "This live split is full. Ask the host to add you.";
+    case "rate_limited":
+      return "Too many people joined from this network. Wait a few minutes, then try again.";
+    case "identity_claimed":
+      return "Someone already joined as that person. Pick another name.";
+    case "person_not_found":
+      return "The host removed that name. Pick another.";
+    case "room_busy":
+      return "Lots of people are joining right now. Try again.";
+    default:
+      return "Couldn't join. Check your connection and try again.";
+  }
+}
+
 // ─── Error screen ─────────────────────────────────────────────────────────────
 
 interface ErrorScreenProps {
@@ -113,7 +133,7 @@ function ErrorScreen({ message, retryable, onRetry }: ErrorScreenProps) {
         <WifiOff className="h-7 w-7 text-destructive" />
       </div>
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-bold">Session unavailable</h1>
+        <h1 className="text-xl font-bold">Live split unavailable</h1>
         <p className="text-sm text-muted-foreground">{message}</p>
       </div>
       {retryable && (
@@ -195,7 +215,24 @@ function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: Do
       animate={{ opacity: 1, scale: 1 }}
       className="relative flex min-h-dvh flex-col items-center justify-center gap-6 overflow-hidden px-6 text-center"
     >
+      {/* Ambient glow */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 50% 60%, hsl(160 64% 52% / 0.4), transparent)",
+        }}
+      />
+
       <div className="relative flex items-center justify-center">
+        {/* Pulsing ring — hidden once redirecting */}
+        {!redirecting && (
+          <motion.div
+            className="absolute h-20 w-20 rounded-full bg-primary/20"
+            animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )}
         {/* Existing icon circle — unchanged */}
         <motion.div
           initial={{ scale: 0.6, opacity: 0 }}
@@ -269,7 +306,7 @@ function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: Do
               animate={{ opacity: 1, y: 0 }}
               className="text-sm text-muted-foreground"
             >
-              Couldn&apos;t connect — tap to try again
+              Couldn&apos;t reach the live split. Tap Edit my choices to try again.
             </motion.p>
           )}
         </motion.div>
@@ -312,9 +349,10 @@ interface NamePickerProps {
   onSelfJoin: (name: string, guest: boolean) => void;
   onResume: (personId: string) => void;
   joining: boolean;
+  error: string | null;
 }
 
-function NamePicker({ room, myPersonId, onJoin, onSelfJoin, onResume, joining }: NamePickerProps) {
+function NamePicker({ room, myPersonId, onJoin, onSelfJoin, onResume, joining, error }: NamePickerProps) {
   const [name, setName] = useState("");
   const [showSelfEntry, setShowSelfEntry] = useState(room.entryMode === "self_serve" || room.people.length === 0);
   const rosterFirst = room.entryMode !== "self_serve" && room.people.length > 0 && !showSelfEntry;
@@ -445,6 +483,8 @@ function NamePicker({ room, myPersonId, onJoin, onSelfJoin, onResume, joining }:
         </div>
       )}
 
+      <p role="alert" className="mt-4 px-6 text-center text-sm text-destructive empty:hidden">{error}</p>
+
       {joining && (
         <div className="mt-6 flex justify-center">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
@@ -564,8 +604,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
       });
       onRoomUpdate(updated);
     } catch (err: unknown) {
-      const apiErr = err as { code?: string };
-      if (apiErr?.code === "409" || apiErr?.code === "already_claimed") {
+      if ((err as { status?: number })?.status === 409) {
         // Revert optimistic update and shake
         onRoomUpdate(room);
         triggerShake(item.id, true);
@@ -737,7 +776,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                             <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions claimed</span>
                           </div>
                         </div>
-                        <span className="flex-shrink-0 text-base font-medium tabular-nums">
+                        <span className="flex-shrink-0 font-mono text-base font-medium tabular-nums">
                           {formatCurrency(normalizedItem.price * normalizedItem.quantity)}
                         </span>
                       </div>
@@ -768,7 +807,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                               return (
                                 <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text, pid === myPersonId && "ring-1 ring-primary/40")}>
                                   {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
-                                  {count > 1 && <span className="tabular-nums">×{count}</span>}
+                                  {count > 1 && <span className="font-mono tabular-nums">×{count}</span>}
                                 </span>
                               );
                             })}
@@ -786,7 +825,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                             Split portions
                           </button>
                         )}
-                        <span className="text-xs tabular-nums text-muted-foreground">
+                        <span className="font-mono text-xs tabular-nums text-muted-foreground">
                           {formatCurrency(normalizedItem.price)} each
                         </span>
                       </div>
@@ -856,7 +895,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                                       })}
                                     </div>
                                   </div>
-                                  <span className="text-sm tabular-nums text-muted-foreground">
+                                  <span className="font-mono text-sm tabular-nums text-muted-foreground">
                                     {portion.length > 1 ? formatCurrency(normalizedItem.price / portion.length) : formatCurrency(normalizedItem.price)}
                                   </span>
                                 </div>
@@ -904,7 +943,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-2.5">
                     {isClaimedByMe && (
-                      <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
+                      <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
                     )}
                     <span className="text-base">
                       {item.name}
@@ -948,11 +987,11 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                       </button>
                     )}
                     <div className="text-right">
-                      <span className="text-base font-medium tabular-nums">
+                      <span className="font-mono text-base font-medium tabular-nums">
                         {formatCurrency(item.price)}
                       </span>
                       {assigned.length > 1 && (
-                        <p className="text-xs tabular-nums text-muted-foreground">
+                        <p className="font-mono text-xs tabular-nums text-muted-foreground">
                           {formatCurrency(item.price / assigned.length)} ea
                         </p>
                       )}
@@ -1004,7 +1043,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                   aria-hidden="true"
                   animate={shouldReduceMotion ? undefined : { scale: [1, 1.35, 1], opacity: [0.75, 1, 0.75] }}
                   transition={shouldReduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                  className="h-2 w-2 rounded-full bg-primary"
+                  className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(52,211,153,0.55)]"
                 />
                 <span className="text-xs tabular-nums text-primary">
                   {room.connectedPeople.length} online
@@ -1019,11 +1058,11 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-primary">
-                  All dishes claimed
+                  All dishes claimed! 🎉
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-primary" />
+                <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
                 <span className="text-xs tabular-nums text-primary">
                   {room.connectedPeople.length} online
                 </span>
@@ -1089,7 +1128,7 @@ export default function JoinPage() {
       if (res.status === 404) {
         setPageState({
           phase: "error",
-          message: "This session has expired or doesn't exist.",
+          message: ENDED_MESSAGE,
           retryable: false,
         });
         return;
@@ -1097,7 +1136,7 @@ export default function JoinPage() {
       if (!res.ok) {
         setPageState({
           phase: "error",
-          message: "Couldn't connect to the session. Check your connection and try again.",
+          message: "Couldn't reach the live split. Check your connection and try again.",
           retryable: true,
         });
         return;
@@ -1127,7 +1166,7 @@ export default function JoinPage() {
     } catch {
       setPageState({
         phase: "error",
-        message: "Couldn't connect to the session. Check your connection and try again.",
+        message: "Couldn't reach the live split. Check your connection and try again.",
         retryable: true,
       });
     }
@@ -1166,7 +1205,7 @@ export default function JoinPage() {
         // Room not found — expired
         setPageState({
           phase: "error",
-          message: "This session has expired.",
+          message: ENDED_MESSAGE,
           retryable: false,
         });
       }
@@ -1200,7 +1239,7 @@ export default function JoinPage() {
       () => {
         setPageState({
           phase: "error",
-          message: "This session has expired.",
+          message: ENDED_MESSAGE,
           retryable: false,
         });
       }
@@ -1264,10 +1303,12 @@ export default function JoinPage() {
 
   // Handle join
   const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   async function handleJoin(personId: string) {
     if (pageState.phase !== "pick_name") return;
     setJoining(true);
+    setJoinError(null);
 
     try {
       // If this device already holds a different identity for this room, release
@@ -1297,15 +1338,16 @@ export default function JoinPage() {
       } else {
         setPageState({ phase: "assigning", room: updatedRoom, myPersonId: result.personId, participantToken: result.participantToken });
       }
-    } catch {
+    } catch (err) {
       setJoining(false);
-      // Could show inline error but don't disrupt picker
+      setJoinError(joinErrorMessage(err));
     }
   }
 
   async function handleSelfJoin(name: string, guest: boolean) {
     if (pageState.phase !== "pick_name") return;
     setJoining(true);
+    setJoinError(null);
     try {
       const previousIdentity = getLocalRoomIdentity(roomId);
       if (previousIdentity?.personId && previousIdentity.participantToken) {
@@ -1330,8 +1372,9 @@ export default function JoinPage() {
       } else {
         setPageState({ phase: "assigning", room: result.room, myPersonId: result.personId, participantToken: result.participantToken });
       }
-    } catch {
+    } catch (err) {
       setJoining(false);
+      setJoinError(joinErrorMessage(err));
     }
   }
 
@@ -1408,6 +1451,7 @@ export default function JoinPage() {
             onSelfJoin={handleSelfJoin}
             onResume={handleResume}
             joining={joining}
+            error={joinError}
           />
         </motion.div>
       )}

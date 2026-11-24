@@ -80,8 +80,10 @@ No account needed. Saved splits stay on your device (`localStorage`).
   /split/scan/                 — Scan UI, quality hints, and capture preview
 /lib
   /calculate.ts                — Split calculation logic (pure functions)
+  /client-ip.ts                — Caller IP for rate limits (Netlify's own header, not X-Forwarded-For)
   /line-items.ts               — Line item quantity/portion normalization helpers
   /payment-apps.ts             — Venmo / Cash App / PayPal deep link builders
+  /room-action-schema.ts       — zod limits for live-split room actions (size, people, items)
   /receipt-capture/            — Camera frame capture, quality scoring, image preprocessing
   /receipt-parsing/            — Gemini parser service, schemas, confidence validation
   /split-flow-context.tsx      — React Context for split flow state

@@ -68,6 +68,17 @@
   .sticky-header {
     @apply sticky top-0 z-10;
   }
+  /* Homepage hero: primary button glow + pulsing receipt total */
+  .glow-sm {
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.15);
+  }
+  .receipt-total-pulse {
+    animation: receipt-total-pulse 3s ease-in-out infinite;
+  }
+  @keyframes receipt-total-pulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+  }
   .sticky-header::before {
     content: '';
     position: absolute;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { parseReceipt } from "@/lib/receipt-parsing/parse-service";
+import { clientIp } from "@/lib/client-ip";
 import { ReceiptParseError } from "@/lib/receipt-parsing/types";
 import { corsHeaders, isAllowedOrigin } from "@/lib/cors";
 
@@ -34,8 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (ratelimit) {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? request.headers.get("x-real-ip") ?? "anonymous";
-    const { success, reset } = await ratelimit.limit(ip);
+    const { success, reset } = await ratelimit.limit(clientIp(request.headers));
     if (!success) {
       return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { ...cors, "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } });
     }

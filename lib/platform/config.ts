@@ -9,7 +9,7 @@
  */
 
 export const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://warikan0.netlify.app";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://warikan.eat";
 
 const IS_NATIVE_BUILD = process.env.NEXT_PUBLIC_NATIVE_BUILD === "true";
 

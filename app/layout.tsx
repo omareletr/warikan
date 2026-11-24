@@ -7,7 +7,7 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://warikan0.netlify.app"),
+  metadataBase: new URL("https://warikan.eat"),
   title: "Warikan",
   description: "Split restaurant bills fairly. Scan a receipt, assign dishes, done.",
   applicationName: "Warikan",

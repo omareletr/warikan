@@ -89,7 +89,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
         >
           <div className="rounded-2xl shadow-2xl shadow-black/40 ring-1 ring-white/8">
             <div className="rounded-2xl bg-white p-5">
-              <QRCodeSVG value={url || "https://warikan0.netlify.app"} size={220} />
+              <QRCodeSVG value={url || "https://warikan.eat"} size={220} />
             </div>
           </div>
           {payHandle && (

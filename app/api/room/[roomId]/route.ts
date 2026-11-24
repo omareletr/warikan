@@ -256,6 +256,10 @@ export async function POST(
     return jsonError("Storage unavailable", "storage_unavailable", 503, cors);
   }
 
+  // Refuse on the declared size before reading; the length check below catches a missing or false header.
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_CHARS) {
+    return jsonError("Request is too large", "too_large", 413, cors);
+  }
   const body = await request.text();
   if (body.length > MAX_BODY_CHARS) {
     return jsonError("Request is too large", "too_large", 413, cors);
@@ -417,9 +421,10 @@ async function handleAction(
       return jsonError("personId is required for join", "missing_field", 400, cors);
     }
 
-    // Look up the person's name from the people list
+    // Join claims someone already on the list; unknown ids would grow the room past MAX_PEOPLE.
     const person: Person | undefined = state.people.find((p) => p.id === personId);
-    const personName = person?.name ?? personId;
+    if (!person) return jsonError("Person not found", "person_not_found", 404, cors);
+    const personName = person.name;
 
     // Check if already claimed by another session.
     const existingClaim = state.claimedBy[personId];

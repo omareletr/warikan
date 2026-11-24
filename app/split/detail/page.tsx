@@ -122,7 +122,7 @@ function SplitDetailContent() {
     const encoded = encodePayData(
       payHandle ? payAppId : null,
       payHandle || null,
-      totals.filter((pt) => !pt.person.covered).map((pt) => ({ name: pt.person.name, amount: pt.total })),
+      totals.filter((pt) => pt.total > 0).map((pt) => ({ name: pt.person.name, amount: pt.total })),
       split!.restaurantName
     );
     return `${APP_URL}/pay#${encoded}`;
@@ -189,8 +189,10 @@ function SplitDetailContent() {
                       <span className="flex-1 text-left text-base font-medium">{pt.person.name}</span>
                       {pt.person.covered ? (
                         <span className="text-sm font-medium text-amber-400">Covered</span>
-                      ) : (
+                      ) : pt.total > 0 ? (
                         <span className="font-mono text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
+                      ) : (
+                        <span className="text-sm font-medium text-muted-foreground">Not splitting</span>
                       )}
                       <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2, ease: EASE_OUT }}>
                         <ChevronDown className="h-5 w-5 text-muted-foreground" />

@@ -128,7 +128,7 @@ Driven by CSS variables in `app/globals.css` using the standard shadcn/ui system
 
 ### Avatar Color Palette
 Person avatars cycle through 6 colors via `colorIndex` (defined in `components/split/person-avatar.tsx`):
-1. Emerald, 2. Sky, 3. Violet, 4. Amber, 5. Rose, 6. Cyan
+1. Emerald, 2. Sky, 3. Violet, 4. Fuchsia, 5. Rose, 6. Cyan (amber is reserved for covered people)
 Covered people always use amber regardless of their index.
 
 ### Typography

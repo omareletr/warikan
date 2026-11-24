@@ -25,8 +25,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0A0F0D",
-  userScalable: false,
-  maximumScale: 1,
+  // Pinch-zoom stays on for the web (low-vision users); the iOS app locks it so it feels native.
+  ...(process.env.NEXT_PUBLIC_NATIVE_BUILD === "true" && { userScalable: false, maximumScale: 1 }),
 };
 
 export default function RootLayout({

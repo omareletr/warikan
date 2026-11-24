@@ -8,7 +8,7 @@ export const AVATAR_COLORS = [
   { bg: "bg-emerald-500/15", text: "text-emerald-400", ring: "ring-emerald-400", activeBg: "bg-emerald-500", selectedText: "text-emerald-900", outline: "outline-emerald-400" },
   { bg: "bg-sky-500/15",     text: "text-sky-400",     ring: "ring-sky-400",     activeBg: "bg-sky-500",     selectedText: "text-sky-900",     outline: "outline-sky-400" },
   { bg: "bg-violet-500/15",  text: "text-violet-400",  ring: "ring-violet-400",  activeBg: "bg-violet-500",  selectedText: "text-violet-900",  outline: "outline-violet-400" },
-  { bg: "bg-amber-500/15",   text: "text-amber-400",   ring: "ring-amber-400",   activeBg: "bg-amber-500",   selectedText: "text-amber-900",   outline: "outline-amber-400" },
+  { bg: "bg-fuchsia-500/15", text: "text-fuchsia-400", ring: "ring-fuchsia-400", activeBg: "bg-fuchsia-500", selectedText: "text-fuchsia-900", outline: "outline-fuchsia-400" },
   { bg: "bg-rose-500/15",    text: "text-rose-400",    ring: "ring-rose-400",    activeBg: "bg-rose-500",    selectedText: "text-rose-900",    outline: "outline-rose-400" },
   { bg: "bg-cyan-500/15",    text: "text-cyan-400",    ring: "ring-cyan-400",    activeBg: "bg-cyan-500",    selectedText: "text-cyan-900",    outline: "outline-cyan-400" },
 ];

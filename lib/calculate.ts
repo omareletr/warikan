@@ -78,24 +78,23 @@ export function calculateSplit(
   const coveredTotal = totals
     .filter((pt) => pt.person.covered)
     .reduce((sum, pt) => sum + pt.total, 0);
-  const payerCount = totals.filter((pt) => !pt.person.covered && pt.total > 0).length;
+  const notCovered = totals.filter((pt) => !pt.person.covered);
+  // People who ordered something chip in; if nobody did (e.g. the host treating ordered nothing), every non-covered person pays.
+  const ordered = notCovered.filter((pt) => pt.total > 0);
+  const payers = ordered.length > 0 ? ordered : notCovered;
 
-  if (coveredTotal > 0 && payerCount > 0) {
-    const extra = coveredTotal / payerCount;
-    for (const pt of totals) {
-      if (pt.person.covered) {
-        pt.total = 0;
-      } else if (pt.total > 0) {
-        pt.coveredExtra = extra;
-        pt.total += extra;
-      }
+  if (coveredTotal > 0) {
+    const extra = payers.length > 0 ? coveredTotal / payers.length : 0;
+    for (const pt of totals) if (pt.person.covered) pt.total = 0;
+    for (const pt of payers) {
+      pt.coveredExtra = extra;
+      pt.total += extra;
     }
-  } else if (coveredTotal > 0 && payerCount === 0) {
-    // Everyone is covered — zero out all totals.
-    for (const pt of totals) pt.total = 0;
   }
 
   // Round totals so individual amounts sum exactly to the grand total.
+  // Skip when nobody owes anything (everyone covered, nothing assigned), or the remainder would be sprinkled as cents.
+  if (totals.every((pt) => pt.total === 0)) return totals;
   const grandTotal = overallSubtotal + taxAmount + tipAmount + totalFees;
   const rounded = largestRemainder(totals.map((pt) => pt.total), grandTotal);
   totals.forEach((pt, i) => { pt.total = rounded[i]; });

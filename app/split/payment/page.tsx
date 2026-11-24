@@ -141,7 +141,7 @@ export default function PaymentPage() {
     const encoded = encodePayData(
       handle ? selectedAppId : null,
       handle || null,
-      totals.map((pt) => ({ name: pt.person.name, amount: pt.total })),
+      totals.filter((pt) => pt.total > 0).map((pt) => ({ name: pt.person.name, amount: pt.total })),
       state.restaurantName || undefined
     );
     return `${APP_URL}/pay#${encoded}`;
@@ -320,7 +320,7 @@ export default function PaymentPage() {
 
         {/* Person cards */}
         <div className="mt-8 flex flex-col gap-4">
-          {totals.map((pt, i) => (
+          {totals.map((pt, i) => !pt.person.covered && pt.total === 0 ? null : (
             <motion.div
               key={pt.person.id}
               initial={{ opacity: 0, y: 8 }}

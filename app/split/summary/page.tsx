@@ -43,7 +43,7 @@ export default function SummaryPage() {
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
         <AnimatedTotal amount={grandTotal} />
         <p className="mt-1 text-xs text-muted-foreground">incl. tax & tip</p>
-        <p className="mt-2 text-base text-muted-foreground">Split between {state.people.length} people</p>
+        <p className="mt-2 text-base text-muted-foreground">Split between {totals.filter((pt) => pt.total > 0).length} people</p>
       </div>
 
       <div className="mt-10">
@@ -108,7 +108,7 @@ export default function SummaryPage() {
         <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
           <div className="flex gap-3">
             <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={async () => {
-              const text = totals.map((pt) => `${pt.person.name}: ${formatCurrency(pt.total)}`).join("\n");
+              const text = totals.filter((pt) => pt.total > 0).map((pt) => `${pt.person.name}: ${formatCurrency(pt.total)}`).join("\n");
               try {
                 await navigator.clipboard.writeText(text);
                 setCopied(true);

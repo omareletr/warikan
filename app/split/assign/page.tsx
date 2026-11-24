@@ -774,7 +774,7 @@ export default function AssignPage() {
                           <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions assigned</span>
                         </div>
                       </div>
-                      <span className="flex-shrink-0 text-base font-medium tabular-nums">{formatCurrency(normalizedItem.price * normalizedItem.quantity)}</span>
+                      <span className="flex-shrink-0 font-mono text-base font-medium tabular-nums">{formatCurrency(normalizedItem.price * normalizedItem.quantity)}</span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -787,7 +787,7 @@ export default function AssignPage() {
                             return (
                               <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text)}>
                                 {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
-                                {count > 1 && <span className="tabular-nums">×{count}</span>}
+                                {count > 1 && <span className="font-mono tabular-nums">×{count}</span>}
                               </span>
                             );
                           })}
@@ -805,7 +805,7 @@ export default function AssignPage() {
                           Split portions
                         </button>
                       )}
-                      <span className="text-xs text-muted-foreground tabular-nums">{formatCurrency(normalizedItem.price)} each</span>
+                      <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(normalizedItem.price)} each</span>
                     </div>
                   </div>
 
@@ -873,7 +873,7 @@ export default function AssignPage() {
                                     })}
                                   </div>
                                 </div>
-                                <span className="text-sm tabular-nums text-muted-foreground">
+                                <span className="font-mono text-sm tabular-nums text-muted-foreground">
                                   {portion.assignedToIds.length > 1 ? formatCurrency(normalizedItem.price / portion.assignedToIds.length) : formatCurrency(normalizedItem.price)}
                                 </span>
                               </div>
@@ -926,7 +926,7 @@ export default function AssignPage() {
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  {isAssignedToMe && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />}
+                  {isAssignedToMe && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
                   <span className="text-base">
                     {item.name}
                     {singleAssignedIds.length > 0 && (
@@ -957,9 +957,9 @@ export default function AssignPage() {
                     </button>
                   )}
                   <div className="text-right">
-                    <span className="text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
+                    <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
                     {singleAssignedIds.length > 1 && (
-                      <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / singleAssignedIds.length)} each</p>
+                      <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / singleAssignedIds.length)} each</p>
                     )}
                   </div>
                 </div>
@@ -985,13 +985,13 @@ export default function AssignPage() {
             </motion.div>
           ) : allAssigned ? (
             <motion.div key="need-payers" {...swapIn} className="flex justify-center pb-1">
-              <span className="rounded-full border border-amber-500/30 bg-card shadow-lg shadow-black/20 px-4 py-2 text-sm text-amber-400">
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-amber-400">
                 Need at least 2 payers
               </span>
             </motion.div>
           ) : (
             <motion.div key="progress" {...swapIn} className="flex justify-center pb-1">
-              <span className="rounded-full border border-emerald-500/30 bg-card shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
                 <motion.span>{displaySlots}</motion.span>
                 {` of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`}
               </span>

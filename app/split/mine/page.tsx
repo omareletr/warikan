@@ -56,7 +56,7 @@ export default function MyDishesPage() {
         <div className="bottom-bar">
           <div className="mb-4 flex items-baseline justify-between">
             <span className="text-base text-muted-foreground">You owe</span>
-            <span className="text-2xl font-bold tabular-nums text-primary">{formatCurrency(share.total)}</span>
+            <span className="font-mono text-2xl font-bold tabular-nums text-primary">{formatCurrency(share.total)}</span>
           </div>
           <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled={!loaded || !hasPicks} onClick={() => router.push("/split/mine/total")}>
             See breakdown

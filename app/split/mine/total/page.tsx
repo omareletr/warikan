@@ -8,6 +8,7 @@ import { ArrowLeft, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { AnimatedTotal } from "@/components/split/animated-total";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { popIn, usePageEnter } from "@/lib/motion";
@@ -53,7 +54,7 @@ export default function MyTotalPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <p className="mt-2 text-4xl font-bold tabular-nums text-primary">{formatCurrency(share.total)}</p>
+        <AnimatedTotal amount={share.total} />
         <p className="mt-1 text-xs text-muted-foreground">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">{Math.round(share.ratio * 100)}% of the bill</p>
       </div>
@@ -66,14 +67,14 @@ export default function MyTotalPage() {
               {item.name}
               {item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground">split {item.splitCount} ways</span>}
             </span>
-            <span className="tabular-nums">{formatCurrency(item.price)}</span>
+            <span className="font-mono tabular-nums">{formatCurrency(item.price)}</span>
           </div>
         ))}
         <Separator className="my-3" />
         {rows.map((row) => (
           <div key={row.label} className="flex justify-between py-2 text-base text-muted-foreground">
             <span>{row.label}</span>
-            <span className="tabular-nums">{formatCurrency(row.amount)}</span>
+            <span className="font-mono tabular-nums">{formatCurrency(row.amount)}</span>
           </div>
         ))}
       </Card>

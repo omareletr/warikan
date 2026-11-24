@@ -132,10 +132,12 @@ Person avatars cycle through 6 colors via `colorIndex` (defined in `components/s
 Covered people always use amber regardless of their index.
 
 ### Typography
-- **Font:** Manrope (variable) — bundled via `@fontsource-variable/manrope` in root layout. One face everywhere, money included
+- **Font:** Manrope (variable) for UI text, bundled via `@fontsource-variable/manrope` in root layout
+- **Money font:** JetBrains Mono (`font-mono`, via `@fontsource-variable/jetbrains-mono`) for monetary values
 - Use standard Tailwind text sizes: `text-sm`, `text-base`, `text-lg`, `text-xl`, `text-2xl`, etc.
 - Use `text-muted-foreground` for secondary/helper text
-- Monetary values: `tabular-nums` (no monospace font), formatted with `formatCurrency` (Intl, e.g. $1,234.56). Money never animates
+- Monetary values: `font-mono tabular-nums`, formatted with `formatCurrency` (Intl, e.g. $1,234.56)
+- Delight is part of the design, not decoration to strip: big totals roll in (`AnimatedTotal`), running totals animate (NumberFlow), confetti on save, frosted-glass bars and dialogs, emerald glows and gradient totals, the animated homepage hero. Never remove these in a cleanup without asking
 
 ### shadcn/ui Components Available
 All components follow shadcn/ui defaults with no custom overrides:
@@ -208,7 +210,7 @@ All components follow shadcn/ui defaults with no custom overrides:
 All pages with a fixed bottom CTA use a consistent floating bar:
 ```
 <div className="fixed bottom-0 left-0 right-0 p-4">
-  <div className="bottom-bar">  {/* defined in globals.css: solid bg-card, no blur */}
+  <div className="bottom-bar">  {/* defined in globals.css: frosted glass */}
     {/* buttons here */}
   </div>
 </div>

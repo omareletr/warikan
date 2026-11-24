@@ -7,7 +7,10 @@ const BACKUP_KEY = "warikan_splits_unreadable";
 
 function keepBackup(raw: string) {
   try {
-    if (!localStorage.getItem(BACKUP_KEY)) localStorage.setItem(BACKUP_KEY, raw);
+    const existing = localStorage.getItem(BACKUP_KEY);
+    // Append each distinct unreadable version, so a later corruption can't be lost behind an earlier one.
+    if (!existing) localStorage.setItem(BACKUP_KEY, raw);
+    else if (!existing.includes(raw)) localStorage.setItem(BACKUP_KEY, `${existing}\n${raw}`);
   } catch {}
 }
 
@@ -77,4 +80,5 @@ export function deleteSplit(id: string): void {
 
 export function clearAllSplits(): void {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(BACKUP_KEY); // "Clear all" means gone, backups included
 }

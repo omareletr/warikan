@@ -96,7 +96,7 @@ function QRDrawerContent({ onClose, url, payAppName, payHandle }: QRDrawerProps)
             <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1">
               <span className="text-xs text-muted-foreground">{payAppName}</span>
               <span className="text-xs text-muted-foreground/40">·</span>
-              <span className="text-xs text-foreground">{payHandle}</span>
+              <span className="font-mono text-xs text-foreground">{payHandle}</span>
             </div>
           )}
         </motion.div>

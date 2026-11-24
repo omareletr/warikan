@@ -182,13 +182,13 @@ function InviteDrawerContent({
           className="mt-8 flex flex-col items-center gap-1"
         >
           <p className="text-xs text-muted-foreground">can&apos;t scan?</p>
-          <p className="text-xs tabular-nums text-muted-foreground">
+          <p className="font-mono text-xs tabular-nums text-muted-foreground">
             {joinUrl.replace(/^https?:\/\//, "").replace(new RegExp(roomId, "i"), "")}
             <span className="font-semibold text-foreground">
               {formatRoomCode(roomId)}
             </span>
           </p>
-          <p className="mt-2 text-3xl font-bold tabular-nums tracking-[0.25em] text-foreground">
+          <p className="mt-2 font-mono text-3xl font-bold tabular-nums tracking-[0.25em] text-foreground">
             {formatRoomCode(roomId)}
           </p>
         </motion.div>

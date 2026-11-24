@@ -680,7 +680,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
   return (
     <main className="flex min-h-dvh flex-col pb-52">
       {/* Sticky header */}
-      <div className="sticky-header px-6 pt-10 pb-4">
+      <div className="sticky-header px-6 pb-4">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"

@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
-import { Camera, ImagePlus, FlaskConical, History } from "lucide-react";
+import { Camera, ImagePlus, FlaskConical, History, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HeroConceptA } from "@/components/split/hero-concept-a";
@@ -14,6 +14,8 @@ import { consumePopFlag } from "@/lib/nav-flag";
 import { closeRoomIfActive } from "@/lib/room-client";
 import { getSplits } from "@/lib/splits";
 import { createId } from "@/lib/id";
+import { isNative } from "@/lib/platform";
+import { useNativeCapture } from "@/lib/use-native-capture";
 
 function createDemoReceipt() {
   return {
@@ -46,6 +48,7 @@ export default function HomePage() {
   const router = useRouter();
   const { setImage, setReceiptData, reset } = useSplitFlow();
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const nativeCapture = useNativeCapture();
 
   const [fromPop] = useState(() => consumePopFlag());
   const [heroReady, setHeroReady] = useState(false);
@@ -76,23 +79,33 @@ export default function HomePage() {
 
   const actionButtons = (
     <>
+      {/* In the native app the camera is a system sheet, so open it straight from here */}
       <Button
         className="h-14 gap-3 rounded-2xl text-base font-semibold glow-sm"
-        asChild
+        disabled={nativeCapture.loading}
+        onClick={async () => {
+          if (!isNative()) return router.push("/split/scan");
+          if (await nativeCapture.scan()) router.push("/split/review");
+        }}
       >
-        <Link href="/split/scan">
-          <Camera className="h-5 w-5" />
-          Scan Receipt
-        </Link>
+        {nativeCapture.loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+        Scan Receipt
       </Button>
       <Button
         variant="outline"
         className="h-14 gap-3 rounded-2xl text-base font-semibold"
-        onClick={() => uploadInputRef.current?.click()}
+        disabled={nativeCapture.loading}
+        onClick={async () => {
+          if (!isNative()) return uploadInputRef.current?.click();
+          if (await nativeCapture.pickPhoto()) router.push("/split/review");
+        }}
       >
         <ImagePlus className="h-5 w-5" />
         Upload Photo
       </Button>
+      {nativeCapture.error && (
+        <p className="text-center text-sm text-destructive">{nativeCapture.error}</p>
+      )}
     </>
   );
 
@@ -104,7 +117,7 @@ export default function HomePage() {
       className="flex min-h-dvh flex-col px-6 pb-10"
     >
       {/* Top bar */}
-      <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+      <div className="sticky-header -mx-6 px-6 pb-3">
         <div className="flex items-center justify-start">
           {splitCount > 0 && (
             <Button

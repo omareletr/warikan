@@ -251,7 +251,7 @@ export default function PaymentPage() {
         {...pageEnter}
         className="flex min-h-dvh flex-col px-6 pb-40"
       >
-        <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+        <div className="sticky-header -mx-6 px-6 pb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild aria-label="Go back">
               <Link href={state.editingSplitId ? `/split/detail?id=${state.editingSplitId}` : "/split/summary"}>

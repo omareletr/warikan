@@ -158,7 +158,7 @@ export default function PeoplePage() {
 
   return (
     <motion.main {...pageEnter} className={cn("flex min-h-dvh flex-col px-6", hasExistingRoom ? "pb-64" : "pb-48")}>
-      <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+      <div className="sticky-header -mx-6 px-6 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
             <Link href="/split/review"><ArrowLeft className="h-5 w-5" /></Link>

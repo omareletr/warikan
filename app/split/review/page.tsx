@@ -21,7 +21,8 @@ import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
 import { normalizeLineItem, normalizeLineItems } from "@/lib/line-items";
-import { apiUrl } from "@/lib/platform";
+import { apiUrl, isNative } from "@/lib/platform";
+import { useNativeCapture } from "@/lib/use-native-capture";
 import { createId } from "@/lib/id";
 import type { Fee, LineItem } from "@/lib/types";
 
@@ -132,6 +133,7 @@ export default function ReviewPage() {
   const [aiDeclined, setAiDeclined] = useState(false);
   const [itemsRef] = useAutoAnimate<HTMLDivElement>();
   const [feesRef] = useAutoAnimate<HTMLDivElement>();
+  const nativeCapture = useNativeCapture();
 
   useEffect(() => {
     if (loaded && !state.image && !state.ocrText && state.lineItems.length === 0) router.replace("/");
@@ -267,7 +269,7 @@ export default function ReviewPage() {
 
   return (
     <motion.main {...pageEnter} className={`flex min-h-dvh flex-col px-6 ${totalFees > 0 ? "pb-80" : "pb-72"}`}>
-      <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+      <div className="sticky-header -mx-6 px-6 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
             <Link href={state.editingSplitId ? `/split/detail?id=${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>
@@ -286,7 +288,15 @@ export default function ReviewPage() {
             <Button variant="outline" size="sm" onClick={() => { setError(null); setRetryKey((k) => k + 1); }}>
               Try again
             </Button>
-            <Button variant="outline" size="sm" onClick={() => router.push("/split/scan")}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={nativeCapture.loading}
+              onClick={async () => {
+                if (!isNative()) return router.push("/split/scan");
+                if (await nativeCapture.scan()) setError(null); // new receipt is in state; the parse effect re-runs
+              }}
+            >
               <Camera className="mr-1.5 h-4 w-4" />
               Retake Photo
             </Button>
@@ -294,6 +304,7 @@ export default function ReviewPage() {
               Add items manually
             </Button>
           </div>
+          {nativeCapture.error && <p className="mt-3 text-sm text-destructive">{nativeCapture.error}</p>}
         </div>
       )}
 

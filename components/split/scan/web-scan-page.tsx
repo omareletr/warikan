@@ -165,7 +165,7 @@ export function WebScanPage({ setImage }: WebScanPageProps) {
         )}
       </AnimatePresence>
 
-      <div className="absolute left-0 right-0 top-0 flex items-center px-4 pb-4 pt-12">
+      <div className="absolute left-0 right-0 top-0 flex items-center px-4 pb-4 pt-[max(3rem,calc(env(safe-area-inset-top)+0.75rem))]">
         <button aria-label="Go back" className="flex h-11 w-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-xl transition-transform active:scale-95" onClick={() => router.push("/")}>
           <ArrowLeft className="h-5 w-5" />
         </button>

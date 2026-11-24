@@ -17,6 +17,8 @@ const EMERALD = "hsl(160 64% 52%)";
 const EMERALD_HEX = "#10B981";
 const RECEIPT_W = 160;
 const RECEIPT_H = 224;
+/** Room around the receipt for the ±30px tear slide, 2° tilt and drop shadow */
+const SVG_PAD = 60;
 
 /** Y positions of the 5 line-item rows inside the receipt SVG */
 const LINE_ITEM_YS = [52, 65, 78, 91, 104];
@@ -259,13 +261,15 @@ export function HeroConceptA({ onReady }: HeroConceptAProps) {
         transition={{ type: "spring", stiffness: 120, damping: 20 }}
         className="relative"
       >
+        {/* iOS WebKit ignores overflow:visible here and clips to the viewBox, so pad
+            the canvas to fit the torn-apart halves + shadow; negative margin keeps layout. */}
         <svg
-          viewBox={`0 0 ${RECEIPT_W} ${RECEIPT_H}`}
-          width={RECEIPT_W}
-          height={RECEIPT_H}
+          viewBox={`${-SVG_PAD} ${-SVG_PAD} ${RECEIPT_W + SVG_PAD * 2} ${RECEIPT_H + SVG_PAD * 2}`}
+          width={RECEIPT_W + SVG_PAD * 2}
+          height={RECEIPT_H + SVG_PAD * 2}
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
-          style={{ overflow: "visible" }}
+          style={{ overflow: "visible", margin: -SVG_PAD }}
         >
           <defs>
             {/* Inner glow gradient */}

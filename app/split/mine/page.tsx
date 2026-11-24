@@ -35,7 +35,7 @@ export default function MyDishesPage() {
 
   return (
     <motion.main {...pageEnter} className="flex min-h-dvh flex-col px-6 pb-40">
-      <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+      <div className="sticky-header -mx-6 px-6 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back"><Link href="/split/review"><ArrowLeft className="h-5 w-5" /></Link></Button>
           <h1 className="text-xl font-bold">What did you have?</h1>

@@ -18,7 +18,7 @@ A mobile web app for splitting restaurant receipts fairly. Photograph a receipt,
 5. **Summary** — See each person's itemized total
 6. **Payment** — Copy amounts or send deep links via Venmo, Cash App, or PayPal
 
-Everything runs in the browser. No account required. Splits are saved to `localStorage`.
+No account needed. Saved splits stay on your device (`localStorage`).
 
 ---
 
@@ -26,7 +26,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 
 | Layer | Tech |
 |---|---|
-| Framework | Next.js 16 (App Router) |
+| Framework | Next.js 15 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
 | Components | shadcn/ui (Radix UI primitives) |
@@ -34,6 +34,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
 | Receipt Parsing | Apple VisionKit/Vision OCR on iOS + Google Gemini Flash for structured parsing |
 | Native App | Capacitor |
 | Deployment | Netlify |
+| Tests | Vitest (`npm test`) for the split math |
 
 ---
 
@@ -86,7 +87,7 @@ Everything runs in the browser. No account required. Splits are saved to `localS
   /split-flow-context.tsx      — React Context for split flow state
   /splits.ts                   — localStorage read/write for splits
   /types.ts                    — TypeScript interfaces
-/scripts                       — Native build helper and app icon generation scripts (Recraft)
+/scripts                       — Native build helper, TestFlight upload, and icon export (`node scripts/export-icons.mjs` renders every icon and splash from `public/icon.svg`)
 /ios/App/App
   /ReceiptOCRPlugin.swift      — Capacitor plugin for Apple VisionKit/Vision receipt OCR
   /MainViewController.swift    — Capacitor bridge controller registering app-local native plugins

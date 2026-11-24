@@ -14,7 +14,7 @@ If an update is needed, draft the proposed README changes and ask the user for a
 Warikan helps groups split restaurant receipts fairly. A user photographs a receipt, the app extracts line items using AI, users assign each dish to people, and the app calculates each person's share including tax and tip. The name means "going dutch" in Japanese.
 
 ## Current State
-V1 web app is complete and deployed to https://warikan0.netlify.app. All 7 core screens are built and polished (47-item UI audit resolved). The "covered person" birthday feature is shipped.
+V1 web app is complete and deployed to https://warikan.eat (Netlify; https://warikan0.netlify.app still serves without redirect and must stay allowed in `lib/cors.ts` and the room `payUrl` check, because installed native builds call the API there). All 7 core screens are built and polished (47-item UI audit resolved). The "covered person" birthday feature is shipped.
 
 The web app lives in the project root. (The old iOS/Swift codebase was removed in a repo cleanup — it exists only in git history.)
 

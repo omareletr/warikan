@@ -5,6 +5,9 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 // start within the first few seconds, so one upload is at most 3 upstream calls.
 const RETRY_DELAYS_MS = [600, 1500];
 const RETRY_WINDOW_MS = 8000;
+// Netlify stops a function at 60s; finish (or give up cleanly) 10s before that.
+const REQUEST_DEADLINE_MS = 50_000;
+const CALL_TIMEOUT_MS = 30_000;
 
 const BASE_PROMPT = `Extract receipt data as JSON only.
 
@@ -71,6 +74,11 @@ export class GeminiReceiptParser implements ReceiptParser {
     this.apiKey = apiKey;
   }
 
+  /** Time left in this request's overall budget. */
+  msLeft(): number {
+    return this.startedAt + REQUEST_DEADLINE_MS - Date.now();
+  }
+
   async parse(input: ReceiptParseInput): Promise<ParsedReceipt> {
     return this.parseWithPrompt(input, input.kind === "text" ? TEXT_PROMPT : IMAGE_PROMPT);
   }
@@ -126,8 +134,10 @@ export class GeminiReceiptParser implements ReceiptParser {
   }
 
   private async request(url: string, body: string): Promise<Response> {
+    const budget = Math.min(CALL_TIMEOUT_MS, this.msLeft());
+    if (budget <= 0) throw new ReceiptParseError("timeout");
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), budget);
     try {
       return await fetch(url, { method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" }, body });
     } catch (error) {

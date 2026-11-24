@@ -2,20 +2,52 @@ import type { Split } from "./types";
 import { normalizeLineItems } from "./line-items";
 
 const STORAGE_KEY = "warikan_splits";
+// History that can't be read in full is copied here before anything rewrites it, so nothing is ever deleted.
+const BACKUP_KEY = "warikan_splits_unreadable";
+
+function keepBackup(raw: string) {
+  try {
+    if (!localStorage.getItem(BACKUP_KEY)) localStorage.setItem(BACKUP_KEY, raw);
+  } catch {}
+}
+
+function readSplit(value: unknown): Split[] {
+  const split = value as Split;
+  if (!split || typeof split.id !== "string" || !Array.isArray(split.lineItems) || !Array.isArray(split.people)) return [];
+  try {
+    return [{ ...split, lineItems: normalizeLineItems(split.lineItems) }];
+  } catch {
+    return [];
+  }
+}
 
 export function getSplits(): Split[] {
   if (typeof window === "undefined") return [];
+  let raw: string | null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Split[];
-    if (!Array.isArray(parsed)) throw new Error("invalid");
-    return parsed.map((split) => ({ ...split, lineItems: normalizeLineItems(split.lineItems) }));
+    raw = localStorage.getItem(STORAGE_KEY);
   } catch {
-    console.error("Warikan: split history corrupted — clearing storage.");
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
     return [];
   }
+  if (!raw) return [];
+
+  let parsed: unknown = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {}
+  if (!Array.isArray(parsed)) {
+    console.error("Warikan: split history unreadable — kept a copy, starting empty.");
+    keepBackup(raw);
+    return [];
+  }
+
+  // One broken split shouldn't hide the rest: skip it, keep a copy of the original.
+  const splits = parsed.flatMap(readSplit);
+  if (splits.length < parsed.length) {
+    console.error(`Warikan: skipped ${parsed.length - splits.length} unreadable split(s) — kept a copy.`);
+    keepBackup(raw);
+  }
+  return splits;
 }
 
 export function saveSplit(split: Split): void {

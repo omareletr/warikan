@@ -131,7 +131,7 @@ function SplitDetailContent() {
   return (
     <>
       <motion.main {...pageEnter} className="flex min-h-dvh flex-col px-6 pb-48">
-        <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+        <div className="sticky-header -mx-6 px-6 pb-3">
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="-ml-3" asChild aria-label="Go back">
               <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>

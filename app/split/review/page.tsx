@@ -267,7 +267,7 @@ export default function ReviewPage() {
 
   return (
     <motion.main {...pageEnter} className={`flex min-h-dvh flex-col px-6 ${totalFees > 0 ? "pb-80" : "pb-72"}`}>
-      <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+      <div className="sticky-header -mx-6 px-6 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild aria-label="Go back">
             <Link href={state.editingSplitId ? `/split/detail?id=${state.editingSplitId}` : "/"}><ArrowLeft className="h-5 w-5" /></Link>

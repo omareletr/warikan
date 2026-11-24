@@ -19,7 +19,7 @@ export function CapturePreview({ photo, quality, onUse, onRetake, onUpload }: Ca
     <div className="absolute inset-0 z-30 flex flex-col bg-black">
       <div className="relative flex-1 overflow-hidden">
         <img src={photoToDataUrl(photo)} alt="Captured receipt preview" className="h-full w-full object-contain" />
-        <div className="absolute left-0 right-0 top-0 bg-gradient-to-b from-black/65 to-transparent px-5 pb-16 pt-12">
+        <div className="absolute left-0 right-0 top-0 bg-gradient-to-b from-black/65 to-transparent px-5 pb-16 pt-[max(3rem,calc(env(safe-area-inset-top)+0.75rem))]">
           <div className="inline-flex rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-sm font-medium text-white/75 backdrop-blur-xl">
             Preview
           </div>

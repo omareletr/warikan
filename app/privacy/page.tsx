@@ -64,7 +64,7 @@ export const metadata = { title: "Privacy Policy · Warikan" };
 export default function PrivacyPage() {
   return (
     <main className="flex min-h-dvh flex-col px-6 pb-8">
-      <div className="sticky-header -mx-6 px-6 pt-10 pb-3">
+      <div className="sticky-header -mx-6 px-6 pb-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
             <Link href="/" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>

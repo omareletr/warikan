@@ -2,9 +2,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
-// DRAFT: fill in CONTACT_EMAIL and review before publishing.
-const CONTACT_EMAIL = "[contact email]";
 const LAST_UPDATED = "October 25, 2026";
 
 const SECTIONS: { title: string; body: React.ReactNode }[] = [
@@ -48,7 +47,15 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   },
   {
     title: "Changes and contact",
-    body: `We'll update this page if anything changes. Questions or requests: ${CONTACT_EMAIL}.`,
+    body: (
+      <>
+        We&apos;ll update this page if anything changes. Questions or requests:{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary underline-offset-4 hover:underline">
+          {CONTACT_EMAIL}
+        </a>
+        .
+      </>
+    ),
   },
 ];
 

@@ -11,7 +11,7 @@
 [context.production]
   command = "npm run build"
   [context.production.environment]
-    NEXT_PUBLIC_APP_URL = "https://warikan0.netlify.app"
+    NEXT_PUBLIC_APP_URL = "https://warikan.eat"
 
 [functions]
   node_bundler = "esbuild"

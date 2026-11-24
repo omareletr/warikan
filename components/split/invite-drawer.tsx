@@ -12,7 +12,7 @@ interface InviteDrawerProps {
   open: boolean;
   onClose: () => void;
   roomId: string;        // 6-char e.g. "X7K2MN"
-  joinUrl: string;       // full URL e.g. "https://warikan0.netlify.app/join/X7K2MN"
+  joinUrl: string;       // full URL e.g. "https://warikan.eat/join/X7K2MN"
   peopleCount: number;   // total people in the split
   connectedCount: number; // how many guests have joined
   selfServe?: boolean;

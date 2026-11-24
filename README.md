@@ -4,7 +4,7 @@
 
 A mobile web app for splitting restaurant receipts fairly. Photograph a receipt, let AI extract the line items, assign each dish to people, and get everyone's exact share including tax and tip.
 
-**Live app:** [warikan0.netlify.app](https://warikan0.netlify.app)
+**Live app:** [warikan.eat](https://warikan.eat)
 
 ---
 

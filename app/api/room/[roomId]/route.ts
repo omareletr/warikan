@@ -756,6 +756,7 @@ async function handleAction(
     // Localhost is restricted to /pay paths only to avoid open-redirect to arbitrary ports.
     const isRelative = action.payUrl.startsWith("/pay");
     const isAbsolute =
+      action.payUrl.startsWith("https://warikan.eat/pay") ||
       action.payUrl.startsWith("https://warikan0.netlify.app/pay") ||
       /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app\/pay/.test(action.payUrl) ||
       /^http:\/\/localhost(?::\d+)?\/pay/.test(action.payUrl);

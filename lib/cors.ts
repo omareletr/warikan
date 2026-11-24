@@ -10,6 +10,8 @@
 // capacitor://localhost is kept for iOS builds made before the app hostname
 // changed to warikan.local.
 const PRODUCTION_ORIGINS = [
+  "https://warikan.eat",
+  // Old address: installed native builds still call the API here.
   "https://warikan0.netlify.app",
   "capacitor://warikan.local",
   "capacitor://localhost",

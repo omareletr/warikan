@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import type { RoomState, RoomAction, LineItem, Person } from "@/lib/types";
 import {
@@ -10,6 +11,8 @@ import {
   portionAssignmentsToLegacy,
 } from "@/lib/line-items";
 import { corsHeaders as sharedCorsHeaders } from "@/lib/cors";
+import { clientIp } from "@/lib/client-ip";
+import { MAX_BODY_CHARS, MAX_NAME_LENGTH, MAX_PEOPLE, RoomActionSchema } from "@/lib/room-action-schema";
 
 // Room actions mutate Redis state — always dynamic.
 export const dynamic = "force-dynamic";
@@ -27,6 +30,15 @@ const redis =
 if (!redis) {
   console.warn("[room] Upstash env vars missing — room API will return 503");
 }
+
+// Per-IP caps on the two actions that grow storage. A whole table on one restaurant
+// Wi-Fi shares an IP, so joins allow a full room several times over.
+const actionLimits = redis
+  ? {
+      create: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, "1 h"), prefix: "warikan:rl:room-create" }),
+      add_person: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, "10 m"), prefix: "warikan:rl:room-join" }),
+    }
+  : null;
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -100,7 +112,7 @@ function isValidParticipantToken(state: PrivateRoomState, personId?: string, tok
 }
 
 function disambiguateName(name: string, people: Person[], personId?: string): string {
-  const base = name.trim() || "Guest";
+  const base = name.trim().slice(0, MAX_NAME_LENGTH).trim() || "Guest";
   const existing = people.filter((p) => p.id !== personId).map((p) => p.name);
   if (!existing.includes(base)) return base;
   let n = 2;
@@ -244,11 +256,18 @@ export async function POST(
     return jsonError("Storage unavailable", "storage_unavailable", 503, cors);
   }
 
+  const body = await request.text();
+  if (body.length > MAX_BODY_CHARS) {
+    return jsonError("Request is too large", "too_large", 413, cors);
+  }
   let action: RoomAction;
   try {
-    action = (await request.json()) as RoomAction;
+    action = JSON.parse(body) as RoomAction;
   } catch {
     return jsonError("Invalid JSON body", "invalid_body", 400, cors);
+  }
+  if (!RoomActionSchema.safeParse(action).success) {
+    return jsonError("Invalid room action", "invalid_body", 400, cors);
   }
 
   if (!action.type || !VALID_ACTION_TYPES.has(action.type)) {
@@ -258,6 +277,17 @@ export async function POST(
       400,
       cors
     );
+  }
+
+  const limiter = actionLimits?.[action.type as keyof typeof actionLimits];
+  if (limiter) {
+    const { success, reset } = await limiter.limit(clientIp(request.headers));
+    if (!success) {
+      return jsonError("Too many requests. Try again later.", "rate_limited", 429, {
+        ...cors,
+        "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)),
+      });
+    }
   }
 
   // Each attempt re-reads the room and re-runs the action's checks, so a retry
@@ -348,6 +378,9 @@ async function handleAction(
       if (hostError) return hostError;
     }
 
+    if (state.people.length >= MAX_PEOPLE) {
+      return jsonError(`A live split holds up to ${MAX_PEOPLE} people`, "room_full", 409, cors);
+    }
     const personId = action.personId ?? randomBytes(16).toString("hex");
     if (state.people.some((p) => p.id === personId)) {
       return jsonError("Person already exists", "person_exists", 409, cors);
@@ -756,6 +789,7 @@ async function handleAction(
     // Localhost is restricted to /pay paths only to avoid open-redirect to arbitrary ports.
     const isRelative = action.payUrl.startsWith("/pay");
     const isAbsolute =
+      action.payUrl.startsWith("https://warikan.eat/pay") ||
       action.payUrl.startsWith("https://warikan0.netlify.app/pay") ||
       /^https:\/\/[a-z0-9-]+--warikan0\.netlify\.app\/pay/.test(action.payUrl) ||
       /^http:\/\/localhost(?::\d+)?\/pay/.test(action.payUrl);

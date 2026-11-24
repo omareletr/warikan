@@ -25,6 +25,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0A0F0D",
+  // Lets CSS read the iPhone's safe areas (env(safe-area-inset-*)); layout already clears the status bar.
+  viewportFit: "cover",
   // Pinch-zoom stays on for the web (low-vision users); the iOS app locks it so it feels native.
   ...(process.env.NEXT_PUBLIC_NATIVE_BUILD === "true" && { userScalable: false, maximumScale: 1 }),
 };

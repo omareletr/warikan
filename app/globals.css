@@ -49,6 +49,8 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    /* Room below the last content for the iPhone home indicator (0 in browsers). */
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   * {
@@ -64,6 +66,8 @@
   /* The frosted-glass floating bar that holds each page's main button. */
   .bottom-bar {
     @apply rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20;
+    /* Keep the bar's buttons clear of the iPhone home indicator. */
+    margin-bottom: env(safe-area-inset-bottom);
   }
   .sticky-header {
     @apply sticky top-0 z-10;

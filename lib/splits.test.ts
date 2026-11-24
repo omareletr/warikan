@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getSplits, saveSplit } from "./splits";
+import { clearAllSplits, getSplits, saveSplit } from "./splits";
 import type { Split } from "./types";
 
 const split = (id: string): Split => ({
@@ -33,5 +33,22 @@ describe("saved split history", () => {
     saveSplit(split("new"));
     expect(store.get("warikan_splits_unreadable")).toBe("{not json");
     expect(getSplits().map((s) => s.id)).toEqual(["new"]);
+  });
+
+  it("keeps a later corruption too, once each", () => {
+    store.set("warikan_splits", "{first");
+    getSplits();
+    getSplits();
+    store.set("warikan_splits", "{second");
+    getSplits();
+    expect(store.get("warikan_splits_unreadable")).toBe("{first\n{second");
+  });
+
+  it("Clear all removes the backup as well", () => {
+    store.set("warikan_splits", "{not json");
+    getSplits();
+    clearAllSplits();
+    expect(store.has("warikan_splits")).toBe(false);
+    expect(store.has("warikan_splits_unreadable")).toBe(false);
   });
 });

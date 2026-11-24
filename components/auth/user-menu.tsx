@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth-context";
 import { SignInSheet } from "@/components/auth/sign-in-sheet";
+import { isNative } from "@/lib/platform/config";
 
 function UserAvatar({
   photoURL,
@@ -62,6 +63,10 @@ export function UserMenu() {
   if (loading) {
     return <div className="h-11 w-11" />;
   }
+
+  // No sign-in in the iOS/Android app: Google-only login would need Sign in
+  // with Apple (App Store guideline 4.8) and in-app account deletion first.
+  if (isNative()) return null;
 
   // Signed out — ghost person icon opens sign-in sheet
   if (!user) {

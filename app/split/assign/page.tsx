@@ -18,7 +18,7 @@ import { PersonAvatar, AVATAR_COLORS } from "@/components/split/person-avatar";
 import { InviteDrawer } from "@/components/split/invite-drawer";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
-import { formatCurrency, initials, inlineInitials } from "@/lib/calculate";
+import { formatCurrency, inlineInitials } from "@/lib/calculate";
 import {
   applyPortionAssignments,
   countAssignedPortions,
@@ -774,24 +774,10 @@ export default function AssignPage() {
                           <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions assigned</span>
                         </div>
                       </div>
-                      <span className="flex-shrink-0 font-mono text-base font-medium tabular-nums">{formatCurrency(normalizedItem.price * normalizedItem.quantity)}</span>
+                      <span className="flex-shrink-0 text-base font-medium tabular-nums">{formatCurrency(normalizedItem.price * normalizedItem.quantity)}</span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex gap-1">
-                          {portions.map((portion) => (
-                            <div
-                              key={portion.id}
-                              className={cn(
-                                "h-2 w-2 rounded-full transition-colors",
-                                portion.assignedToIds.length > 0 ? "bg-primary" : "bg-muted"
-                              )}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity}</span>
-                      </div>
                       {claimEntries.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {claimEntries.map(([pid, count]) => {
@@ -801,7 +787,7 @@ export default function AssignPage() {
                             return (
                               <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text)}>
                                 {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
-                                {count > 1 && <span className="font-mono tabular-nums">×{count}</span>}
+                                {count > 1 && <span className="tabular-nums">×{count}</span>}
                               </span>
                             );
                           })}
@@ -814,12 +800,12 @@ export default function AssignPage() {
                             e.stopPropagation();
                             setExpandedItemId(expanded ? null : item.id);
                           }}
-                          className="ml-auto rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
+                          className="relative ml-auto rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground after:absolute after:-inset-3 after:content-[''] active:opacity-70"
                         >
-                          Share
+                          Split portions
                         </button>
                       )}
-                      <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(normalizedItem.price)}/ea</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{formatCurrency(normalizedItem.price)} each</span>
                     </div>
                   </div>
 
@@ -887,7 +873,7 @@ export default function AssignPage() {
                                     })}
                                   </div>
                                 </div>
-                                <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                                <span className="text-sm tabular-nums text-muted-foreground">
                                   {portion.assignedToIds.length > 1 ? formatCurrency(normalizedItem.price / portion.assignedToIds.length) : formatCurrency(normalizedItem.price)}
                                 </span>
                               </div>
@@ -940,7 +926,7 @@ export default function AssignPage() {
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  {isAssignedToMe && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
+                  {isAssignedToMe && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />}
                   <span className="text-base">
                     {item.name}
                     {singleAssignedIds.length > 0 && (
@@ -965,15 +951,15 @@ export default function AssignPage() {
                     <button
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); toggleAssignment(item.id); }}
-                      className="rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
+                      className="relative rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground after:absolute after:-inset-3 after:content-[''] active:opacity-70"
                     >
-                      Share
+                      Split it
                     </button>
                   )}
                   <div className="text-right">
-                    <span className="font-mono text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
+                    <span className="text-base font-medium tabular-nums">{formatCurrency(item.price)}</span>
                     {singleAssignedIds.length > 1 && (
-                      <p className="font-mono text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / singleAssignedIds.length)} ea</p>
+                      <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.price / singleAssignedIds.length)} each</p>
                     )}
                   </div>
                 </div>
@@ -986,26 +972,26 @@ export default function AssignPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4">
         <AnimatePresence mode="popLayout" initial={false}>
           {!loaded ? (
-            <motion.div key="loading" {...swapIn} className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+            <motion.div key="loading" {...swapIn} className="bottom-bar">
               <Button className="h-14 w-full rounded-2xl text-base font-semibold" disabled>
                 Loading...
               </Button>
             </motion.div>
           ) : canContinue ? (
-            <motion.div key="continue" {...swapIn} className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+            <motion.div key="continue" {...swapIn} className="bottom-bar">
               <Button className="h-14 w-full rounded-2xl text-base font-semibold" onClick={handleContinue}>
                 Continue
               </Button>
             </motion.div>
           ) : allAssigned ? (
             <motion.div key="need-payers" {...swapIn} className="flex justify-center pb-1">
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-amber-400">
+              <span className="rounded-full border border-amber-500/30 bg-card shadow-lg shadow-black/20 px-4 py-2 text-sm text-amber-400">
                 Need at least 2 payers
               </span>
             </motion.div>
           ) : (
             <motion.div key="progress" {...swapIn} className="flex justify-center pb-1">
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-xl shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
+              <span className="rounded-full border border-emerald-500/30 bg-card shadow-lg shadow-black/20 px-4 py-2 text-sm text-emerald-400">
                 <motion.span>{displaySlots}</motion.span>
                 {` of ${totalSlots} ${totalSlots === 1 ? "portion" : "portions"} assigned`}
               </span>

@@ -61,33 +61,9 @@
 }
 
 @layer utilities {
-  .glow-sm {
-    box-shadow: 0 0 12px rgba(52, 211, 153, 0.15);
-  }
-  .glow-md {
-    box-shadow: 0 0 20px rgba(52, 211, 153, 0.25);
-  }
-  .glow-lg {
-    box-shadow: 0 0 30px rgba(52, 211, 153, 0.35);
-  }
-  .glass {
-    @apply bg-card/60 backdrop-blur-xl border border-border/50;
-  }
-  .text-gradient {
-    @apply bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent;
-  }
-  .tear-glow-left {
-    filter: drop-shadow(2px 0 8px rgba(52, 211, 153, 0.18));
-  }
-  .tear-glow-right {
-    filter: drop-shadow(-2px 0 8px rgba(52, 211, 153, 0.18));
-  }
-  .receipt-total-pulse {
-    animation: receipt-total-pulse 3s ease-in-out infinite;
-  }
-  @keyframes receipt-total-pulse {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
+  /* The floating bar that holds each page's main button. */
+  .bottom-bar {
+    @apply rounded-3xl border border-border bg-card p-5 shadow-lg shadow-black/20;
   }
   .sticky-header {
     @apply sticky top-0 z-10;

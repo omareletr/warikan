@@ -262,7 +262,7 @@ export default function PeoplePage() {
       )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="flex flex-col gap-3 rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="flex flex-col gap-3 bottom-bar">
           <Button
             variant="outline"
             className="h-12 w-full gap-2 rounded-2xl text-base font-semibold border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"

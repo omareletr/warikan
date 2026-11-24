@@ -132,10 +132,10 @@ Person avatars cycle through 6 colors via `colorIndex` (defined in `components/s
 Covered people always use amber regardless of their index.
 
 ### Typography
-- **Font:** Geist Sans — loaded via `next/font/google` in root layout
+- **Font:** Manrope (variable) — bundled via `@fontsource-variable/manrope` in root layout. One face everywhere, money included
 - Use standard Tailwind text sizes: `text-sm`, `text-base`, `text-lg`, `text-xl`, `text-2xl`, etc.
 - Use `text-muted-foreground` for secondary/helper text
-- Monospaced digits for monetary values: use `tabular-nums` font-feature
+- Monetary values: `tabular-nums` (no monospace font), formatted with `formatCurrency` (Intl, e.g. $1,234.56). Money never animates
 
 ### shadcn/ui Components Available
 All components follow shadcn/ui defaults with no custom overrides:
@@ -208,7 +208,7 @@ All components follow shadcn/ui defaults with no custom overrides:
 All pages with a fixed bottom CTA use a consistent floating bar:
 ```
 <div className="fixed bottom-0 left-0 right-0 p-4">
-  <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+  <div className="bottom-bar">  {/* defined in globals.css: solid bg-card, no blur */}
     {/* buttons here */}
   </div>
 </div>
@@ -234,7 +234,7 @@ Content padding to clear the bar:
     /[id]/page.tsx             — SplitDetailPage (view/edit saved split)
   /api
     /parse-receipt/route.ts    — Gemini API endpoint
-  /layout.tsx                  — Root layout with Geist Sans font, dark class
+  /layout.tsx                  — Root layout with Manrope font, dark class
   /globals.css                 — Tailwind base + dark theme CSS variables
 /components
   /ui/                         — shadcn/ui components

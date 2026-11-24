@@ -136,8 +136,10 @@ export function calculateMyShare(
   return { subtotal, taxShare, tipShare, feesShare, total, ratio, items };
 }
 
+const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+
 export function formatCurrency(amount: number): string {
-  return `$${amount.toFixed(2)}`;
+  return usd.format(amount);
 }
 
 export function initials(name: string): string {

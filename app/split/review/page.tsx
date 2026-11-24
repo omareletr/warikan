@@ -15,6 +15,8 @@ import { TipSelector } from "@/components/split/tip-selector";
 import { SummaryBar } from "@/components/split/summary-bar";
 import { ReceiptSkeleton } from "@/components/split/receipt-skeleton";
 import { RevealSection } from "@/components/split/reveal-section";
+import { AiConsentSheet } from "@/components/split/ai-consent-sheet";
+import { hasAiConsent, saveAiConsent } from "@/lib/ai-consent";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { saveSplit } from "@/lib/splits";
@@ -100,7 +102,7 @@ function FeeRow({ fee, onUpdate, onRemove }: FeeRowProps) {
     >
       <span className="text-base">{fee.name}</span>
       <div className="flex items-center gap-2">
-        <span className="font-mono text-base font-medium tabular-nums">
+        <span className="text-base font-medium tabular-nums">
           ${fee.amount.toFixed(2)}
         </span>
         <Button
@@ -125,6 +127,9 @@ export default function ReviewPage() {
   const [parseMetadata, setParseMetadata] = useState<ParseMetadata | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [justParsed, setJustParsed] = useState(false);
+  // null until read from storage, so nothing is sent before we know
+  const [aiConsent, setAiConsent] = useState<boolean | null>(null);
+  const [aiDeclined, setAiDeclined] = useState(false);
   const [itemsRef] = useAutoAnimate<HTMLDivElement>();
   const [feesRef] = useAutoAnimate<HTMLDivElement>();
 
@@ -133,7 +138,12 @@ export default function ReviewPage() {
   }, [loaded, state.image, state.ocrText, state.lineItems.length, router]);
 
   useEffect(() => {
+    setAiConsent(hasAiConsent());
+  }, []);
+
+  useEffect(() => {
     if ((!state.image && !state.ocrText) || state.lineItems.length > 0) return;
+    if (!aiConsent) return;
     async function parseReceipt() {
       setLoading(true);
       setError(null);
@@ -187,7 +197,7 @@ export default function ReviewPage() {
       }
     }
     parseReceipt();
-  }, [state.image, state.imageMimeType, state.ocrText, state.ocrSource, state.lineItems.length, setReceiptData, retryKey]);
+  }, [state.image, state.imageMimeType, state.ocrText, state.ocrSource, state.lineItems.length, setReceiptData, retryKey, aiConsent]);
 
   function addItem() {
     const newItem: LineItem = normalizeLineItem({ id: createId(), name: "", quantity: 1, price: 0, assignedToIds: [] });
@@ -376,7 +386,7 @@ export default function ReviewPage() {
       )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="bottom-bar">
           {state.lineItems.length > 0 && <SummaryBar subtotal={subtotal} tax={state.taxAmount} tip={state.tipAmount} fees={totalFees} />}
           {state.editingSplitId ? (
             <Button className={`${state.lineItems.length > 0 ? "mt-4" : ""} h-14 w-full rounded-2xl text-base font-semibold`} disabled={state.lineItems.length === 0} onClick={handleContinue}>Continue</Button>
@@ -388,6 +398,12 @@ export default function ReviewPage() {
           )}
         </div>
       </div>
+
+      <AiConsentSheet
+        open={aiConsent === false && !aiDeclined && !!(state.image || state.ocrText) && state.lineItems.length === 0}
+        onAllow={() => { saveAiConsent(); setAiConsent(true); }}
+        onDecline={() => setAiDeclined(true)}
+      />
     </motion.main>
   );
 }

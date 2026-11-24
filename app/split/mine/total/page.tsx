@@ -8,7 +8,6 @@ import { ArrowLeft, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AnimatedTotal } from "@/components/split/animated-total";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { popIn, usePageEnter } from "@/lib/motion";
@@ -54,7 +53,7 @@ export default function MyTotalPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <AnimatedTotal amount={share.total} />
+        <p className="mt-2 text-4xl font-bold tabular-nums text-primary">{formatCurrency(share.total)}</p>
         <p className="mt-1 text-xs text-muted-foreground">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">{Math.round(share.ratio * 100)}% of the bill</p>
       </div>
@@ -67,20 +66,20 @@ export default function MyTotalPage() {
               {item.name}
               {item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground">split {item.splitCount} ways</span>}
             </span>
-            <span className="font-mono tabular-nums">{formatCurrency(item.price)}</span>
+            <span className="tabular-nums">{formatCurrency(item.price)}</span>
           </div>
         ))}
         <Separator className="my-3" />
         {rows.map((row) => (
           <div key={row.label} className="flex justify-between py-2 text-base text-muted-foreground">
             <span>{row.label}</span>
-            <span className="font-mono tabular-nums">{formatCurrency(row.amount)}</span>
+            <span className="tabular-nums">{formatCurrency(row.amount)}</span>
           </div>
         ))}
       </Card>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="bottom-bar">
           <div className="flex gap-3">
             <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={copyAmount}>
               {copied ? <><motion.span {...popIn}><Check className="h-4 w-4 text-primary" /></motion.span>Copied</> : <><Copy className="h-4 w-4" />Copy {formatCurrency(share.total)}</>}

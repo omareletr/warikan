@@ -1,7 +1,6 @@
 import { Gift } from "lucide-react";
-import NumberFlow from "@number-flow/react";
 import { cn } from "@/lib/utils";
-import { initials } from "@/lib/calculate";
+import { formatCurrency, initials } from "@/lib/calculate";
 import type { Person } from "@/lib/types";
 
 export const AVATAR_COLORS = [
@@ -28,9 +27,7 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
     ? { bg: "bg-amber-500/15", text: "text-amber-400", ring: "ring-amber-400", activeBg: "bg-amber-500", selectedText: "text-amber-900", outline: "outline-amber-400" }
     : AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
   return (
-    <button onClick={onClick} className={cn("flex flex-col items-center gap-1.5 transition-opacity duration-200",
-      !selected && !person.covered && runningTotal !== undefined && runningTotal === 0 && "opacity-50"
-    )}>
+    <button onClick={onClick} className="flex flex-col items-center gap-1.5">
       <div className={cn(
         "relative flex h-14 w-14 items-center justify-center rounded-full text-base font-semibold transition-colors duration-200",
         selected ? `${color.activeBg} ${color.selectedText}` : `${color.bg} ${color.text}`,
@@ -59,11 +56,9 @@ export function PersonAvatar({ person, selected, runningTotal, onClick, colorInd
       {runningTotal !== undefined && (
         <span className={cn("text-sm tabular-nums", person.covered && "text-amber-400")}>
           {person.covered ? "Covered" : (
-            <NumberFlow
-              value={runningTotal}
-              format={{ style: "currency", currency: "USD", minimumFractionDigits: 2 }}
-              className={cn("tabular-nums", runningTotal === 0 && !selected ? "text-muted-foreground" : "text-primary")}
-            />
+            <span className={runningTotal === 0 && !selected ? "text-muted-foreground" : "text-primary"}>
+              {formatCurrency(runningTotal)}
+            </span>
           )}
         </span>
       )}

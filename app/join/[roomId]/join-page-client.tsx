@@ -195,24 +195,7 @@ function DoneScreen({ myPersonId, myPersonName, roomClosed, payUrl, onEdit }: Do
       animate={{ opacity: 1, scale: 1 }}
       className="relative flex min-h-dvh flex-col items-center justify-center gap-6 overflow-hidden px-6 text-center"
     >
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-20"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 40% at 50% 60%, hsl(160 64% 52% / 0.4), transparent)",
-        }}
-      />
-
       <div className="relative flex items-center justify-center">
-        {/* Pulsing ring — hidden once redirecting */}
-        {!redirecting && (
-          <motion.div
-            className="absolute h-20 w-20 rounded-full bg-primary/20"
-            animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        )}
         {/* Existing icon circle — unchanged */}
         <motion.div
           initial={{ scale: 0.6, opacity: 0 }}
@@ -754,7 +737,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                             <span className="text-xs text-muted-foreground tabular-nums">{assignedPortions}/{normalizedItem.quantity} portions claimed</span>
                           </div>
                         </div>
-                        <span className="flex-shrink-0 font-mono text-base font-medium tabular-nums">
+                        <span className="flex-shrink-0 text-base font-medium tabular-nums">
                           {formatCurrency(normalizedItem.price * normalizedItem.quantity)}
                         </span>
                       </div>
@@ -785,7 +768,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                               return (
                                 <span key={pid} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold", color.bg, color.text, pid === myPersonId && "ring-1 ring-primary/40")}>
                                   {person.covered ? <Gift className="h-3 w-3" /> : inlineInitials(person.name)}
-                                  {count > 1 && <span className="font-mono tabular-nums">×{count}</span>}
+                                  {count > 1 && <span className="tabular-nums">×{count}</span>}
                                 </span>
                               );
                             })}
@@ -798,13 +781,13 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                               e.stopPropagation();
                               setExpandedItemId(expanded ? null : item.id);
                             }}
-                            className="ml-auto rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
+                            className="ml-auto relative rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground after:absolute after:-inset-3 after:content-[''] active:opacity-70"
                           >
-                            Share
+                            Split portions
                           </button>
                         )}
-                        <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                          {formatCurrency(normalizedItem.price)}/ea
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {formatCurrency(normalizedItem.price)} each
                         </span>
                       </div>
                     </div>
@@ -873,7 +856,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                                       })}
                                     </div>
                                   </div>
-                                  <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                                  <span className="text-sm tabular-nums text-muted-foreground">
                                     {portion.length > 1 ? formatCurrency(normalizedItem.price / portion.length) : formatCurrency(normalizedItem.price)}
                                   </span>
                                 </div>
@@ -921,7 +904,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-2.5">
                     {isClaimedByMe && (
-                      <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+                      <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
                     )}
                     <span className="text-base">
                       {item.name}
@@ -959,17 +942,17 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                       <button
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); void handleShare(item, 0); }}
-                        className="rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground active:opacity-70"
+                        className="relative rounded-full border border-border/50 bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground after:absolute after:-inset-3 after:content-[''] active:opacity-70"
                       >
-                        Share
+                        Split it
                       </button>
                     )}
                     <div className="text-right">
-                      <span className="font-mono text-base font-medium tabular-nums">
+                      <span className="text-base font-medium tabular-nums">
                         {formatCurrency(item.price)}
                       </span>
                       {assigned.length > 1 && (
-                        <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                        <p className="text-xs tabular-nums text-muted-foreground">
                           {formatCurrency(item.price / assigned.length)} ea
                         </p>
                       )}
@@ -984,7 +967,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
 
       {/* Bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20 flex flex-col gap-3">
+        <div className="bottom-bar flex flex-col gap-3">
           {/* Status row — hidden when all claimed (button takes its place) */}
           {!allClaimed && (
             <div className="flex items-center justify-between gap-3">
@@ -1021,7 +1004,7 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
                   aria-hidden="true"
                   animate={shouldReduceMotion ? undefined : { scale: [1, 1.35, 1], opacity: [0.75, 1, 0.75] }}
                   transition={shouldReduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                  className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(52,211,153,0.55)]"
+                  className="h-2 w-2 rounded-full bg-primary"
                 />
                 <span className="text-xs tabular-nums text-primary">
                   {room.connectedPeople.length} online
@@ -1036,11 +1019,11 @@ function AssigningView({ room, myPersonId, participantToken, onBack, onDone, onR
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-primary">
-                  All dishes claimed! 🎉
+                  All dishes claimed
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
+                <div className="h-2 w-2 rounded-full bg-primary" />
                 <span className="text-xs tabular-nums text-primary">
                   {room.connectedPeople.length} online
                 </span>

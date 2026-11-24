@@ -90,7 +90,7 @@ export function NativeScanPage({ setImage, setReceiptText }: NativeScanPageProps
         <p className="text-base text-muted-foreground">{isIOSNative ? "Use Apple document scanning or choose a photo" : "Use your camera or photo library"}</p>
       </div>
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="flex flex-col gap-3 rounded-3xl border border-border/30 bg-card/80 p-5 shadow-lg shadow-black/20 backdrop-blur-xl">
+        <div className="flex flex-col gap-3 bottom-bar">
           {error && <p className="text-center text-sm text-destructive">{error}</p>}
           <Button className="h-14 w-full gap-3 rounded-2xl text-base font-semibold" disabled={loading} onClick={handleScanReceipt}>
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}

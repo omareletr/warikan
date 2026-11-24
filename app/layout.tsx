@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from "next";
 // next/font/google crashes when Google serves font URLs without an extension,
 // which failed production builds on Netlify.
 import "@fontsource-variable/manrope";
-import "@fontsource-variable/jetbrains-mono";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 

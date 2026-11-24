@@ -21,7 +21,7 @@ export function SplitCard({ split }: { split: Split }) {
             <p className="mt-1 text-sm text-muted-foreground">{date}</p>
           </div>
           <div className="shrink-0 text-right">
-            <p className="font-mono text-lg font-semibold tabular-nums text-primary">
+            <p className="text-lg font-semibold tabular-nums text-primary">
               {formatCurrency(split.totalAmount)}
             </p>
             <p className="mt-1 flex items-center justify-end gap-1 text-sm text-muted-foreground">

@@ -48,7 +48,6 @@ const config: Config = {
       fontFamily: {
         // Bundled via @fontsource-variable (imported in app/layout.tsx)
         sans: ['"Manrope Variable"', "sans-serif"],
-        mono: ['"JetBrains Mono Variable"', "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",

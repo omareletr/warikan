@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { popIn, usePageEnter, staggerDelay } from "@/lib/motion";
-import confetti from "canvas-confetti";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Gift, QrCode, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -226,13 +225,6 @@ export default function PaymentPage() {
     };
     try {
       saveSplit(split);
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.7 },
-        colors: ["#10B981", "#34D399", "#ffffff", "#6EE7B7"],
-        disableForReducedMotion: true,
-      });
       // Hold on the checkmark briefly so the save registers before leaving
       setSaved(true);
       setTimeout(() => {
@@ -343,7 +335,7 @@ export default function PaymentPage() {
                     {pt.person.covered ? (
                       <p className="text-base text-amber-400">Covered by group</p>
                     ) : (
-                      <p className="font-mono text-2xl font-semibold tabular-nums text-primary">
+                      <p className="text-2xl font-semibold tabular-nums text-primary">
                         {formatCurrency(pt.total)}
                       </p>
                     )}
@@ -397,7 +389,7 @@ export default function PaymentPage() {
       </motion.main>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="bottom-bar">
           {saveError && (
             <p className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {saveError}

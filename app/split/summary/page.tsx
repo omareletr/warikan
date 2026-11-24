@@ -12,7 +12,6 @@ import { Separator } from "@/components/ui/separator";
 import { useSplitFlow } from "@/lib/split-flow-context";
 import { consumePopFlag } from "@/lib/nav-flag";
 import { calculateSplit, formatCurrency, initials } from "@/lib/calculate";
-import { AnimatedTotal } from "@/components/split/animated-total";
 import { AVATAR_COLORS } from "@/components/split/person-avatar";
 
 export default function SummaryPage() {
@@ -41,7 +40,7 @@ export default function SummaryPage() {
 
       <div className="mt-8 text-center">
         {state.restaurantName && <p className="line-clamp-1 text-xl font-semibold">{state.restaurantName}</p>}
-        <AnimatedTotal amount={grandTotal} />
+        <p className="mt-2 text-4xl font-bold tabular-nums text-primary">{formatCurrency(grandTotal)}</p>
         <p className="mt-1 text-xs text-muted-foreground">incl. tax & tip</p>
         <p className="mt-2 text-base text-muted-foreground">Split between {totals.filter((pt) => pt.total > 0).length} people</p>
       </div>
@@ -65,7 +64,7 @@ export default function SummaryPage() {
                     {pt.person.covered ? (
                       <span className="text-sm font-medium text-amber-400">Covered</span>
                     ) : pt.total > 0 ? (
-                      <span className="font-mono text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
+                      <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(pt.total)}</span>
                     ) : (
                       <span className="text-sm font-medium text-muted-foreground">Not splitting</span>
                     )}
@@ -80,17 +79,17 @@ export default function SummaryPage() {
                       {pt.items.map((item, j) => (
                         <div key={j} className="flex justify-between py-2 text-base text-muted-foreground">
                           <span>{item.quantity > 1 && <span className="mr-1">{item.quantity}×</span>}{item.name}{item.mixedSplits ? <span className="ml-1 text-sm text-muted-foreground">mixed splits</span> : item.splitCount > 1 && <span className="ml-1 text-sm text-muted-foreground">split {item.splitCount} ways</span>}</span>
-                          <span className="font-mono tabular-nums">{formatCurrency(item.price)}</span>
+                          <span className="tabular-nums">{formatCurrency(item.price)}</span>
                         </div>
                       ))}
                       <Separator className="my-3" />
-                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tax</span><span className="font-mono tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
-                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tip</span><span className="font-mono tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
-                      {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="font-mono tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
+                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tax</span><span className="tabular-nums">{formatCurrency(pt.taxShare)}</span></div>
+                      <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Tip</span><span className="tabular-nums">{formatCurrency(pt.tipShare)}</span></div>
+                      {pt.feesShare > 0 && <div className="flex justify-between py-2 text-base text-muted-foreground"><span>Fees</span><span className="tabular-nums">{formatCurrency(pt.feesShare)}</span></div>}
                       {pt.coveredExtra > 0 && (
                         <div className="flex justify-between py-2 text-base text-amber-400">
                           <span className="flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" />Covering {totals.filter((t) => t.person.covered).map((t) => t.person.name).join(", ")}&apos;s share</span>
-                          <span className="font-mono tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
+                          <span className="tabular-nums">{formatCurrency(pt.coveredExtra)}</span>
                         </div>
                       )}
                       </div>
@@ -105,7 +104,7 @@ export default function SummaryPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <div className="rounded-3xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-lg shadow-black/20">
+        <div className="bottom-bar">
           <div className="flex gap-3">
             <Button variant="outline" className="h-14 flex-1 gap-2 rounded-2xl text-sm font-semibold" onClick={async () => {
               const text = totals.filter((pt) => pt.total > 0).map((pt) => `${pt.person.name}: ${formatCurrency(pt.total)}`).join("\n");

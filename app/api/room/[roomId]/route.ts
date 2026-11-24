@@ -140,15 +140,29 @@ async function getRoom(roomId: string): Promise<RoomState | null> {
   return state ? sanitizeRoomState(state) : null;
 }
 
+// Another request saved the room after this one read it; the caller re-reads and retries.
+class RoomConflict extends Error {}
+
+// Compare-and-set in one atomic step: write the room and its version only if the
+// stored version still equals the one this request read (0 = room not created yet).
+const SAVE_IF_UNCHANGED = `
+local stored = tonumber(redis.call('GET', KEYS[2]) or '0')
+if stored ~= tonumber(ARGV[1]) then return 0 end
+redis.call('SET', KEYS[1], ARGV[2], 'EX', ARGV[4])
+redis.call('SET', KEYS[2], ARGV[3], 'EX', ARGV[4])
+return 1`;
+
 async function saveRoom(state: PrivateRoomState): Promise<PrivateRoomState> {
   if (!redis) return state;
   // Build a new object with the incremented version so we never mutate the
   // caller's reference before the Redis write succeeds.
   const newState: PrivateRoomState = { ...state, version: state.version + 1 };
-  await Promise.all([
-    redis.set(roomKey(newState.roomId), newState, { ex: ROOM_TTL }),
-    redis.set(versionKey(newState.roomId), newState.version, { ex: ROOM_TTL }),
-  ]);
+  const saved = await redis.eval(
+    SAVE_IF_UNCHANGED,
+    [roomKey(newState.roomId), versionKey(newState.roomId)],
+    [String(state.version), JSON.stringify(newState), String(newState.version), String(ROOM_TTL)],
+  );
+  if (saved !== 1) throw new RoomConflict();
   // Notify subscribers with the full state — fire and forget.
   // Embedding the state in the publish payload lets the subscriber push it
   // directly to clients without a second Redis GET, cutting one full
@@ -246,6 +260,26 @@ export async function POST(
     );
   }
 
+  // Each attempt re-reads the room and re-runs the action's checks, so a retry
+  // never applies a stale decision. Five tries covers a whole table tapping at once.
+  for (let attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
+    try {
+      return await handleAction(roomId, action, cors);
+    } catch (error) {
+      if (!(error instanceof RoomConflict)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 10 + Math.random() * 40 * (attempt + 1)));
+    }
+  }
+  return jsonError("The room is busy. Try again.", "room_busy", 409, cors);
+}
+
+const MAX_SAVE_ATTEMPTS = 5;
+
+async function handleAction(
+  roomId: string,
+  action: RoomAction,
+  cors: Record<string, string>,
+): Promise<NextResponse> {
   // ── create ──────────────────────────────────────────────────────────────
   if (action.type === "create") {
     const existing = await getPrivateRoom(roomId);

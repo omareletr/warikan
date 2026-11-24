@@ -89,7 +89,7 @@ interface Split {
 ```
 
 ## Gemini Integration
-Receipt parsing is a single API call. Send the photo as a base64 image to Gemini Flash (multimodal). The prompt and parsing logic live in /lib/gemini.ts.
+Receipt parsing is a single API call. Send the photo as a base64 image to Gemini Flash (multimodal). The prompt and parsing logic live in /lib/receipt-parsing/gemini-parser.ts.
 
 The prompt should ask Gemini to return JSON in this shape:
 ```json
@@ -148,7 +148,6 @@ All components follow shadcn/ui defaults with no custom overrides:
 - **Sheet** — bottom drawer (default side), tip picker, etc.
 - **Separator** — dividers
 - **Badge** — default, secondary, destructive, outline variants
-- **ScrollArea** — for scrollable lists
 - **Toggle** — for tip percentage pills
 
 ### Screen-by-Screen Design Notes
@@ -247,12 +246,12 @@ Content padding to clear the bar:
     /tip-selector.tsx          — Tip % toggles (15/18/20/25/None)
     /split-card.tsx            — Split card for home page list
 /lib
-  /gemini.ts                   — Gemini API client + receipt parsing prompt
+  /receipt-parsing/gemini-parser.ts — Gemini receipt parsing prompt + client (server-side)
   /splits.ts                   — localStorage read/write for splits
   /calculate.ts                — Split calculation (pure functions, handles covered redistribution)
   /types.ts                    — TypeScript interfaces (Person, LineItem, Fee, Split, PersonTotal)
   /split-flow-context.tsx      — React Context for split flow state management
-  /venmo.ts                    — Venmo deep link builder + QR pay data encoding
+  /payment-apps.ts             — Venmo/Cash App/PayPal deep links + QR pay data encoding
   /utils.ts                    — cn() utility (clsx + tailwind-merge)
 /netlify.toml                  — Netlify build config with @netlify/plugin-nextjs
 /public                        — Static assets (currently empty)

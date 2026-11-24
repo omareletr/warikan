@@ -42,11 +42,13 @@ export function getRoomJoinUrl(roomId: string): string {
 
 interface ApiError extends Error {
   code: string;
+  status: number;
 }
 
-function buildApiError(code: string, message: string): ApiError {
+function buildApiError(code: string, message: string, status: number): ApiError {
   const err = new Error(message) as ApiError;
   err.code = code;
+  err.status = status;
   return err;
 }
 
@@ -57,12 +59,14 @@ async function postRoomAction(roomId: string, action: RoomAction): Promise<RoomS
     body: JSON.stringify(action),
   });
 
-  const json = await res.json();
+  const json = await res.json().catch(() => null);
 
   if (!res.ok) {
+    // The room API names the error in `error` (e.g. "room_full"); fall back to the status.
     throw buildApiError(
-      String(json?.code ?? res.status),
+      String(json?.error ?? json?.code ?? res.status),
       String(json?.message ?? `Request failed with status ${res.status}`),
+      res.status,
     );
   }
 
